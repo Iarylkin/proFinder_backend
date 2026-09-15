@@ -71,10 +71,9 @@ jobs:
         run: mvn -B test verify
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
-          files: ./target/site/jacoco/jacoco.xml
-          flags: unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ========== CHECKSTYLE ==========
   checkstyle:
