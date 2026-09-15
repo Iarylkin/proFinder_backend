@@ -1,7 +1,7 @@
 # ProFinder — SDLC & Development Workflow
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.3
+- **Date:** 2026-09-15
 - **Status:** Draft
 - **Purpose:** The Software Development Lifecycle for ProFinder — repository structure, development workflow, environments, CI/CD pipeline, and how Claude integrates. Partially delivers Documentation Roadmap Tier 3 (docker-compose, CI/CD, testing strategy, environments, git workflow).
 
@@ -236,15 +236,14 @@ git push origin feature/auth-email-verification
 ### **Step 6: GitHub Actions Auto-Checks**
 ---
 
-**On PR creation, GitHub Actions runs:**
+**On PR creation, GitHub Actions runs (`ci.yml`):**
 ```text
-✓ Compile (all services)
+✓ Compile (build job)
 ✓ Run unit tests (JUnit 5)
-✓ Run integration tests (Testcontainers)
+✓ Run integration tests
+✓ Upload coverage report to Codecov (informational, no gate)
 ✓ Checkstyle (code style)
-✓ SonarQube (code quality, security)
-✓ Jacoco (coverage report ≥80%)
-✓ OWASP dependency check
+✓ SonarQube quality gate (code quality, security)
 
 Status: ✅ All checks passed → Ready to review
         ❌ Some check failed → Fix and push again
@@ -252,10 +251,12 @@ Status: ✅ All checks passed → Ready to review
 
 **GitHub Actions won't pass if:**
 - Tests fail
-- Coverage < 80%
 - Checkstyle violations exist
 - SonarQube quality gate fails
-- Security vulnerabilities found
+
+**Not currently enforced by CI** (see [§5 ci.yml](#5-cicd-pipeline-github-actions)):
+- Coverage falling below 80% — JaCoCo only produces a report for Codecov, there is no `jacoco:check` threshold
+- OWASP dependency vulnerabilities — the job was removed; Dependabot PRs are the current mitigation, not a blocking check
 
 ### **Step 7: Code Review**
 ---
@@ -549,7 +550,7 @@ Fixes: #123 (GitHub issue number)
 Before approving a PR, verify:
 - [ ] Code compiles without errors
 - [ ] All tests pass (unit + integration)
-- [ ] Coverage ≥ 80%
+- [ ] Coverage ≥ 80% (CI does not enforce this — check the Codecov report manually)
 - [ ] Checkstyle passes
 - [ ] SonarQube quality gate passes
 - [ ] No hardcoded secrets (API keys, passwords)
@@ -568,80 +569,191 @@ Before approving a PR, verify:
 ### **Workflows**
 ---
 
-#### **test.yml** — Runs on every push/PR
+CI/CD is split into 3 separate workflow files:
+
+| Workflow | Trigger | Purpose | Duration | Jobs |
+|----------|---------|---------|----------|------|
+| **ci.yml** | Push + PR (all branches) | Build → Test → Checkstyle + SonarQube | ~10-15 min | build, test, checkstyle, sonarqube |
+| **e2e.yml** | Push to develop | Full E2E tests (docker-compose) | ~10-20 min | e2e |
+| **deploy.yml** | Git tags (v*) | Build + Push Docker + Deploy | ~5-10 min | deploy |
+
 ---
 
+#### **ci.yml** — Build + Test + Checkstyle + SonarQube (4 Jobs)
+---
+
+**Triggers:** `on: push (branches: '**') + pull_request (branches: '**')` — every job below runs on **every push to every branch**, not only on pull requests.
+
+**Runs:** Four jobs:
+1. **build** — compile sources, upload `target/classes` + `target/test-classes` as an artifact (~2 min)
+2. **test** (needs: `build`) — starts Postgres/RabbitMQ/Redis/Elasticsearch service containers, runs `mvn -B test verify`, uploads the JaCoCo report to Codecov (~5 min)
+3. **checkstyle** (needs: `test`) — `mvn -B checkstyle:checkstyle`, uploads `checkstyle-result.xml` as an artifact
+4. **sonarqube** (needs: `test`, runs in parallel with `checkstyle`) — `mvn -B clean verify sonar:sonar`, then checks the SonarQube quality gate
+
 ```yaml
-name: Test
-on: [push, pull_request]
+name: CI
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: mvn -B clean test-compile -Dmaven.test.skip=true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: compiled-classes
+          path: |
+            **/target/classes
+            **/target/test-classes
+
   test:
     runs-on: ubuntu-latest
+    needs: build
     services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: password
-      rabbitmq:
-        image: rabbitmq:3.12
-      redis:
-        image: redis:7
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
-
+      postgres: { image: postgres:15 }
+      rabbitmq: { image: rabbitmq:3.12 }
+      redis: { image: redis:7 }
+      elasticsearch: { image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0 }
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: '21'
-      - run: ./mvnw clean verify
-      - run: ./mvnw jacoco:report
-      - uses: codecov/codecov-action@v3
-```
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: mvn -B test verify
+      - uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./target/site/jacoco/jacoco.xml
+          flags: java
 
-**What it checks:**
-- ✓ Compile all services
-- ✓ Run unit tests (JUnit 5)
-- ✓ Run integration tests (Testcontainers)
-- ✓ Coverage (Jacoco)
-
-#### **quality.yml** — Code quality checks
----
-
-```yaml
-name: Quality
-on: [pull_request]
-
-jobs:
-  quality:
+  checkstyle:
     runs-on: ubuntu-latest
+    needs: test
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: '21'
-      
-      - name: Checkstyle
-        run: ./mvnw checkstyle:check
-      
-      - name: SonarQube
-        run: ./mvnw clean verify sonar:sonar
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: mvn -B checkstyle:checkstyle
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkstyle-report
+          path: target/checkstyle-result.xml
+
+  sonarqube:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - run: mvn -B clean verify sonar:sonar
         env:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ secrets.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+      - uses: sonarsource/sonarqube-quality-gate-action@v1.2.0
+        with:
+          scanMetadataReportFile: target/sonar/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+```
+
+**Required GitHub secrets:** `CODECOV_TOKEN`, `SONAR_HOST_URL`, `SONAR_TOKEN`, `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`.
+
+**What it does:**
+- Compiles all sources (`build`)
+- Runs unit + integration tests against real PostgreSQL, RabbitMQ, Redis, Elasticsearch containers (`test`)
+- Uploads the JaCoCo coverage report to Codecov — **no minimum-coverage threshold is enforced**; `jacoco-maven-plugin` only runs `prepare-agent`/`report`, there is no `check` execution, so a coverage drop does not fail the build (see [§6 Coverage Goals](#6-testing-strategy) — the 80% figure there is a target, not a gate)
+- Runs Checkstyle and uploads the report as a build artifact (`checkstyle`)
+- Runs SonarQube analysis and enforces the SonarQube quality gate — this job fails the pipeline (no `continue-on-error`) (`sonarqube`)
+- **Does not run an OWASP dependency check.** It was added, then removed in favor of Dependabot (see [`.github/dependabot.yml`](../.github/dependabot.yml)): `org.owasp:dependency-check-maven` needs a populated NVD vulnerability database, which requires an `NVD_API_KEY` that isn't configured; without it every run failed with `NoDataException` and produced no usable result. Dependabot instead opens weekly PRs for outdated/vulnerable Maven and GitHub Actions dependencies, but it does not block a PR the way a CI security-scan job would.
+
+**Note on "quality only on PR":** an earlier version of this pipeline ran Checkstyle/SonarQube only on `pull_request` to save time on feature branches. That is no longer the case — `checkstyle` and `sonarqube` share the same `push` + `pull_request` trigger as `build`/`test` and run on every push to every branch.
+
+---
+
+#### **e2e.yml** — End-to-end tests on develop
+---
+
+**Triggers:** `on: [push]` to `develop` branch only
+
+**Runs:** Full E2E tests using docker-compose (all services running together)
+
+```yaml
+name: E2E Tests
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
       
-      - name: OWASP Dependency Check
-        run: ./mvnw org.owasp:dependency-check-maven:check
+      - name: Start all services with docker-compose
+        run: docker-compose up -d
+      
+      - name: Wait for services to be ready
+        run: sleep 30
+      
+      - name: Run E2E tests
+        run: mvn -B test -Dtest='*E2E' -DskipITs=false
+        continue-on-error: true
+      
+      - name: Cleanup services
+        if: always()
+        run: docker-compose down -v
 ```
 
 **What it checks:**
-- ✓ Checkstyle (code style)
-- ✓ SonarQube (code quality, bugs, security)
-- ✓ OWASP (known vulnerabilities in dependencies)
+- ✓ Full user workflows (Register → Create Order → Review)
+- ✓ Multiple services working together
+- ✓ Real database, Elasticsearch, RabbitMQ all running
+- ✓ End-to-end functionality
 
-#### **deploy.yml** — Build & deploy on release
+**When does it run?**
+- After code is merged to `develop`
+- Not on every feature branch (too slow)
+- Before creating release PR to main
+
 ---
+
+#### **deploy.yml** — Build & deploy on release tags
+---
+
+**Triggers:** `on: [push]` with git tags matching `v*` (e.g., v1.0.0)
+
+**Runs:** All tests + Build Docker images + Push to registry
 
 ```yaml
 name: Deploy
@@ -653,36 +765,47 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-java@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
+          cache: maven
       
-      - name: Run all tests & quality checks
-        run: ./mvnw clean verify sonar:sonar
+      - name: Run all tests and quality checks
+        run: mvn -B clean verify
       
-      - name: Build Docker images
+      - name: Run SonarQube analysis
+        run: mvn -B sonar:sonar
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+        continue-on-error: true
+      
+      - name: Build Docker image
+        run: docker build -t profinder/core-api:${{ github.ref_name }} -f src/main/docker/Dockerfile.jvm .
+      
+      - name: Login to Docker registry
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        continue-on-error: true
+      
+      - name: Push Docker image to registry
+        run: docker push profinder/core-api:${{ github.ref_name }}
+        continue-on-error: true
+      
+      - name: Print deployment info
         run: |
-          docker build -t profinder/core-api:${{ github.ref_name }} services/core-api/
-          docker build -t profinder/auth-service:${{ github.ref_name }} services/auth-service/
-          # ... build other services
-      
-      - name: Push to registry
-        run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push profinder/core-api:${{ github.ref_name }}
-          docker push profinder/auth-service:${{ github.ref_name }}
-          # ... push other services
-      
-      - name: Deploy to K8s
-        run: |
-          kubectl config use-context production
-          kubectl set image deployment/core-api core-api=profinder/core-api:${{ github.ref_name }}
-          # ... update other deployments
-          kubectl rollout status deployment/core-api
+          echo "Version: ${{ github.ref_name }}"
+          echo "Image: profinder/core-api:${{ github.ref_name }}"
+          echo "Ready for deployment to production"
 ```
+
+**What it does:**
+- ✓ Re-run all tests (safety check)
+- ✓ Build Docker image with tag (e.g., profinder/core-api:v1.0.0)
+- ✓ Push image to Docker registry
+- ✓ Ready for K8s deployment (manual step)
 
 
 ## 6. Testing Strategy
@@ -755,8 +878,15 @@ class AuthServiceIntegrationTest {
 - Full feature flow via REST API
 - Multiple services working together
 - Complete user journeys
+- Database + Elasticsearch + RabbitMQ all running
 
-**Tools:** RestAssured, TestContainers for all services
+**Where it runs:**
+- **Workflow:** `e2e.yml`
+- **Trigger:** Push to `develop` branch (after merging feature PR)
+- **Duration:** ~10-20 minutes
+- **Requirement:** `docker-compose up -d` to start all services
+
+**Tools:** RestAssured, docker-compose for all services
 
 **Example:**
 ```java
@@ -801,12 +931,15 @@ class OrderE2ETest {
 }
 ```
 
+**File naming:** Class names ending with `*E2E.java` (e.g., `OrderE2ETest.java`)
+
 ### **Coverage Goals**
 ---
 
 - **Target:** ≥ 80% line coverage
 - **Not critical:** 100% coverage (test complexity vs value)
 - **Skip testing:** Getters/setters, simple constructors, generated code
+- **Not enforced in CI:** `ci.yml` uploads the JaCoCo report to Codecov for visibility only; there is no `jacoco:check` rule failing the build below 80% (see [§5 ci.yml](#5-cicd-pipeline-github-actions))
 
 
 ## 7. Code Quality Standards
@@ -845,11 +978,12 @@ class OrderE2ETest {
 ### **OWASP Dependency Check**
 ---
 
-**Checks:**
+**Status: removed from CI.** `ci.yml` no longer runs `org.owasp:dependency-check-maven` — without an `NVD_API_KEY` secret, the plugin cannot populate its vulnerability database on a fresh runner and every run failed with `NoDataException`. It was intended to check:
 - Known security vulnerabilities in dependencies
 - Outdated packages
+- **Fail on:** High/Critical vulnerabilities
 
-**Fail on:** High/Critical vulnerabilities
+**Current mitigation:** [`.github/dependabot.yml`](../.github/dependabot.yml) opens weekly PRs for outdated/vulnerable Maven and GitHub Actions dependencies. This is not a blocking CI check — re-adding the OWASP job requires provisioning an `NVD_API_KEY` secret.
 
 ### **Code Patterns** (from docs/CODE_PATTERNS.md)
 ---
@@ -1086,11 +1220,11 @@ Option 2: Automatic sync (advanced)
 |--------|---------|
 | **Repo** | Monorepo (5 services + docs) |
 | **Local Dev** | docker-compose (all deps) |
-| **Testing** | Unit + Integration + E2E (JUnit 5, Testcontainers) |
-| **Quality** | Checkstyle + SonarQube + coverage ≥80% |
+| **Testing** | Unit + Integration + E2E (JUnit 5, docker-compose) |
+| **Quality** | Checkstyle + SonarQube quality gate (both enforced); coverage ≥80% is a target only, not CI-enforced; OWASP dependency check removed, Dependabot is the interim mitigation |
 | **Branching** | main (prod) ← develop (staging) ← feature/* |
-| **CI/CD** | GitHub Actions (test, build, deploy) |
-| **Environments** | Local → Staging (auto) → Prod (manual) |
+| **CI/CD Workflows** | ci.yml (push/PR, all branches: build → test → checkstyle + sonarqube) + e2e.yml (develop push) + deploy.yml (tags) |
+| **Environments** | Local → Staging (auto on develop) → Prod (manual on tags) |
 | **Docs** | /docs in repo + GitHub Wiki (synced) |
 | **Claude** | Reads docs, writes code, creates PRs |
 | **Rollback** | Git tags on Kubernetes |
@@ -1102,5 +1236,7 @@ Option 2: Automatic sync (advanced)
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-09-15 | Rewrote §5 to match the actual `ci.yml`: 4 jobs (build, test, checkstyle, sonarqube) instead of a single "quality" job; removed the stale standalone `quality.yml`/duplicate `e2e.yml` sections; documented that checkstyle/sonarqube now run on every push (not PR-only); documented required secrets (`CODECOV_TOKEN`, `SONAR_TOKEN`, `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`); documented that the OWASP dependency-check job was removed (no `NVD_API_KEY`) in favor of Dependabot, and that the 80% coverage target is not enforced by CI (JaCoCo has no `check` execution). Updated Step 6, PR checklist, §6 Coverage Goals, §7 OWASP section, and the Summary table to match. |
+| 1.2 | 2026-09-11 | Split monolithic CI workflow into 4 separate files: test.yml (unit + integration on push/PR), quality.yml (checkstyle + SonarQube on PR only), e2e.yml (end-to-end tests on develop push), deploy.yml (build + push Docker on git tags). Updated action versions from v3 to v4. Added explicit E2E test section with docker-compose requirement. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata block, separators, changelog). "files 1–14" / "all 14 files" → 15. `verification_tokens` references → `email_verification_tokens` (matches [6 - Database Schema.md](6%20-%20Database%20Schema.md)). Removed the "Next Steps" section — its items live in [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 3. |
 | 1.0 | 2026-09-07 | Initial. Monorepo layout, issue→production workflow, three environments, git branching, CI/CD workflows, testing strategy, code-quality standards, Claude integration, rollback/DR. |

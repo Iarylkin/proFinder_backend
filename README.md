@@ -1,5 +1,8 @@
 # ProFinder Backend
 
+[![CI](https://github.com/Strogolsky/proFinder_backend/actions/workflows/ci.yml/badge.svg)](https://github.com/Strogolsky/proFinder_backend/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Strogolsky/proFinder_backend/graph/badge.svg)](https://codecov.io/gh/Strogolsky/proFinder_backend)
+
 > **Note:** This repository contains only the **backend component** of the ProFinder platform. The client applications are developed separately.
 
 ## 📖 Table of Contents

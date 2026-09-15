@@ -51,6 +51,10 @@
     <module name="BeforeExecutionExclusionFileFilter">
         <property name="fileNamePattern" value=".*[\\/]test[\\/].*\.java$"/>
     </module>
+    <!-- Excludes all generated code (MapStruct, annotation processors) -->
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*[\\/]target[\\/]generated.*[\\/].*\.java$"/>
+    </module>
 
     <!-- https://checkstyle.org/filters/suppressionfilter.html -->
     <module name="SuppressionFilter">
