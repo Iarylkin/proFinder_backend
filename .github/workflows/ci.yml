@@ -147,5 +147,5 @@ jobs:
           cache: maven
 
       - name: OWASP Dependency Check
-        run: mvn -B org.owasp:dependency-check-maven:check -Ddependency-check.skip.update=true
+        run: mvn -B org.owasp:dependency-check-maven:check -DautoUpdate=false
         continue-on-error: true
