@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Strogolsky/proFinder_backend/actions/workflows/ci.yml/badge.svg)](https://github.com/Strogolsky/proFinder_backend/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/Strogolsky/proFinder_backend/graph/badge.svg)](https://codecov.io/gh/Strogolsky/proFinder_backend)
+[![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=Strogolsky_proFinder_backend&metric=alert_status)](https://sonarcloud.io/dashboard?id=Strogolsky_proFinder_backend)
 
 > **Note:** This repository contains only the **backend component** of the ProFinder platform. The client applications are developed separately.
 
