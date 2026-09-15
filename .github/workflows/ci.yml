@@ -31,7 +31,7 @@ jobs:
         run: mvn -B clean test-compile -Dmaven.test.skip=true
 
       - name: Upload compiled classes
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compiled-classes
           retention-days: 1
@@ -95,7 +95,7 @@ jobs:
         run: mvn -B checkstyle:checkstyle
 
       - name: Upload Checkstyle Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: checkstyle-report
