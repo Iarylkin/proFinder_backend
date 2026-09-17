@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The authoritative design lives in [`docs/`](docs/) (files `1 - Description.md` …
 `15 - SDLC & Workflow.md`), which is synced both ways with the GitHub Wiki
-(see [`.github/wiki-sync.md`](.github/wiki-sync.md)).
+(see [`.github/wiki-sync.md`](../.github/wiki-sync.md)).
 
 **The docs describe the target; the code is a transitional monolith.** Key gaps to
 be aware of:
@@ -14,7 +14,7 @@ be aware of:
 | Aspect | `docs/` (intended design) | Current code |
 | --- | --- | --- |
 | Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`fit.biejk`) |
-| Async / events | RabbitMQ topic exchange + transactional outbox ([`9 - Event Catalog.md`](docs/9%20-%20Event%20Catalog.md)) | in-process service calls |
+| Async / events | RabbitMQ topic exchange + transactional outbox ([`9 - Event Catalog.md`](../docs/9%20-%20Event%20Catalog.md)) | in-process service calls |
 | Domain language | `Customer` / `Professional` | `Client` / `Specialist` entities |
 | Schema management | Flyway migrations | Hibernate `drop-and-create` (dev) |
 
