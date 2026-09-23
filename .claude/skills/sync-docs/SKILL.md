@@ -14,12 +14,31 @@ from the diff alone.
 
 ## Step 1 - Enumerate every changed file, not a filtered subset
 
+Do not diff against `main`/`origin/main` by default - on this repo `main` can
+sit dozens of commits behind the current branch (stale integration branch),
+so a `merge-base` diff against it drags in a pile of already-merged, already-
+documented history that has nothing to do with the current branch's actual
+work. Scope to the current branch's own commits instead:
+
 ```bash
-BASE=$(git merge-base main HEAD 2>/dev/null || git merge-base origin/main HEAD)
-git diff --name-only "$BASE"...HEAD   # committed on this branch
+BASE=$(git log --merges -1 --format=%H HEAD)   # nearest merge-commit ancestor
+git diff --name-only "$BASE"...HEAD   # committed on this branch, since that merge
 git diff --name-only                  # unstaged
 git diff --cached --name-only         # staged
 ```
+
+The nearest merge commit reachable from `HEAD` (typically the last "Merge
+pull request" commit) marks where already-integrated history ends and this
+branch's own new commits begin - use that as `BASE`. Only fall back to
+`git merge-base main HEAD` (or `origin/main`) if `HEAD` has no merge-commit
+ancestor at all (e.g. a very short-lived repo/branch). Always include the
+unstaged and staged diffs regardless of which `BASE` was used - in-progress
+work isn't committed yet but is still in scope.
+
+If the resulting file list still looks implausibly large or unrelated to the
+branch's apparent purpose (branch name, recent commit subjects), stop and
+confirm the intended scope with the user before proceeding, rather than
+silently reconciling docs against unrelated history.
 
 Union all three lists. Drop only files that cannot possibly be described in
 `docs/`: build output (`target/`), compiled classes, lock files, generated
