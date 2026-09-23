@@ -1,7 +1,7 @@
 # ProFinder — SDLC & Development Workflow
 
-- **Version:** 1.3
-- **Date:** 2026-09-15
+- **Version:** 1.5
+- **Date:** 2026-09-23
 - **Status:** Draft
 - **Purpose:** The Software Development Lifecycle for ProFinder — repository structure, development workflow, environments, CI/CD pipeline, and how Claude integrates. Partially delivers Documentation Roadmap Tier 3 (docker-compose, CI/CD, testing strategy, environments, git workflow).
 
@@ -19,8 +19,14 @@ ProFinder uses a **monorepo** with 5 microservices, docker-compose for local dev
 ```text
 profinder/
 ├── .claude/
+│   ├── CLAUDE.md                ⭐ Main guide for Claude
 │   ├── config.json              ← Claude Code configuration
 │   ├── settings.json            ← Permissions & hooks
+│   ├── hooks/
+│   │   ├── checkstyle_on_edit.py    ← Runs checkstyle after every .java edit
+│   │   └── git_commit_test_gate.py  ← Blocks `git commit` unless `mvn verify` passes
+│   ├── skills/
+│   │   └── sync-docs/           ← Reconciles docs/ with code changes on the current branch
 │   └── agents/
 │       ├── code-reviewer.md
 │       ├── test-writer.md
@@ -30,7 +36,6 @@ profinder/
 │   ├── quality.yml              ← Checkstyle + SonarQube
 │   └── deploy.yml               ← Build & push to K8s
 ├── docs/
-│   ├── CLAUDE.md               ⭐ Main guide for Claude
 │   ├── SETUP.md                ← Local dev (docker-compose)
 │   ├── TESTING.md              ← Test strategy & patterns
 │   ├── CONTRIBUTING.md         ← Code standards & Git workflow
@@ -134,7 +139,7 @@ Body:
 ---
 
 Claude reads:
-- `docs/CLAUDE.md` → Project patterns, constraints, code standards
+- `.claude/CLAUDE.md` → Project patterns, constraints, code standards
 - Linked documentation (files 1–15) → Domain knowledge
 - Existing code in `services/*/src/main/java` → Code patterns
 - `docs/TESTING.md` → Test patterns & examples
@@ -562,6 +567,17 @@ Before approving a PR, verify:
 - [ ] Commit messages are clear & reference docs
 - [ ] PR description explains what & why
 
+### **Branch Protection Rules**
+---
+
+`main` and `develop` are protected on GitHub (Settings → Branches), enforcing the steps above technically instead of by convention only:
+
+- **Require a pull request before merging** — no direct push to `main` or `develop`
+- **Require status checks to pass before merging** — `build`, `test`, `checkstyle`, `sonarqube` (the `ci.yml` jobs, see §5) must be green
+- **Required approvals: 0** — team is 1-2 developers with no dedicated reviewer available; PR + green CI is the gate, not a second pair of eyes
+- **Do not allow bypassing the above settings** — applies to admins too, no emergency override
+
+Coverage threshold (`jacoco:check`) and the OWASP dependency-check job are intentionally **not** part of the required checks — see §5/§6/§7 for why each is deferred/removed.
 
 ## 5. CI/CD Pipeline (GitHub Actions)
 ---
@@ -1003,7 +1019,7 @@ class OrderE2ETest {
 ---
 
 **Can read:**
-- ✅ docs/CLAUDE.md (project guide)
+- ✅ .claude/CLAUDE.md (project guide)
 - ✅ docs/IT/ProFinder/* (all 15 files)
 - ✅ docs/TESTING.md (patterns)
 - ✅ docs/CODE_PATTERNS.md (examples)
@@ -1033,7 +1049,7 @@ class OrderE2ETest {
 1. Read GitHub Issue
    → Understand requirements, acceptance criteria, linked docs
 
-2. Read docs/CLAUDE.md
+2. Read .claude/CLAUDE.md
    → Understand project patterns, constraints, code standards
 
 3. Read relevant docs (files 4, 6, 8, 13)
@@ -1070,7 +1086,7 @@ See [2 - Requirements.md § FR-Auth-1]
 ```
 
 **Claude's Process:**
-1. Reads `docs/CLAUDE.md` → learns project patterns
+1. Reads `.claude/CLAUDE.md` → learns project patterns
 2. Reads `docs/IT/ProFinder/2 - Requirements.md § FR-Auth-1` → understands requirements
 3. Reads `docs/IT/ProFinder/4 - Business logic.md § Authentication` → learns business rules
 4. Reads `docs/IT/ProFinder/6 - Database Schema.md` → understands DB schema
@@ -1092,6 +1108,19 @@ See [2 - Requirements.md § FR-Auth-1]
 11. Creates PR with explanation + links to docs
 12. Addresses feedback from code review
 13. PR merged, auto-deploys to staging
+
+### **Automated Hooks & Skills**
+---
+
+The task loop above is backed by automation configured in `.claude/settings.json`:
+
+- **Checkstyle-on-edit hook** - checks code style immediately after every
+  Java file edit, instead of waiting for the pre-commit gate or CI.
+- **Commit test gate hook** - blocks `git commit` unless the full test and
+  checkstyle suite passes, and reminds (without blocking) when code changed
+  without a matching docs update.
+- **`sync-docs` skill** - reconciles `docs/` with the current branch's own
+  code changes on request.
 
 
 ## 9. Rollback & Disaster Recovery
@@ -1236,6 +1265,8 @@ Option 2: Automatic sync (advanced)
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-09-23 | Updated `docs/CLAUDE.md` references to `.claude/CLAUDE.md` (6 places in §1/§2/§8) to match the actual file move done in the `44-configure-claude-code-settings` branch. Added `.claude/hooks/` (`checkstyle_on_edit.py`, `git_commit_test_gate.py`) and `.claude/skills/sync-docs/` to the §1 repository-structure tree, and added a new §8 "Automated Hooks & Skills" subsection describing what each hook enforces and what the `sync-docs` skill does. |
+| 1.4 | 2026-09-15 | Documented that `main`/`develop` branch protection is enabled on GitHub (new §4 "Branch Protection Rules" subsection): required PR, required status checks (`build`/`test`/`checkstyle`/`sonarqube`), 0 required approvals (small team, no dedicated reviewer), no admin bypass. Noted `jacoco:check` and OWASP are intentionally excluded from required checks. |
 | 1.3 | 2026-09-15 | Rewrote §5 to match the actual `ci.yml`: 4 jobs (build, test, checkstyle, sonarqube) instead of a single "quality" job; removed the stale standalone `quality.yml`/duplicate `e2e.yml` sections; documented that checkstyle/sonarqube now run on every push (not PR-only); documented required secrets (`CODECOV_TOKEN`, `SONAR_TOKEN`, `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`); documented that the OWASP dependency-check job was removed (no `NVD_API_KEY`) in favor of Dependabot, and that the 80% coverage target is not enforced by CI (JaCoCo has no `check` execution). Updated Step 6, PR checklist, §6 Coverage Goals, §7 OWASP section, and the Summary table to match. |
 | 1.2 | 2026-09-11 | Split monolithic CI workflow into 4 separate files: test.yml (unit + integration on push/PR), quality.yml (checkstyle + SonarQube on PR only), e2e.yml (end-to-end tests on develop push), deploy.yml (build + push Docker on git tags). Updated action versions from v3 to v4. Added explicit E2E test section with docker-compose requirement. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata block, separators, changelog). "files 1–14" / "all 14 files" → 15. `verification_tokens` references → `email_verification_tokens` (matches [6 - Database Schema.md](6%20-%20Database%20Schema.md)). Removed the "Next Steps" section — its items live in [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 3. |
