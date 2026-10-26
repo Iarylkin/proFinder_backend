@@ -5,8 +5,8 @@ import fit.biejk.entity.User;
 import fit.biejk.service.UserService;
 import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -18,6 +18,7 @@ import java.io.InputStream;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class FileService {
 
     /**
@@ -34,14 +35,12 @@ public class FileService {
     /**
      * MinIO client for interacting with the S3-compatible storage.
      */
-    @Inject
-    private MinioClient minioClient;
+    private final MinioClient minioClient;
 
     /**
      * Service for accessing and updating {@link User} entities.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Uploads the avatar to MinIO and saves the avatar key to the user.
