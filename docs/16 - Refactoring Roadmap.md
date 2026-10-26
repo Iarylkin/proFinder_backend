@@ -73,7 +73,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-1.1** (before code) | Decide shared database vs schema per service (`docs/3` vs `docs/10` E1, E2, B1). Record it in `docs/3`, `6`, `7`. Decision 7 |
 | **D-1.2** (before code) | Registration: `display_name` is required but not sent; `users.role NOT NULL` vs a Google flow with no role; `POST /auth/role` with no token. Fix `docs/6`, `8`, `13` |
-| **D-1.3** | Naming: `quote_price`/`quote_amount`, `location`/`city`, `CUSTOMER`/`customer_written`, enum case, duplicate codes (`ORDER_CLOSED` vs `ORDER_ALREADY_CLOSED`, `ACCOUNT_LOCKED` vs `RATE_LIMITED`). Choose JSON-B or Jackson |
+| **D-1.3** | Naming: `quote_price`/`quote_amount`, `location`/`city`, `CUSTOMER`/`customer_written`, enum case, duplicate codes (`ORDER_CLOSED` vs `ORDER_ALREADY_CLOSED`, `ACCOUNT_LOCKED` vs `RATE_LIMITED`). Choose JSON-B or Jackson. Decide on DTOs as Java `record`s (see 1.7.0): scope, mapper impact, how secret fields are masked in `toString` |
 | **D-1.4** | `docs/6`: add `CHECK` (`budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`), `citext`, `ON DELETE`, `last_active_at`, respect `deleted_at` in the review `UNIQUE`; seed categories with UUID v7, not `gen_random_uuid()` |
 | **1.1.0** | `Client → Customer`: entity, repository, service, resource, DTOs, mappers, ES documents, tests |
 | **1.2.0** | `Specialist → Professional`, roles `CUSTOMER`/`PROFESSIONAL` in the JWT |
@@ -81,7 +81,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
 | **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
 | **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI |
+| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
 | **1.8.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
 ## M2 — Modular monolith (1.9.0 – 1.14.0)
@@ -282,3 +282,4 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
+| 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
