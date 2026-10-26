@@ -45,6 +45,7 @@ public class OrderProposalResource {
 
     /**
      * Retrieves a specific proposal by its ID.
+     * Available only to the owner of the order and the specialist who made the proposal.
      *
      * @param proposalId the ID of the proposal
      * @return the corresponding proposal
@@ -54,7 +55,7 @@ public class OrderProposalResource {
     @RolesAllowed({"CLIENT", "SPECIALIST"})
     public Response getById(@PathParam("proposalId") final Long proposalId) {
         log.info("Get proposal: proposalId={}", proposalId);
-        OrderProposal result = orderProposalService.getById(proposalId);
+        OrderProposal result = orderProposalService.getByIdForCurrentUser(proposalId);
         return Response.ok(orderProposalMapper.toDto(result)).build();
     }
 
@@ -72,6 +73,7 @@ public class OrderProposalResource {
      */
     @POST
     @Path("/{proposalId}/confirm")
+    @RolesAllowed("CLIENT")
     public Response confirm(@PathParam("proposalId") final Long proposalId,
                             @Valid final ConfirmProposal confirm) {
 

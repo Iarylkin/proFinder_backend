@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.0
+- **Version:** 1.2
 - **Date:** 2026-10-26
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -59,7 +59,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version / task | What we do |
 |---|---|
 | **1.0.1** | Remove JWTs, reset codes, passwords and chat content from logs. Override `toString` on DTOs that carry passwords |
-| **1.0.2** | Check chat membership (REST and WS), check order ownership for proposals, close the public `/clients` endpoints, remove email and phone from public DTOs |
+| **1.0.2** | Check chat membership (REST and WS), check order ownership for proposals, close the public `/clients` list; `GET /clients/{id}` stays for authenticated users with a public DTO without email and phone; remove the account email from public specialist DTOs (phone stays public per `docs/4`; a separate public contact email comes with 2.5.0). Foreign chat or proposal returns `403 FORBIDDEN`, a missing one `404 NOT_FOUND` per `docs/8` |
 | **1.0.3** | `findBySpecialistId`, `createAt` sort in `ChatMessageRepository`, 1-based pagination everywhere, `signUp` with an unknown role, null-safe specialist search, index `title` and `description` of orders, response to a closed order |
 | **1.0.4** | Password reset: single-use code, `SecureRandom`, attempt limit, `202` without revealing whether the email exists. Avatars: size and type limits. `drop-and-create` and `import.sql` only in `%dev`, Swagger not in `%prod` |
 | **D-0.1** | `docs/15`: describe the `hotfix/*` and `release/x.y` branches this plan uses. Remove the steps that push straight to `develop` and `main` (they contradict branch protection) |
@@ -283,3 +283,4 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|---|
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
+| 1.2 | 2026-10-26 | 1.0.2: public DTOs drop the account email only (phone stays public per `docs/4`); error codes follow `docs/8`. |

@@ -112,7 +112,7 @@ public class SpecialistResource {
                     pagination.getSize()
             );
             var result = specialistSearchMapper.toEntityList(searchResults);
-            return Response.ok(specialistMapper.toDtoList(result)).build();
+            return Response.ok(specialistMapper.toPublicDtoList(result)).build();
         }
 
         log.info("Get all specialists");
@@ -121,7 +121,7 @@ public class SpecialistResource {
                 pagination.getSize()
         );
         log.debug("Found {} specialists", result.size());
-        return Response.ok(specialistMapper.toDtoList(result)).build();
+        return Response.ok(specialistMapper.toPublicDtoList(result)).build();
     }
 
     /**
@@ -136,7 +136,7 @@ public class SpecialistResource {
     public Response getById(@PathParam("specialistId") final Long specialistId) {
         log.info("Get specialist by ID={}", specialistId);
         Specialist result = specialistService.getById(specialistId);
-        return Response.ok(specialistMapper.toDto(result)).build();
+        return Response.ok(specialistMapper.toPublicDto(result)).build();
     }
 
     /**

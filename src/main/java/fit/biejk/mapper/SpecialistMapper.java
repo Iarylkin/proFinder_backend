@@ -1,6 +1,7 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.SpecialistDto;
+import fit.biejk.dto.SpecialistPublicDto;
 import fit.biejk.entity.Specialist;
 import org.mapstruct.Mapper;
 
@@ -20,6 +21,22 @@ public interface SpecialistMapper {
      * @return the mapped SpecialistDto
      */
     SpecialistDto toDto(Specialist entity);
+
+    /**
+     * Converts a Specialist entity to its public DTO (without the login email).
+     *
+     * @param entity the Specialist entity
+     * @return the mapped SpecialistPublicDto
+     */
+    SpecialistPublicDto toPublicDto(Specialist entity);
+
+    /**
+     * Converts a list of Specialist entities to a list of public DTOs.
+     *
+     * @param entityList list of Specialist entities
+     * @return list of SpecialistPublicDto objects
+     */
+    List<SpecialistPublicDto> toPublicDtoList(List<Specialist> entityList);
 
     /**
      * Converts a Specialist DTO to its corresponding entity.

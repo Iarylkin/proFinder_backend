@@ -74,8 +74,10 @@ public class ChatResource {
     public Response getMessagesById(
             @PathParam("chatId") final Long chatId,
             @BeanParam final PageRequest pagination) {
+        Long userId = authService.getCurrentUserId();
         List<ChatMessage> result = chatService.getMessagesById(
                 chatId,
+                userId,
                 pagination.getPage(),
                 pagination.getSize()
         );

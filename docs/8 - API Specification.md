@@ -1,7 +1,7 @@
 # ProFinder — API Specification
 
-- **Version:** 1.8
-- **Date:** 2026-09-10
+- **Version:** 1.9
+- **Date:** 2026-10-26
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
 
@@ -78,6 +78,7 @@ Every endpoint below requires `Authorization: Bearer <JWT>` unless marked **publ
 | `GET /me/profile` | any authenticated | — | `200 ProfessionalProfileDto \| CustomerProfileDto` | — |
 | `PATCH /me/profile` | any authenticated | `ProfileUpdateRequestDto` (role-appropriate fields) | `200` (same shape as GET) | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
 | `GET /professionals/{id}` | **public** | — | `200 ProfessionalProfileDto` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
+| `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicDto` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
 | `GET /categories` | **public** | — | `200 CategoryDto[]` (flat list) | — |
 | `POST /categories` | Moderator, `SENIOR` | `{name}` | `201 CategoryDto` | `VALIDATION_ERROR`, `FORBIDDEN` |
 | `PATCH /categories/{id}` | Moderator, `SENIOR` | `{name}` | `200 CategoryDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
@@ -455,6 +456,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-10-26 | Added `GET /customers/{id}`: a public customer view for any authenticated user, without contact data, and no customer list. |
 | 1.8 | 2026-09-10 | Standardised to the shared doc format (metadata, separators, changelog). Added the **`DELETE /me`** account-deletion endpoint (used by files 10, 11, 13 but previously undocumented). `ACCOUNT_DELETION_BLOCKED` status **403 → 409** to match [10 - Sequence Diagrams.md § E2](10%20-%20Sequence%20Diagrams.md) and [13 - Validation Rules.md](13%20-%20Validation%20Rules.md). Wired `GOOGLE_ACCOUNT_ALREADY_LINKED` to the Google-callback endpoint. Removed the stale "Next" section (Event Catalog is done — [9 - Event Catalog.md](9%20-%20Event%20Catalog.md)). |
 | 1.7 | 2026-09-07 | Added the **UUID v7** and **enums returned raw** conventions — closed the last two open "API conventions" items. |
 | 1.6 | 2026-09-05 | Rebuilt so all 5 services sit correctly under `## Endpoints`, with `## Error Catalog` as its own sibling section. |

@@ -144,15 +144,45 @@ public class OrderProposalService {
     }
 
     /**
+     * Retrieves a proposal visible to the current user: the owner of the order
+     * or the specialist who submitted the proposal.
+     *
+     * @param proposalId the ID of the proposal
+     * @return the proposal
+     * @throws NotFoundException  if no proposal exists with the given ID
+     * @throws ForbiddenException if the current user is neither the order owner nor the author
+     */
+    public OrderProposal getByIdForCurrentUser(final Long proposalId) {
+        OrderProposal proposal = getById(proposalId);
+        boolean isOrderOwner = authService.isCurrentUser(proposal.getOrder().getClient().getId());
+        boolean isAuthor = authService.isCurrentUser(proposal.getSpecialist().getId());
+        if (!isOrderOwner && !isAuthor) {
+            throw new ForbiddenException("You do not have access to this proposal");
+        }
+        return proposal;
+    }
+
+    /**
      * Retrieves all proposals associated with a specific order.
+     * The caller must be the owner of the order.
      *
      * @param orderId the ID of the order
      * @param page    page number for pagination
      * @param size    number of proposals per page
      * @return list of proposals for the order
+     * @throws NotFoundException  if the order does not exist
+     * @throws ForbiddenException if the current user is not the owner of the order
      */
     public List<OrderProposal> getByOrderId(final Long orderId, final int page, final int size) {
         log.info("Fetching all proposals for order ID={}", orderId);
+
+        Order order = orderRepository.findById(orderId);
+        if (order == null) {
+            throw new NotFoundException("Order not found");
+        }
+        if (!authService.isCurrentUser(order.getClient().getId())) {
+            throw new ForbiddenException("You are not the owner of this order");
+        }
 
         List<OrderProposal> proposals = orderProposalRepository.findByOrderId(orderId, page, size);
         log.debug("Found {} proposal(s) for order ID={}", proposals.size(), orderId);

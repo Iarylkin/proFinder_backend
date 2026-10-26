@@ -13,7 +13,6 @@ import fit.biejk.service.ClientService;
 import fit.biejk.service.OrderService;
 import fit.biejk.service.ReviewService;
 import jakarta.annotation.security.DenyAll;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -72,12 +71,13 @@ public class ClientResource {
 
     /**
      * Retrieves all clients.
+     * Currently disabled by @DenyAll: client profiles are not public.
      *
      * @param pagination the pagination parameters (page and size)
      * @return list of all clients
      */
     @GET
-    @PermitAll
+    @DenyAll
     public Response getClients(@BeanParam final PageRequest pagination) {
         log.info("getAll request");
         List<Client> result = clientService.getAll(
@@ -89,19 +89,20 @@ public class ClientResource {
     }
 
     /**
-     * Retrieves a client by ID.
+     * Retrieves the public view of a client by ID (no contact data).
+     * Available to any authenticated user.
      *
      * @param clientId the client ID
-     * @return client data
+     * @return public client data
      */
     @GET
     @Path("/{clientId}")
-    @PermitAll
+    @RolesAllowed({"CLIENT", "SPECIALIST"})
     public Response getById(@PathParam("clientId") final Long clientId) {
         log.info("getById request: {}", clientId);
         Client result = clientService.getById(clientId);
         log.debug("Found client with ID={}", result.getId());
-        return Response.ok(clientMapper.toDto(result)).build();
+        return Response.ok(clientMapper.toPublicDto(result)).build();
     }
 
     /**

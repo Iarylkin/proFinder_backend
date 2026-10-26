@@ -8,6 +8,7 @@ import fit.biejk.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,18 +94,36 @@ public class ChatService {
      * Retrieves the list of messages in a given chat.
      *
      * @param chatId ID of the chat
+     * @param userId ID of the user requesting the history
      * @param page   page number for pagination
      * @param size   number of messages per page
      * @return list of {@link ChatMessage} in the chat
+     * @throws NotFoundException  if the chat does not exist
+     * @throws ForbiddenException if the user is not a participant of the chat
      */
-    public List<ChatMessage> getMessagesById(final Long chatId, final int page, final int size) {
+    public List<ChatMessage> getMessagesById(final Long chatId, final Long userId,
+                                             final int page, final int size) {
         log.info("Getting history for chat {}", chatId);
 
-        if (!existById(chatId)) {
-            throw new NotFoundException("Chat with id " + chatId + " not found");
+        Chat chat = getById(chatId);
+        if (!chat.hasParticipant(userId)) {
+            log.warn("User {} is not a participant of chat {}", userId, chatId);
+            throw new ForbiddenException("You are not a participant of this chat");
         }
 
         return chatMessageRepository.findByChatId(chatId, page, size);
+    }
+
+    /**
+     * Checks whether a user is a participant of a chat.
+     *
+     * @param chatId ID of the chat
+     * @param userId ID of the user
+     * @return true if the chat exists and the user is one of its participants
+     */
+    public boolean isParticipant(final Long chatId, final Long userId) {
+        Chat chat = chatRepository.findById(chatId);
+        return chat != null && chat.hasParticipant(userId);
     }
 
     /**

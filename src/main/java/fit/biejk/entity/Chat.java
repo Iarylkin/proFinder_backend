@@ -61,4 +61,15 @@ public class Chat {
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
     private List<ChatMessage> messages;
+
+    /**
+     * Checks whether the given user is one of the two participants of this chat.
+     *
+     * @param userId ID of the user to check
+     * @return true if the user is a participant, false otherwise
+     */
+    public boolean hasParticipant(final Long userId) {
+        return userId != null
+                && (user1.getId().equals(userId) || user2.getId().equals(userId));
+    }
 }
