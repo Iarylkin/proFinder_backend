@@ -10,8 +10,8 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class AuthService {
 
     /**
@@ -32,48 +33,40 @@ public class AuthService {
     /**
      * Service for sending emails.
      */
-    @Inject
-    private MailService mailService;
+    private final MailService mailService;
 
     /**
      * Service for managing locations.
      */
-    @Inject
-    private LocationService locationService;
+    private final LocationService locationService;
 
     /**
      * Service for managing specialists.
      */
-    @Inject
-    private SpecialistService specialistService;
+    private final SpecialistService specialistService;
 
     /**
      * Service for managing clients.
      */
-    @Inject
-    private ClientService clientService;
+    private final ClientService clientService;
 
     /**
      * Service for managing users.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Quarkus security context used to get the current authenticated identity.
      */
-    @Inject
-    private SecurityIdentity securityIdentity;
+    private final SecurityIdentity securityIdentity;
 
     /**
      * Redis client for temporary storage (e.g., verification codes).
      */
-    @Inject
-    private RedisClient redisClient;
+    private final RedisClient redisClient;
 
     /** Service for generating signed JWT tokens. */
-    @Inject
-    private TokenService tokenService;
+    private final TokenService tokenService;
 
     /**
      * Registers a new user (client or specialist) and returns a JWT token.
