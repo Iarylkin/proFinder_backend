@@ -6,11 +6,10 @@ import fit.biejk.entity.User;
 import fit.biejk.repository.ChatMessageRepository;
 import fit.biejk.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -19,7 +18,7 @@ import java.util.List;
  * Service for handling chat operations, such as creating new chats,
  * retrieving chat history, and checking chat existence.
  */
-@NoArgsConstructor
+@RequiredArgsConstructor
 @ApplicationScoped
 @Slf4j
 public class ChatService {
@@ -27,20 +26,17 @@ public class ChatService {
     /**
      * Repository for performing CRUD operations on {@link Chat} entities.
      */
-    @Inject
-    private ChatRepository chatRepository;
+    private final ChatRepository chatRepository;
 
     /**
      * Repository for performing CRUD operations on {@link ChatMessage} entities.
      */
-    @Inject
-    private ChatMessageRepository chatMessageRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     /**
      * Service for user-related operations.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Creates a new chat between two users if it doesn't already exist.

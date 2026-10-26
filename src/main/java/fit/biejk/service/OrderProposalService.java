@@ -8,10 +8,10 @@ import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -25,35 +25,31 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class OrderProposalService {
     /**
      * Repository for accessing order data.
      */
-    @Inject
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
     /**
      * Service for checking the identity of the currently authenticated user.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Service for indexing orders in Elasticsearch.
      */
-    @Inject
-    private OrderSearchService orderSearchService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Mapper responsible for converting Order to OrderSearchDto.
      */
-    @Inject
-    private OrderSearchMapper orderSearchMapper;
+    private final OrderSearchMapper orderSearchMapper;
 
     /**
      * Repository for managing order proposal persistence.
      */
-    @Inject
-    private OrderProposalRepository orderProposalRepository;
+    private final OrderProposalRepository orderProposalRepository;
     /**
      * Creates a new proposal for an order and assigns it the {@link ProposalStatus#CREATED} status.
      *

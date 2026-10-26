@@ -7,11 +7,11 @@ import fit.biejk.mapper.OrderMapper;
 import fit.biejk.mapper.OrderProposalMapper;
 import fit.biejk.service.OrderProposalService;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -23,25 +23,23 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Path("/v1/proposals")
+@RequiredArgsConstructor
 public class OrderProposalResource {
 
     /**
      * Service responsible for handling business logic related to order proposals.
      */
-    @Inject
-    private OrderProposalService orderProposalService;
+    private final OrderProposalService orderProposalService;
 
     /**
      * Mapper for converting between OrderProposal entities and DTOs.
      */
-    @Inject
-    private OrderProposalMapper orderProposalMapper;
+    private final OrderProposalMapper orderProposalMapper;
 
     /**
      * Mapper for converting between Order entities and DTOs.
      */
-    @Inject
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     /**
      * Retrieves a specific proposal by its ID.

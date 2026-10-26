@@ -15,10 +15,10 @@ import fit.biejk.service.*;
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -32,63 +32,53 @@ import java.util.List;
  */
 @Path("/v1/specialists")
 @Slf4j
+@RequiredArgsConstructor
 public class SpecialistResource {
 
     /**
      * Service responsible for handling business logic related to order proposals.
      */
-    @Inject
-    private OrderProposalService orderProposalService;
+    private final OrderProposalService orderProposalService;
 
     /**
      * Service for managing order-related operations.
      */
-    @Inject
-    private OrderService orderService;
+    private final OrderService orderService;
 
     /**
      * Mapper for converting between Order entities and DTOs.
      */
-    @Inject
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     /**
      * Service for searching and filtering specialists.
      */
-    @Inject
-    private SpecialistSearchService specialistSearchService;
+    private final SpecialistSearchService specialistSearchService;
 
     /**
      * Mapper for converting specialist search results to DTOs.
      */
-    @Inject
-    private SpecialistSearchMapper specialistSearchMapper;
+    private final SpecialistSearchMapper specialistSearchMapper;
 
     /**
      * Mapper for converting between OrderProposal entities and DTOs.
      */
-    @Inject
-    private OrderProposalMapper orderProposalMapper;
+    private final OrderProposalMapper orderProposalMapper;
 
     /** Service for handling business logic related to specialists. */
-    @Inject
-    private SpecialistService specialistService;
+    private final SpecialistService specialistService;
 
     /** Mapper for converting between Specialist entities and DTOs. */
-    @Inject
-    private SpecialistMapper specialistMapper;
+    private final SpecialistMapper specialistMapper;
 
     /** Service for retrieving authenticated user context and identity. */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /** Mapper for converting between Review and ReviewDto. */
-    @Inject
-    private ReviewMapper reviewMapper;
+    private final ReviewMapper reviewMapper;
 
     /** Service for accessing client reviews. */
-    @Inject
-    private ReviewService reviewService;
+    private final ReviewService reviewService;
 
     /**
      * Retrieves a list of all specialists.
