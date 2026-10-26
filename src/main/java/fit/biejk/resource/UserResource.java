@@ -5,18 +5,18 @@ import fit.biejk.dto.AvatarData;
 import fit.biejk.dto.ChangeEmailRequest;
 import fit.biejk.dto.ChangePasswordRequest;
 import fit.biejk.entity.User;
-import fit.biejk.minIO.FileUploadForm;
-import fit.biejk.minIO.FileService;
+import fit.biejk.minio.FileUploadForm;
+import fit.biejk.minio.FileService;
 import fit.biejk.service.AuthService;
 import fit.biejk.service.TokenService;
 import fit.biejk.service.UserService;
 import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.PermitAll;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -29,27 +29,24 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Path("/v1/users")
 @Slf4j
+@RequiredArgsConstructor
 public class UserResource {
 
     /**
      * Service responsible for handling file uploads and interactions with MinIO.
      */
-    @Inject
-    private FileService fileService;
+    private final FileService fileService;
 
     /**
      * Service for retrieving the currently authenticated user ID and auth logic.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /** Service for user entity management. */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /** Service for generating JWT tokens. */
-    @Inject
-    private TokenService tokenService;
+    private final TokenService tokenService;
     /**
      * Handles avatar upload for the currently authenticated user.
      *

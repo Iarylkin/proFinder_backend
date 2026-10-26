@@ -10,8 +10,8 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class AuthService {
 
     /**
@@ -32,48 +33,40 @@ public class AuthService {
     /**
      * Service for sending emails.
      */
-    @Inject
-    private MailService mailService;
+    private final MailService mailService;
 
     /**
      * Service for managing locations.
      */
-    @Inject
-    private LocationService locationService;
+    private final LocationService locationService;
 
     /**
      * Service for managing specialists.
      */
-    @Inject
-    private SpecialistService specialistService;
+    private final SpecialistService specialistService;
 
     /**
      * Service for managing clients.
      */
-    @Inject
-    private ClientService clientService;
+    private final ClientService clientService;
 
     /**
      * Service for managing users.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Quarkus security context used to get the current authenticated identity.
      */
-    @Inject
-    private SecurityIdentity securityIdentity;
+    private final SecurityIdentity securityIdentity;
 
     /**
      * Redis client for temporary storage (e.g., verification codes).
      */
-    @Inject
-    private RedisClient redisClient;
+    private final RedisClient redisClient;
 
     /** Service for generating signed JWT tokens. */
-    @Inject
-    private TokenService tokenService;
+    private final TokenService tokenService;
 
     /**
      * Registers a new user (client or specialist) and returns a JWT token.
@@ -105,7 +98,6 @@ public class AuthService {
             log.debug("Created client with ID={}", newClient.getId());
             jwtToken = tokenService.generateToken(newClient);
         }
-        log.debug("Sign up JWT={}", jwtToken);
         return jwtToken;
     }
 
@@ -129,9 +121,7 @@ public class AuthService {
             log.error("Invalid role: expected={}, actual={}", role, user.getRole());
             throw new IllegalArgumentException("Invalid role");
         }
-        String token = tokenService.generateToken(user);
-        log.debug("Sign in JWT={}", token);
-        return token;
+        return tokenService.generateToken(user);
     }
 
     /**
@@ -178,7 +168,7 @@ public class AuthService {
         String message = "Your password reset code is: " + code + "\nIt is valid for 10 minutes.";
 
         mailService.send(email, "Reset password", message);
-        log.debug("Generated reset code for email={}: code={}, hashed={}", email, code, hashedCode);
+        log.debug("Reset code issued for userId={}", user.getId());
     }
 
     /**
@@ -191,8 +181,7 @@ public class AuthService {
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            log.error("Invalid new password: expected={}, actual={}",
-                    request.getNewPassword(), request.getConfirmPassword());
+            log.error("New password and confirmation do not match");
             throw new IllegalArgumentException("Invalid new password");
         }
 
@@ -210,9 +199,6 @@ public class AuthService {
 
         log.debug("Updated user with ID={}", updatedUser.getId());
 
-        String res = tokenService.generateToken(updatedUser);
-        log.debug("Change JWT={}", res);
-
-        return res;
+        return tokenService.generateToken(updatedUser);
     }
 }

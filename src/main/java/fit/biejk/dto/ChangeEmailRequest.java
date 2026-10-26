@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * DTO representing a request to change the user's email address.
@@ -29,5 +30,6 @@ public class ChangeEmailRequest {
      * Used to verify the user's identity before changing the email.
      */
     @NotBlank
+    @ToString.Exclude
     private String password;
 }

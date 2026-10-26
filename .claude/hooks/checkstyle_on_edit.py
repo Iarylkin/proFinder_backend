@@ -3,6 +3,9 @@
 import json
 import subprocess
 import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 data = json.load(sys.stdin)
 file_path = (
@@ -16,6 +19,7 @@ if not file_path.endswith(".java"):
 
 result = subprocess.run(
     ["mvn", "-B", "checkstyle:checkstyle", "--fail-at-end"],
+    cwd=REPO_ROOT,
     capture_output=True,
     text=True,
 )

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Request DTO for resetting a user's password using a verification code.
@@ -29,17 +30,20 @@ public class ResetPasswordRequest {
      * The new password the user wants to set.
      */
     @NotBlank(message = "New password must not be blank")
+    @ToString.Exclude
     private String newPassword;
 
     /**
      * Confirmation of the new password for validation.
      */
     @NotBlank(message = "Password confirmation must not be blank")
+    @ToString.Exclude
     private String confirmPassword;
 
     /**
      * The verification code previously sent to the user's email.
      */
     @NotBlank(message = "Verification code must not be blank")
+    @ToString.Exclude
     private String verificationCode;
 }

@@ -2,12 +2,12 @@ package fit.biejk;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SampleTest {
 
     @Test
     void testSimpleAssertion() {
-        assertTrue(1 + 1 == 2);
+        assertEquals(2, 1 + 1);
     }
 }

@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/checkstyle_on_edit.py",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/checkstyle_on_edit.py",
             "timeout": 120,
             "statusMessage": "Running checkstyle..."
           }
@@ -32,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/git_commit_test_gate.py",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/git_commit_test_gate.py",
             "timeout": 300,
             "statusMessage": "Running mvn test before commit..."
           }

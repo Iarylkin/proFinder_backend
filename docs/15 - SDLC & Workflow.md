@@ -1,7 +1,7 @@
 # ProFinder — SDLC & Development Workflow
 
-- **Version:** 1.5
-- **Date:** 2026-09-23
+- **Version:** 1.6
+- **Date:** 2026-10-26
 - **Status:** Draft
 - **Purpose:** The Software Development Lifecycle for ProFinder — repository structure, development workflow, environments, CI/CD pipeline, and how Claude integrates. Partially delivers Documentation Roadmap Tier 3 (docker-compose, CI/CD, testing strategy, environments, git workflow).
 
@@ -160,6 +160,8 @@ git checkout -b feature/auth-email-verification
 - `bugfix/*` for bug fixes
 - `refactor/*` for refactoring
 - `docs/*` for documentation
+- `hotfix/*` for urgent fixes of a released version (see Hotfix Flow)
+- `release/x.y` for patching an older release line when `main` has already moved on
 
 ### **Step 4: Implement + Test Locally**
 ---
@@ -283,19 +285,9 @@ Comment: "Looks good, follows the transactional outbox pattern correctly"
 ### **Step 8: Manual Merge to develop**
 ---
 
-After approval:
-```bash
-# In GitHub UI, click "Merge pull request"
-# Delete feature branch
-```
+After approval, click "Merge pull request" in the GitHub UI and delete the feature branch.
 
-Or via command line:
-```bash
-git checkout develop
-git pull origin develop
-git merge feature/auth-email-verification
-git push origin develop
-```
+Direct `git merge` / `git push` to `develop` or `main` is not possible: both branches are protected (see Branch Protection Rules).
 
 ### **Step 9: Auto-Deploy to STAGING**
 ---
@@ -341,40 +333,21 @@ Developer fixes → new PR → repeat workflow
 ---
 
 When ready to release:
+
+1. Bump `<version>` in `pom.xml` to the release version (no `-SNAPSHOT`), e.g. `1.2.0`, in a PR to `develop`. `pom.xml` version = git tag = Docker tag.
+2. Open a release PR `develop → main`. Merge it after the required checks are green (no direct push to `main`).
+3. Create the tag on the merge commit in `main`:
+
 ```bash
-# From develop branch
-git checkout develop
-git pull origin develop
 git checkout main
 git pull origin main
-git merge develop
-git tag v1.2.0 -m "Release v1.2.0
-
-## Changes
-- [AuthService] Add email verification flow
-- [CoreAPI] Fix order deadline calculation
-- [Notification] Add SMS support (experimental)
-
-## Bug Fixes
-- Fix JWT validation race condition
-- Fix Elasticsearch mapping for city names
-
-## Breaking Changes
-None
-
-## Deployment Notes
-- Requires DB migration V015 (email_verification_tokens table)
-- Elasticsearch re-index recommended
-- RabbitMQ queues will be auto-created
-
-See full changelog: [GitHub Releases](...)
-"
-git push origin main --tags
+git tag -a v1.2.0 -m "Release v1.2.0"
+git push origin v1.2.0
 ```
 
 **Or use GitHub UI:**
 ```text
-Create Release from GitHub → specify tag v1.2.0 → write release notes → publish
+Releases → Draft a new release → create tag v1.2.0 on main → write release notes → publish
 ```
 
 **Release Notes Include:**
@@ -504,6 +477,7 @@ flowchart BT
     F3["bugfix/search-filter-crash"] --> D
     F4["refactor/optimize-queries"] --> D
     F5["docs/update-api-docs"] --> D
+    H["hotfix/remove-secrets-from-logs"] --> D
     D["develop (staging)"] -->|release PR| M["main (production)"]
     M -.->|tagged| T["releases: v1.2.0, v1.2.1, ..."]
 ```
@@ -566,6 +540,16 @@ Before approving a PR, verify:
 - [ ] New events documented in [9 - Event Catalog.md](9%20-%20Event%20Catalog.md)
 - [ ] Commit messages are clear & reference docs
 - [ ] PR description explains what & why
+
+### **Hotfix Flow**
+---
+
+Hotfixes (patch versions `x.y.Z`, see [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)) use the same protected path as other changes:
+
+1. Branch `hotfix/<short-description>` from `develop`.
+2. Fix, add a test, open a PR to `develop`; merge when required checks are green.
+3. Bump `pom.xml` to the patch version (`1.0.1`), release PR `develop → main`, tag `v1.0.1` on `main` (Step 11).
+4. If `main` has already moved on and the fix must ship alone: create `release/x.y` from the last tag of that line, cherry-pick the fix, open a PR to `release/x.y`, tag the merge commit `vx.y.z`.
 
 ### **Branch Protection Rules**
 ---
@@ -1265,6 +1249,7 @@ Option 2: Automatic sync (advanced)
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-10-26 | Added `hotfix/*` and `release/x.y` branches and a Hotfix Flow subsection. Removed the command-line `git merge`/`git push` steps to `develop` and `main` (they contradict branch protection); Step 11 now describes a version bump in `pom.xml`, a release PR and tagging on `main`. |
 | 1.5 | 2026-09-23 | Updated `docs/CLAUDE.md` references to `.claude/CLAUDE.md` (6 places in §1/§2/§8) to match the actual file move done in the `44-configure-claude-code-settings` branch. Added `.claude/hooks/` (`checkstyle_on_edit.py`, `git_commit_test_gate.py`) and `.claude/skills/sync-docs/` to the §1 repository-structure tree, and added a new §8 "Automated Hooks & Skills" subsection describing what each hook enforces and what the `sync-docs` skill does. |
 | 1.4 | 2026-09-15 | Documented that `main`/`develop` branch protection is enabled on GitHub (new §4 "Branch Protection Rules" subsection): required PR, required status checks (`build`/`test`/`checkstyle`/`sonarqube`), 0 required approvals (small team, no dedicated reviewer), no admin bypass. Noted `jacoco:check` and OWASP are intentionally excluded from required checks. |
 | 1.3 | 2026-09-15 | Rewrote §5 to match the actual `ci.yml`: 4 jobs (build, test, checkstyle, sonarqube) instead of a single "quality" job; removed the stale standalone `quality.yml`/duplicate `e2e.yml` sections; documented that checkstyle/sonarqube now run on every push (not PR-only); documented required secrets (`CODECOV_TOKEN`, `SONAR_TOKEN`, `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`); documented that the OWASP dependency-check job was removed (no `NVD_API_KEY`) in favor of Dependabot, and that the 80% coverage target is not enforced by CI (JaCoCo has no `check` execution). Updated Step 6, PR checklist, §6 Coverage Goals, §7 OWASP section, and the Summary table to match. |
