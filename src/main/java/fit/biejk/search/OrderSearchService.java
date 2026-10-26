@@ -6,7 +6,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,13 +18,13 @@ import java.util.List;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class OrderSearchService {
 
     /**
      * Elasticsearch client used to perform operations on the search index.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Saves or updates an {@link OrderSearchDto} document in the Elasticsearch "orders" index.

@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class OrderSearchMapperTest {
 
-    private final OrderSearchMapper mapper = new OrderSearchMapper();
+    private final OrderSearchMapper mapper = new OrderSearchMapper(null);
 
     @Test
     void searchDocumentContainsTitleAndDescription() {

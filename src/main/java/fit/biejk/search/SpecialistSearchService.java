@@ -5,8 +5,8 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,13 +17,13 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class SpecialistSearchService {
 
     /**
      * Elasticsearch client used for communication with the search index.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Indexes a specialist document in Elasticsearch.

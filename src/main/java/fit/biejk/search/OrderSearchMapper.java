@@ -4,7 +4,7 @@ import fit.biejk.entity.Order;
 import fit.biejk.entity.ServiceOffering;
 import fit.biejk.service.OrderService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -16,13 +16,13 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class OrderSearchMapper {
 
     /**
      * Service providing access to {@link Order} data from the database.
      */
-    @Inject
-    private OrderService orderService;
+    private final OrderService orderService;
 
     /**
      * Converts an {@link Order} entity to a {@link OrderSearchDto} for Elasticsearch indexing.

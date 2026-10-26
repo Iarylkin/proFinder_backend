@@ -6,11 +6,11 @@ import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -24,40 +24,35 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class OrderService {
 
     /**
      * Service for indexing orders in Elasticsearch.
      */
-    @Inject
-    private OrderSearchService orderSearchService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Mapper responsible for converting Order to OrderSearchDto.
      */
-    @Inject
-    private OrderSearchMapper orderSearchMapper;
+    private final OrderSearchMapper orderSearchMapper;
     /**
      * Repository for accessing order data.
      */
-    @Inject
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     /**
      * Service for managing order proposals.
      */
-    @Inject
-    private OrderProposalService orderProposalService;
+    private final OrderProposalService orderProposalService;
 
     /** Service for handling business logic related to specialists. */
-    @Inject
-    private SpecialistService specialistService;
+    private final SpecialistService specialistService;
 
     /**
      * Service for user identity validation.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Creates a new order with default status.

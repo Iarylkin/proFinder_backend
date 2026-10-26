@@ -5,9 +5,9 @@ import fit.biejk.repository.SpecialistRepository;
 import fit.biejk.search.SpecialistSearchMapper;
 import fit.biejk.search.SpecialistSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -21,43 +21,37 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class SpecialistService {
 
     /**
      * Repository for accessing specialist data.
      */
-    @Inject
-    private SpecialistRepository specialistRepository;
+    private final SpecialistRepository specialistRepository;
 
     /**
      * Service for handling common user operations (validation, update, delete).
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Service used to persist specialist data to the Elasticsearch index.
      */
-    @Inject
-    private SpecialistSearchService specialistSearchService;
+    private final SpecialistSearchService specialistSearchService;
 
     /**
      * Mapper for converting Specialist entities into SpecialistSearchDto.
      */
-    @Inject
-    private SpecialistSearchMapper specialistSearchMapper;
+    private final SpecialistSearchMapper specialistSearchMapper;
 
     /** Service for managing reviews. */
-    @Inject
-    private ReviewService reviewService;
+    private final ReviewService reviewService;
 
     /** Service for authentication and user context. */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /** Service for client management. */
-    @Inject
-    private ClientService clientService;
+    private final ClientService clientService;
 
 
     /**
