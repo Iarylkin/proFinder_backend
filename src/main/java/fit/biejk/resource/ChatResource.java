@@ -9,39 +9,36 @@ import fit.biejk.mapper.ChatMessageMapper;
 import fit.biejk.service.AuthService;
 import fit.biejk.service.ChatService;
 import io.quarkus.security.Authenticated;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 /**
  * REST resource that handles operations related to chat creation and message history retrieval.
  */
 @Path("/v1/chats")
+@RequiredArgsConstructor
 public class ChatResource {
 
     /**
      * Service for managing chat operations.
      */
-    @Inject
-    private ChatService chatService;
+    private final ChatService chatService;
 
     /**
      * Service for retrieving the current authenticated user's information.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Mapper to convert ChatMessage entities to DTOs.
      */
-    @Inject
-    private ChatMessageMapper chatMessageMapper;
+    private final ChatMessageMapper chatMessageMapper;
 
     /** Mapper to convert chat entities to DTOs. */
-    @Inject
-    private ChatMapper chatMapper;
+    private final ChatMapper chatMapper;
 
     /**
      * Creates a new chat between the authenticated user and the recipient.
@@ -74,8 +71,10 @@ public class ChatResource {
     public Response getMessagesById(
             @PathParam("chatId") final Long chatId,
             @BeanParam final PageRequest pagination) {
+        Long userId = authService.getCurrentUserId();
         List<ChatMessage> result = chatService.getMessagesById(
                 chatId,
+                userId,
                 pagination.getPage(),
                 pagination.getSize()
         );

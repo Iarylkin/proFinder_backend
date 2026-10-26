@@ -1,7 +1,7 @@
 # ProFinder — Permission Matrix
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.2
+- **Date:** 2026-10-26
 - **Status:** Stable
 - **Purpose:** One table of who can do what — roles × actions, plus the account-status and ownership conditions layered on top. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 ("permission matrix (role × action)").
 
@@ -81,6 +81,7 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 |---|---|---|---|---|
 | View / edit own profile | `GET/PATCH /me/profile` | ✅ own | ✅ own | ✅ own (minimal) |
 | View a professional's public profile | `GET /professionals/{id}` | ✅ public | ✅ public | ✅ public |
+| View a customer's public profile | `GET /customers/{id}` | ✅ | ✅ | ✅ |
 | Upload / delete own portfolio photo | `POST/DELETE /me/portfolio[/{id}]` | ⛔ | ✅ own | delete: ✅ (any) |
 | List categories | `GET /categories` | ✅ public | ✅ public | ✅ public |
 | Create / edit / delete a category | `POST/PATCH/DELETE /categories[/{id}]` | ⛔ | ⛔ | ★ `SENIOR` only ([8](8%20-%20API%20Specification.md), FR-Admin-1) |
@@ -158,5 +159,6 @@ Everything a hypothetical Admin would do (category management is the concrete ca
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-26 | Added `GET /customers/{id}` (public customer view, any authenticated user, no contact data). |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata, separators). |
 | 1.0 | 2026-09-07 | Initial. Role definitions, account-status gate, full role × action matrix across all 5 services, `STANDARD`/`SENIOR` split, enforcement notes. |

@@ -101,6 +101,12 @@ public class ChatSocket {
             return;
         }
 
+        if (!chatService.isParticipant(chatId, userId)) {
+            log.warn("User {} tried to join chat {} without being a participant", userId, chatId);
+            closeSession(session, "Forbidden");
+            return;
+        }
+
         session.getUserProperties().put("userId", userId);
         CHAT_SESSIONS.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
