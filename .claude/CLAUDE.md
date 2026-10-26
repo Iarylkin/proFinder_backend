@@ -110,7 +110,7 @@ Main application code organized by layers:
   - Paired with `@Valid` validation annotations
   - DTOs: AuthRequest/AuthResponse, OrderDto, UserDto, ClientDto, SpecialistDto, PageRequest, filter criteria, etc.
 
-- **`minIO/`** — File storage integration
+- **`minio/`** — File storage integration
   - `FileService` — Upload/download files to MinIO
   - `FileUploadForm` — Multipart form binding
 

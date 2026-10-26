@@ -1,4 +1,4 @@
-package fit.biejk.minIO;
+package fit.biejk.minio;
 
 import fit.biejk.dto.AvatarData;
 import fit.biejk.entity.User;

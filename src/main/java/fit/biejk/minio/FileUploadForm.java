@@ -1,4 +1,4 @@
-package fit.biejk.minIO;
+package fit.biejk.minio;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
