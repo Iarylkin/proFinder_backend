@@ -139,7 +139,7 @@ public class ChatSocket {
         try {
             ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.getContent());
             ChatOutputMessage outputMessage = chatMessageMapper.toDto(message);
-            log.info("Sending message in chat {}: {}", chatId, outputMessage);
+            log.info("Sending message {} in chat {}", message.getId(), chatId);
             broadcastMessage(chatId, outputMessage);
         } catch (Exception e) {
             log.error("Failed to process message", e);

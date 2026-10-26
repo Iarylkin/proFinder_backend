@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * DTO for requesting a password change.
@@ -21,6 +22,7 @@ public class ChangePasswordRequest {
      * Must match the password stored in the system.
      */
     @NotBlank
+    @ToString.Exclude
     private String oldPassword;
 
     /**
@@ -28,6 +30,7 @@ public class ChangePasswordRequest {
      * Must be different from the old password.
      */
     @NotBlank
+    @ToString.Exclude
     private String newPassword;
 
     /**
@@ -35,6 +38,7 @@ public class ChangePasswordRequest {
      * Must match {@code newPassword}.
      */
     @NotBlank
+    @ToString.Exclude
     private String confirmPassword;
 }
 

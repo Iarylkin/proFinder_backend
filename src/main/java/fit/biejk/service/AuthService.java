@@ -105,7 +105,6 @@ public class AuthService {
             log.debug("Created client with ID={}", newClient.getId());
             jwtToken = tokenService.generateToken(newClient);
         }
-        log.debug("Sign up JWT={}", jwtToken);
         return jwtToken;
     }
 
@@ -129,9 +128,7 @@ public class AuthService {
             log.error("Invalid role: expected={}, actual={}", role, user.getRole());
             throw new IllegalArgumentException("Invalid role");
         }
-        String token = tokenService.generateToken(user);
-        log.debug("Sign in JWT={}", token);
-        return token;
+        return tokenService.generateToken(user);
     }
 
     /**
@@ -178,7 +175,7 @@ public class AuthService {
         String message = "Your password reset code is: " + code + "\nIt is valid for 10 minutes.";
 
         mailService.send(email, "Reset password", message);
-        log.debug("Generated reset code for email={}: code={}, hashed={}", email, code, hashedCode);
+        log.debug("Reset code issued for userId={}", user.getId());
     }
 
     /**
@@ -191,8 +188,7 @@ public class AuthService {
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            log.error("Invalid new password: expected={}, actual={}",
-                    request.getNewPassword(), request.getConfirmPassword());
+            log.error("New password and confirmation do not match");
             throw new IllegalArgumentException("Invalid new password");
         }
 
@@ -210,9 +206,6 @@ public class AuthService {
 
         log.debug("Updated user with ID={}", updatedUser.getId());
 
-        String res = tokenService.generateToken(updatedUser);
-        log.debug("Change JWT={}", res);
-
-        return res;
+        return tokenService.generateToken(updatedUser);
     }
 }
