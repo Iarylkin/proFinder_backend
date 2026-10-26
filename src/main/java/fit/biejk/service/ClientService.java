@@ -59,7 +59,7 @@ public class ClientService {
      */
     public List<Client> getAll(final int page, final int size) {
         log.info("Get all clients");
-        List<Client> result = clientRepository.findAll().page(page, size).list();
+        List<Client> result = clientRepository.findAll().page(page - 1, size).list();
         log.debug("Found {} clients", result.size());
         return result;
     }

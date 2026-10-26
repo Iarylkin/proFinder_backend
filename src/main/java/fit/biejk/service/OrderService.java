@@ -8,7 +8,9 @@ import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -178,7 +180,7 @@ public class OrderService {
      */
     public List<Order> getAll(final int page, final int size) {
         log.info("Get all orders");
-        List<Order> orders = orderRepository.findAll().page(page, size).list();
+        List<Order> orders = orderRepository.findAll().page(page - 1, size).list();
         log.debug("Found {} orders", orders.size());
         return orders;
     }
@@ -195,6 +197,10 @@ public class OrderService {
     public OrderProposal proposal(final Long orderId, final Long specialistId, final OrderProposal proposal) {
         log.info("Create proposal: orderId={}, specialistId={}", orderId, proposal.getSpecialist().getId());
         Order order = getById(orderId);
+        if (!order.getStatus().acceptsProposals()) {
+            log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
+            throw new ClientErrorException("This order is closed", Response.Status.CONFLICT);
+        }
         if (haveSpecialistProposal(order, proposal)) {
             log.error("Order proposal already exists for this specialist. orderId={}, specialistId={}",
                     orderId, proposal.getSpecialist().getId());

@@ -43,7 +43,10 @@ public class OrderSearchMapper {
                 entity.getId(),
                 entity.getStatus().name(),
                 serviceNames,
-                locationName
+                locationName,
+                entity.getTitle(),
+                entity.getDescription(),
+                entity.getCreatedAt().toString()
         );
     }
 

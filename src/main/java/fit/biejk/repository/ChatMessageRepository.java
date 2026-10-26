@@ -25,7 +25,7 @@ public class ChatMessageRepository implements PanacheRepository<ChatMessage> {
      * @return a list of {@link ChatMessage} entities
      */
     public List<ChatMessage> findByChatId(final Long chatId, final int page, final int size) {
-        return find("chat.id = ?1 ORDER BY createdAt DESC", chatId)
+        return find("chat.id = ?1 ORDER BY createAt DESC", chatId)
                 .page(page - 1, size)
                 .list();
     }

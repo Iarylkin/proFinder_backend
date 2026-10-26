@@ -11,6 +11,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,6 +98,9 @@ public class AuthService {
             Client newClient = clientService.create(client);
             log.debug("Created client with ID={}", newClient.getId());
             jwtToken = tokenService.generateToken(newClient);
+        } else {
+            log.warn("Sign up with unsupported role={}", role);
+            throw new BadRequestException("Unsupported role");
         }
         return jwtToken;
     }

@@ -89,22 +89,27 @@ public class SpecialistSearchService {
                             .from(from)
                             .size(size)
                             .query(q -> q
-                                    .bool(b -> b
-                                            .must(m -> m
+                                    .bool(b -> {
+                                        if (hasText(keyword)) {
+                                            b.must(m -> m
                                                     .multiMatch(mm -> mm
                                                             .fields("firstName", "lastName",
                                                                     "description", "services")
                                                             .query(keyword)
                                                             .fuzziness("AUTO")
                                                     )
-                                            )
-                                            .filter(f -> f
+                                            );
+                                        }
+                                        if (hasText(location)) {
+                                            b.filter(f -> f
                                                     .term(t -> t
                                                             .field("location.keyword")
                                                             .value(location)
                                                     )
-                                            )
-                                    )
+                                            );
+                                        }
+                                        return b;
+                                    })
                             )
                             .sort(so -> so
                                     .field(f -> f
@@ -124,5 +129,9 @@ public class SpecialistSearchService {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    private static boolean hasText(final String value) {
+        return value != null && !value.isBlank();
     }
 }

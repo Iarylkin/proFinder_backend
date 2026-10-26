@@ -86,6 +86,9 @@ public class OrderIndexInitializer {
                                             .fields("keyword", k -> k.keyword(kk -> kk))
                                     )
                             )
+                            .properties("title", p -> p.text(t -> t))
+                            .properties("description", p -> p.text(t -> t))
+                            .properties("createdAt", p -> p.date(d -> d))
                     )
             );
             load();
