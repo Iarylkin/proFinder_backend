@@ -91,7 +91,7 @@ public class CustomerResource {
      */
     @GET
     @Path("/{customerId}")
-    @RolesAllowed({"CUSTOMER", "SPECIALIST"})
+    @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
     public Response getById(@PathParam("customerId") final Long customerId) {
         log.info("getById request: {}", customerId);
         Customer result = customerService.getById(customerId);

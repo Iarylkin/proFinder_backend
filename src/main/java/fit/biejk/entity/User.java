@@ -81,7 +81,7 @@ public class User extends PanacheEntityBase {
     private Location location;
 
     /**
-     * Role assigned to the user (e.g., CUSTOMER, SPECIALIST).
+     * Role assigned to the user (e.g., CUSTOMER, PROFESSIONAL).
      */
     @Column(name = "role")
     @Enumerated(EnumType.STRING)

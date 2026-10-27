@@ -171,7 +171,7 @@ public class ProfessionalResource {
      */
     @GET
     @Path("/me")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response getProfile() {
         Long professionalId = authService.getCurrentUserId();
         log.info("Get profile for professional ID={}", professionalId);
@@ -187,7 +187,7 @@ public class ProfessionalResource {
      */
     @PUT
     @Path("/me")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response updateProfile(@Valid final ProfessionalDto dto) {
         Long id = authService.getCurrentUserId();
         log.info("Update profile for professional ID={} with dto={}", id, dto);
@@ -203,7 +203,7 @@ public class ProfessionalResource {
      */
     @DELETE
     @Path("/me")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response deleteProfile() {
         Long id = authService.getCurrentUserId();
         log.info("Delete profile for professional ID={}", id);
@@ -239,7 +239,7 @@ public class ProfessionalResource {
      */
     @PUT
     @Path("/me/services")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response updateServiceOffering(final List<ServiceOffering> serviceOfferings) {
         Long id = authService.getCurrentUserId();
         log.info("Add serviceOffering for professional ID={}", id);
@@ -275,7 +275,7 @@ public class ProfessionalResource {
      */
     @GET
     @Path("/{professionalId}/proposals")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response getProposals(
             @PathParam("professionalId") final Long professionalId,
             @BeanParam final PageRequest pagination
@@ -290,7 +290,7 @@ public class ProfessionalResource {
     /**
      * Retrieves all active orders assigned to a specific professional.
      * <p>
-     * Only accessible to authenticated users with the SPECIALIST role.
+     * Only accessible to authenticated users with the PROFESSIONAL role.
      * </p>
      *
      * @param pagination the pagination parameters (page and size)
@@ -298,7 +298,7 @@ public class ProfessionalResource {
      */
     @GET
     @Path("/me/orders")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {

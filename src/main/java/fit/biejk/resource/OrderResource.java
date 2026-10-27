@@ -136,7 +136,7 @@ public class OrderResource {
      */
     @POST
     @Path("/{orderId}/proposals")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response proposal(
             @PathParam("orderId") final Long orderId,
             @Valid final OrderProposalDto proposalDto) {

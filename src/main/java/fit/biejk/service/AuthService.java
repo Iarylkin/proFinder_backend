@@ -106,7 +106,7 @@ public class AuthService {
     public String signUp(final String email, final String password, final UserRole role) {
         log.info("Sign up: email={}, role={}", email, role);
         User created = switch (role) {
-            case SPECIALIST -> professionalService.create(newUser(new Professional(), email, password, role));
+            case PROFESSIONAL -> professionalService.create(newUser(new Professional(), email, password, role));
             case CUSTOMER -> customerService.create(newUser(new Customer(), email, password, role));
             default -> {
                 log.warn("Sign up with unsupported role={}", role);

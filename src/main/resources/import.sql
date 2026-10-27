@@ -36,16 +36,16 @@ INSERT INTO service_offering (name) VALUES
 
 -- Users (Professionals) IDs 100–109
 INSERT INTO users (id, email, password, first_name, last_name, phone_number, location_id, role, createat) VALUES
-(100, 'spec1@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Eva',    'Kralova',    '555555555', 1, 'SPECIALIST', now()),
-(101, 'spec2@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Tomas',  'Dvorak',     '444444444', 2, 'SPECIALIST', now()),
-(102, 'spec3@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Lucie',  'Horakova',   '111222333', 1, 'SPECIALIST', now()),
-(103, 'spec4@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Petr',   'Novotny',    '222333444', 2, 'SPECIALIST', now()),
-(104, 'spec5@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Karel',  'Sedlak',     '333444555', 1, 'SPECIALIST', now()),
-(105, 'spec6@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Monika', 'Urbanova',   '444555666', 2, 'SPECIALIST', now()),
-(106, 'spec7@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Jana',   'Prochazkova','555666777', 1, 'SPECIALIST', now()),
-(107, 'spec8@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Martin', 'Cerny',      '666777888', 2, 'SPECIALIST', now()),
-(108, 'spec9@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Alena',  'Kozlova',    '777888999', 1, 'SPECIALIST', now()),
-(109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'SPECIALIST', now());
+(100, 'spec1@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Eva',    'Kralova',    '555555555', 1, 'PROFESSIONAL', now()),
+(101, 'spec2@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Tomas',  'Dvorak',     '444444444', 2, 'PROFESSIONAL', now()),
+(102, 'spec3@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Lucie',  'Horakova',   '111222333', 1, 'PROFESSIONAL', now()),
+(103, 'spec4@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Petr',   'Novotny',    '222333444', 2, 'PROFESSIONAL', now()),
+(104, 'spec5@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Karel',  'Sedlak',     '333444555', 1, 'PROFESSIONAL', now()),
+(105, 'spec6@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Monika', 'Urbanova',   '444555666', 2, 'PROFESSIONAL', now()),
+(106, 'spec7@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Jana',   'Prochazkova','555666777', 1, 'PROFESSIONAL', now()),
+(107, 'spec8@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Martin', 'Cerny',      '666777888', 2, 'PROFESSIONAL', now()),
+(108, 'spec9@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Alena',  'Kozlova',    '777888999', 1, 'PROFESSIONAL', now()),
+(109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'PROFESSIONAL', now());
 
 -- Professional data
 INSERT INTO specialist (id, average_rating, description) VALUES

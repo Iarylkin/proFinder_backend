@@ -50,7 +50,7 @@ public class OrderProposalResource {
      */
     @GET
     @Path("/{proposalId}")
-    @RolesAllowed({"CUSTOMER", "SPECIALIST"})
+    @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
     public Response getById(@PathParam("proposalId") final Long proposalId) {
         log.info("Get proposal: proposalId={}", proposalId);
         OrderProposal result = orderProposalService.getByIdForCurrentUser(proposalId);
