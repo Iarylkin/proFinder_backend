@@ -24,7 +24,7 @@ public class OrderSearchService {
     /**
      * Elasticsearch client used to perform operations on the search index.
      */
-    private final ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchCustomer;
 
     /**
      * Saves or updates an {@link OrderSearchDto} document in the Elasticsearch "orders" index.
@@ -34,7 +34,7 @@ public class OrderSearchService {
     public void save(final OrderSearchDto dto) {
         try {
             log.info("Saving Order with id {} for search", dto.getId());
-            elasticsearchClient.index(i -> i
+            elasticsearchCustomer.index(i -> i
                     .index("orders")
                     .id(String.valueOf(dto.getId()))
                     .document(dto)
@@ -53,7 +53,7 @@ public class OrderSearchService {
     public void delete(final Long id) {
         try {
             log.info("Deleting Order with id {} for search", id);
-            elasticsearchClient.delete(d -> d
+            elasticsearchCustomer.delete(d -> d
                     .index("orders")
                     .id(String.valueOf(id))
             );
@@ -85,7 +85,7 @@ public class OrderSearchService {
         try {
             log.info("Searching for Order with keyword '{}', location '{}'", keyword, location);
 
-            SearchResponse<OrderSearchDto> response = elasticsearchClient.search(s -> s
+            SearchResponse<OrderSearchDto> response = elasticsearchCustomer.search(s -> s
                             .index("orders")
                             .from(from)
                             .size(size)

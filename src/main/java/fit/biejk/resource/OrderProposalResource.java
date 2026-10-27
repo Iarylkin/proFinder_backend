@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * REST resource for managing order proposals submitted by specialists.
  * <p>
  * This resource allows retrieval of proposals by specialist, by proposal ID, or by order ID.
- * It also supports confirming proposals by the client and fetching related order data.
+ * It also supports confirming proposals by the customer and fetching related order data.
  * </p>
  */
 @Slf4j
@@ -60,7 +60,7 @@ public class OrderProposalResource {
     /**
      * Confirms an order proposal and transitions the order to the next stage.
      * <p>
-     * This endpoint allows a client to accept a specific specialist's proposal.
+     * This endpoint allows a customer to accept a specific specialist's proposal.
      * By confirming, the system updates the order with the final agreed-upon terms
      * and assigns the specialist to the project.
      * </p>

@@ -73,12 +73,12 @@ INSERT INTO specialist_service_offering (specialist_id, serviceofferings_id) VAL
 (108, 10), (108, 15),
 (109, 16), (109, 8);
 
--- Users (Clients) IDs 110–111
+-- Users (Customers) IDs 110–111
 INSERT INTO users (id, email, password, first_name, last_name, phone_number, location_id, role, createat) VALUES
 (110, 'client1@example.com', '$2a$10$examplehashclient1', 'Anna',  'Novak',  '111111111', 1, 'CLIENT', now()),
 (111, 'client2@example.com', '$2a$10$examplehashclient2', 'David', 'Svoboda','222222222', 2, 'CLIENT', now());
 
--- Client data
+-- Customer data
 INSERT INTO client (id) VALUES
 (110),
 (111);

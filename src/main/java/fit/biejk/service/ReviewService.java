@@ -1,6 +1,6 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Client;
+import fit.biejk.entity.Customer;
 import fit.biejk.entity.Review;
 import fit.biejk.entity.Specialist;
 import fit.biejk.repository.ReviewRepository;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Service for managing {@link Review} entities.
  * <p>
- * Provides functionality for creating reviews and retrieving them by client, specialist, or order.
+ * Provides functionality for creating reviews and retrieving them by customer, specialist, or order.
  * Also updates the average rating of specialists upon new review creation.
  * </p>
  */
@@ -30,9 +30,9 @@ public class ReviewService {
     @Inject
     private SpecialistService specialistService;
 
-    /** Service for retrieving clients. */
+    /** Service for retrieving customers. */
     @Inject
-    private ClientService clientService;
+    private CustomerService customerService;
 
     /**
      * Persists a new review and updates the specialist's average rating.
@@ -42,9 +42,9 @@ public class ReviewService {
      */
     @Transactional
     public Review create(final Review review) {
-        log.info("Creating review: specialistId={}, clientId={}, rating={}",
+        log.info("Creating review: specialistId={}, customerId={}, rating={}",
                 review.getSpecialist().getId(),
-                review.getClient().getId(),
+                review.getCustomer().getId(),
                 review.getRating());
 
         reviewRepository.persist(review);
@@ -73,18 +73,18 @@ public class ReviewService {
     }
 
     /**
-     * Retrieves all reviews written by a specific client.
+     * Retrieves all reviews written by a specific customer.
      *
-     * @param clientId the client's ID
+     * @param customerId the customer's ID
      * @param page     page number for pagination
      * @param size     number of reviews per page
-     * @return list of reviews created by the client
+     * @return list of reviews created by the customer
      */
-    public List<Review> getByClientId(final Long clientId, final int page, final int size) {
-        log.info("Fetching reviews by clientId={}", clientId);
-        Client client = clientService.getById(clientId);
-        List<Review> reviews = reviewRepository.findByClient(client, page, size);
-        log.debug("Found {} reviews by clientId={}", reviews.size(), clientId);
+    public List<Review> getByCustomerId(final Long customerId, final int page, final int size) {
+        log.info("Fetching reviews by customerId={}", customerId);
+        Customer customer = customerService.getById(customerId);
+        List<Review> reviews = reviewRepository.findByCustomer(customer, page, size);
+        log.debug("Found {} reviews by customerId={}", reviews.size(), customerId);
         return reviews;
     }
 

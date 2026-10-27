@@ -54,10 +54,10 @@ public class OrderResource {
     private OrderMapper orderMapper;
 
     /**
-     * Service for accessing client information.
+     * Service for accessing customer information.
      */
     @Inject
-    private ClientService clientService;
+    private CustomerService customerService;
 
     /**
      * Service for authentication and identity resolution.
@@ -73,7 +73,7 @@ public class OrderResource {
 
 
     /**
-     * Creates a new order for the authenticated client.
+     * Creates a new order for the authenticated customer.
      *
      * @param dto order data
      * @return created order
@@ -83,10 +83,10 @@ public class OrderResource {
     public Response create(@Valid final OrderDto dto) {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
-        Long clientId = authService.getCurrentUserId();
-        Client client = clientService.getById(clientId);
-        order.setClient(client);
-        order.setLocation(client.getLocation());
+        Long customerId = authService.getCurrentUserId();
+        Customer customer = customerService.getById(customerId);
+        order.setCustomer(customer);
+        order.setLocation(customer.getLocation());
         Order result = orderService.create(order);
         log.debug("Order created with ID={}", result.getId());
 

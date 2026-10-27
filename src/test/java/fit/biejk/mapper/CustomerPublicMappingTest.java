@@ -1,7 +1,7 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.ClientPublicDto;
-import fit.biejk.entity.Client;
+import fit.biejk.dto.CustomerPublicDto;
+import fit.biejk.entity.Customer;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -9,26 +9,26 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-class ClientPublicMappingTest {
+class CustomerPublicMappingTest {
 
     private static final String EMAIL = "private@example.com";
     private static final String PHONE = "+10000000000";
 
-    private final ClientMapper mapper = new ClientMapperImpl();
+    private final CustomerMapper mapper = new CustomerMapperImpl();
 
     @Test
     void publicDtoHasNoContactData() {
-        Client client = new Client();
-        client.setFirstName("Ann");
-        client.setEmail(EMAIL);
-        client.setPhoneNumber(PHONE);
+        Customer customer = new Customer();
+        customer.setFirstName("Ann");
+        customer.setEmail(EMAIL);
+        customer.setPhoneNumber(PHONE);
 
-        ClientPublicDto dto = mapper.toPublicDto(client);
+        CustomerPublicDto dto = mapper.toPublicDto(customer);
 
         assertEquals("Ann", dto.getFirstName());
         assertFalse(dto.toString().contains(EMAIL));
         assertFalse(dto.toString().contains(PHONE));
-        assertFalse(Arrays.stream(ClientPublicDto.class.getDeclaredFields())
+        assertFalse(Arrays.stream(CustomerPublicDto.class.getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("email")
                         || field.getName().equals("phoneNumber")));
     }

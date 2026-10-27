@@ -26,7 +26,7 @@ public enum OrderStatus {
     CANCELLED,
 
     /**
-     * Status indicating the client needs to take action (e.g., review proposals).
+     * Status indicating the customer needs to take action (e.g., review proposals).
      */
     CLIENT_PENDING,
 

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Base entity representing a system user.
  * <p>
- * This class is extended by more specific user types, such as {@link Client} and {@link Specialist}.
+ * This class is extended by more specific user types, such as {@link Customer} and {@link Specialist}.
  * It stores common attributes such as contact details, role, and avatar reference.
  * </p>
  */

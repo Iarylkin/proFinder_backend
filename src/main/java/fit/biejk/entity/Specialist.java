@@ -31,7 +31,7 @@ public class Specialist extends User {
     private List<ServiceOffering> serviceOfferings;
 
     /**
-     * Average rating calculated from client reviews.
+     * Average rating calculated from customer reviews.
      */
     @Column(name = "average_rating")
     private Double averageRating = 0.0;
@@ -53,7 +53,7 @@ public class Specialist extends User {
     private List<OrderProposal> orderProposals;
 
     /**
-     * List of reviews received from clients for completed orders.
+     * List of reviews received from customers for completed orders.
      * <p>
      * Ignored during JSON serialization to prevent infinite loops or heavy response objects.
      * </p>

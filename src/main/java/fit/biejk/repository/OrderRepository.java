@@ -10,22 +10,22 @@ import java.util.List;
  * Repository class for performing CRUD operations on {@link Order} entities.
  * <p>
  * Uses {@link PanacheRepository} for simplified data access with Quarkus and Hibernate ORM.
- * Provides custom queries for retrieving orders by client and specialist.
+ * Provides custom queries for retrieving orders by customer and specialist.
  * </p>
  */
 @ApplicationScoped
 public class OrderRepository implements PanacheRepository<Order> {
 
     /**
-     * Retrieves all orders created by the specified client.
+     * Retrieves all orders created by the specified customer.
      *
-     * @param clientId the ID of the client
+     * @param customerId the ID of the customer
      * @param page     page number for pagination
      * @param size     number of orders per page
-     * @return a list of {@link Order} entities associated with the given client
+     * @return a list of {@link Order} entities associated with the given customer
      */
-    public List<Order> findByClientId(final Long clientId, final int page, final int size) {
-        return find("client.id", clientId)
+    public List<Order> findByCustomerId(final Long customerId, final int page, final int size) {
+        return find("customer.id", customerId)
                 .page(page - 1, size)
                 .list();
     }

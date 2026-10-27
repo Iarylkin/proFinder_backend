@@ -10,16 +10,16 @@ import org.hibernate.validator.constraints.Length;
 import java.time.LocalDateTime;
 
 /**
- * Data Transfer Object representing a client.
+ * Data Transfer Object representing a customer.
  * <p>
- * Used to transfer client-related data such as identity,
+ * Used to transfer customer-related data such as identity,
  * contact information, location, and avatar reference.
  * </p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClientDto {
+public class CustomerDto {
 
     /**
      * Maximum length for firstName and lastName fields.
@@ -32,41 +32,41 @@ public class ClientDto {
     public static final int PHONE_MAX_LENGTH = 20;
 
     /**
-     * Unique identifier of the client.
+     * Unique identifier of the customer.
      */
     private Long id;
 
     /**
-     * Email address of the client, must be in a valid format.
+     * Email address of the customer, must be in a valid format.
      */
     @Email
     private String email;
 
     /**
-     * First name of the client.
+     * First name of the customer.
      */
     @Length(max = NAME_MAX_LENGTH)
     private String firstName;
 
     /**
-     * Last name of the client.
+     * Last name of the customer.
      */
     @Length(max = NAME_MAX_LENGTH)
     private String lastName;
 
     /**
-     * Phone number of the client.
+     * Phone number of the customer.
      */
     @Length(max = PHONE_MAX_LENGTH)
     private String phoneNumber;
 
     /**
-     * Geographical location associated with the client.
+     * Geographical location associated with the customer.
      */
     private Location location;
 
     /**
-     * Timestamp of when the client account was created.
+     * Timestamp of when the customer account was created.
      */
     private LocalDateTime createAt;
 }

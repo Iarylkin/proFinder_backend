@@ -1,7 +1,7 @@
 package fit.biejk.service;
 
 import fit.biejk.dto.ResetPasswordRequest;
-import fit.biejk.entity.Client;
+import fit.biejk.entity.Customer;
 import fit.biejk.entity.Specialist;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
@@ -73,9 +73,9 @@ public class AuthService {
     private final SpecialistService specialistService;
 
     /**
-     * Service for managing clients.
+     * Service for managing customers.
      */
-    private final ClientService clientService;
+    private final CustomerService customerService;
 
     /**
      * Service for managing users.
@@ -96,7 +96,7 @@ public class AuthService {
     private final TokenService tokenService;
 
     /**
-     * Registers a new user (client or specialist) and returns a JWT token.
+     * Registers a new user (customer or specialist) and returns a JWT token.
      *
      * @param email    user email
      * @param password plain text password
@@ -107,7 +107,7 @@ public class AuthService {
         log.info("Sign up: email={}, role={}", email, role);
         User created = switch (role) {
             case SPECIALIST -> specialistService.create(newUser(new Specialist(), email, password, role));
-            case CLIENT -> clientService.create(newUser(new Client(), email, password, role));
+            case CLIENT -> customerService.create(newUser(new Customer(), email, password, role));
             default -> {
                 log.warn("Sign up with unsupported role={}", role);
                 throw new BadRequestException("Unsupported role");

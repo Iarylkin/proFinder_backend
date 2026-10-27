@@ -81,7 +81,7 @@ public class OrderProposalService {
      * @param dto the confirmation data containing the final agreed price and deadline
      * @return the updated and persisted order
      * @throws NotFoundException if the proposal does not exist
-     * @throws ForbiddenException if the current user is not the client who created the order
+     * @throws ForbiddenException if the current user is not the customer who created the order
      */
     @Transactional
     public Order confirmAndAssign(final Long proposalId, final ConfirmProposal dto) {
@@ -90,7 +90,7 @@ public class OrderProposalService {
 
         Order order = proposal.getOrder();
 
-        if (!authService.isCurrentUser(order.getClient().getId())) {
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
 
@@ -150,7 +150,7 @@ public class OrderProposalService {
      */
     public OrderProposal getByIdForCurrentUser(final Long proposalId) {
         OrderProposal proposal = getById(proposalId);
-        boolean isOrderOwner = authService.isCurrentUser(proposal.getOrder().getClient().getId());
+        boolean isOrderOwner = authService.isCurrentUser(proposal.getOrder().getCustomer().getId());
         boolean isAuthor = authService.isCurrentUser(proposal.getSpecialist().getId());
         if (!isOrderOwner && !isAuthor) {
             throw new ForbiddenException("You do not have access to this proposal");
@@ -176,7 +176,7 @@ public class OrderProposalService {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        if (!authService.isCurrentUser(order.getClient().getId())) {
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
 

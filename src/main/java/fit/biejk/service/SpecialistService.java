@@ -50,8 +50,8 @@ public class SpecialistService {
     /** Service for authentication and user context. */
     private final AuthService authService;
 
-    /** Service for client management. */
-    private final ClientService clientService;
+    /** Service for customer management. */
+    private final CustomerService customerService;
 
 
     /**
@@ -211,11 +211,11 @@ public class SpecialistService {
     @Transactional
     public Review review(final Long specialistId, final Review review) {
 
-        Long clientId = authService.getCurrentUserId();
-        Client client = clientService.getById(clientId);
+        Long customerId = authService.getCurrentUserId();
+        Customer customer = customerService.getById(customerId);
         Specialist specialist = getById(specialistId);
 
-        review.setClient(client);
+        review.setCustomer(customer);
         review.setSpecialist(specialist);
 
         return reviewService.create(review);

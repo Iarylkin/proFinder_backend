@@ -61,7 +61,7 @@ public class OrderService {
      */
     @Transactional
     public Order create(final Order order) {
-        log.info("Create order: clientId={}, description={}", order.getClient().getId(), order.getDescription());
+        log.info("Create order: customerId={}, description={}", order.getCustomer().getId(), order.getDescription());
         order.setStatus(OrderStatus.getStartOrder());
         orderRepository.persist(order);
         log.debug("Order created with ID={}", order.getId());
@@ -83,9 +83,9 @@ public class OrderService {
     public Order update(final Long orderId, final Order order) {
         log.info("Update order: orderId={}, newDescription={}", orderId, order.getDescription());
         Order old = getById(orderId);
-        if (!authService.isCurrentUser(old.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, old.getClient().getId());
+        if (!authService.isCurrentUser(old.getCustomer().getId())) {
+            log.error("User is not the owner of this order. orderId={}, customerId={}",
+                    orderId, old.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         old.setServiceOfferings(order.getServiceOfferings());
@@ -111,9 +111,9 @@ public class OrderService {
     public void delete(final Long orderId) {
         log.info("Delete order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, order.getClient().getId());
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+            log.error("User is not the owner of this order. orderId={}, customerId={}",
+                    orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         orderRepository.delete(order);
@@ -133,9 +133,9 @@ public class OrderService {
     public Order cancel(final Long orderId) {
         log.info("Cancel order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, order.getClient().getId());
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+            log.error("User is not the owner of this order. orderId={}, customerId={}",
+                    orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         order.setStatus(order.getStatus().transitionTo(OrderStatus.CANCELLED));
@@ -238,24 +238,24 @@ public class OrderService {
     }
 
     /**
-     * Retrieves all orders created by the specified client.
+     * Retrieves all orders created by the specified customer.
      * <p>
-     * Ensures that the requesting user is the same as the target client.
+     * Ensures that the requesting user is the same as the target customer.
      * </p>
      *
-     * @param userId ID of the client
+     * @param userId ID of the customer
      * @param page   page number for pagination
      * @param size   number of orders per page
-     * @return list of orders belonging to the client
-     * @throws IllegalArgumentException if the current user is not the same as the client
+     * @return list of orders belonging to the customer
+     * @throws IllegalArgumentException if the current user is not the same as the customer
      */
-    public List<Order> getByClientId(final Long userId, final int page, final int size) {
-        log.info("Get orders by clientId={}", userId);
+    public List<Order> getByCustomerId(final Long userId, final int page, final int size) {
+        log.info("Get orders by customerId={}", userId);
         if (!authService.isCurrentUser(userId)) {
             log.warn("User is not logged in");
             throw new IllegalArgumentException("User is not logged in");
         } // todo delete, when admin system will be created
-        return orderRepository.findByClientId(userId, page, size);
+        return orderRepository.findByCustomerId(userId, page, size);
     }
 
     /**

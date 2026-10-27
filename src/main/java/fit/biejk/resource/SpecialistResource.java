@@ -77,7 +77,7 @@ public class SpecialistResource {
     /** Mapper for converting between Review and ReviewDto. */
     private final ReviewMapper reviewMapper;
 
-    /** Service for accessing client reviews. */
+    /** Service for accessing customer reviews. */
     private final ReviewService reviewService;
 
     /**

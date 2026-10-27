@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Entity representing a client.
+ * Entity representing a customer.
  * <p>
- * Inherits from {@link User} and defines relationships to orders and reviews created by the client.
+ * Inherits from {@link User} and defines relationships to orders and reviews created by the customer.
  * </p>
  */
 @Data
@@ -24,21 +24,21 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "client")
-public class Client extends User {
+public class Customer extends User {
 
     /**
-     * List of orders created by the client.
+     * List of orders created by the customer.
      * <p>
      * This field is ignored during JSON serialization to prevent recursion.
      * </p>
      */
-    @OneToMany(mappedBy = "client")
+    @OneToMany(mappedBy = "customer")
     @JsonbTransient
     private List<Order> orders;
 
     /**
-     * List of reviews submitted by the client.
+     * List of reviews submitted by the customer.
      */
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews;
 }

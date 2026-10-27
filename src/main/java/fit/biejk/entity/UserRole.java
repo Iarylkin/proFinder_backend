@@ -6,7 +6,7 @@ package fit.biejk.entity;
 public enum UserRole {
 
     /**
-     * Role for users acting as clients.
+     * Role for users acting as customers.
      */
     CLIENT,
 

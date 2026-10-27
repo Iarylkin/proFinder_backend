@@ -26,7 +26,7 @@ public class SpecialistIndexInitializer {
     /**
      * Elasticsearch client used to interact with the Elasticsearch cluster.
      */
-    private final ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchCustomer;
 
     /**
      * Service used to retrieve specialist data from the PostgreSQL database.
@@ -55,13 +55,13 @@ public class SpecialistIndexInitializer {
         String indexName = "specialists";
 
         try {
-            boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+            boolean exists = elasticsearchCustomer.indices().exists(e -> e.index(indexName)).value();
             if (exists) {
                 log.info("Deleting index " + indexName);
-                elasticsearchClient.indices().delete(d -> d.index(indexName));
+                elasticsearchCustomer.indices().delete(d -> d.index(indexName));
             }
             log.info("Creating index " + indexName);
-            elasticsearchClient.indices().create(c -> c
+            elasticsearchCustomer.indices().create(c -> c
                     .index(indexName)
                     .mappings(m -> m
                             .properties("id", p -> p.long_(x -> x))

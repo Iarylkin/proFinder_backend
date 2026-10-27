@@ -26,7 +26,7 @@ public class SpecialistPublicDto {
     private Long id;
 
     /**
-     * Average rating based on client reviews.
+     * Average rating based on customer reviews.
      */
     private double averageRating;
 
