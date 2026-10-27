@@ -1,7 +1,7 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.2
-- **Date:** 2026-09-10
+- **Version:** 1.4
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
@@ -36,8 +36,8 @@ Applied everywhere, not repeated per field below.
 |---|---|---|---|---|
 | `email` | register, login, forgot-password | ✅ | `@Email`; ≤ 254 chars; normalized lowercase; case-insensitive unique (register). Disposable-domain blocklist (config, empty in MVP). No MX check. | `VALIDATION_ERROR`; `EMAIL_ALREADY_REGISTERED` (register) |
 | `password` | register, reset-password | ✅ | ≥ `password_min_length` (default **8**); complexity: ≥1 upper, ≥1 lower, ≥1 digit, ≥1 special — each toggle config, all on by default; ≤ **128**; no reuse restriction; not equal to the email local-part. Hashed bcrypt cost 12. | `VALIDATION_ERROR` |
-| `display_name` | register, profile update | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". | `VALIDATION_ERROR` |
-| `role` | `POST /auth/role` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via this path); settable once. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
+| `display_name` | register, profile update | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". For a Google sign-up the value comes from the Google profile name, cleaned to this format (fallback: the email local-part). | `VALIDATION_ERROR` |
+| `role` | `POST /auth/role` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via this path); settable once, only with the `temp_token` of a Google sign-up that has no role. Email registration does not take a role here. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
 | `token` (verify / reset / unsubscribe) | verify-email, reset-password, unsubscribe | ✅ | opaque string, exact match, single-use, unexpired (verify 24 h, reset 15 min). | `VERIFICATION_TOKEN_INVALID` / `RESET_TOKEN_INVALID` |
 | `refresh_token` | refresh, logout | ✅ | opaque; looked up by hash. | `REFRESH_TOKEN_INVALID` / `REFRESH_TOKEN_REUSED` |
 | OAuth `code` / `state` | google/callback | ✅ | validated by the OIDC library; `state` must match the issued value. | `VALIDATION_ERROR` |
@@ -72,7 +72,7 @@ Applied everywhere, not repeated per field below.
 | `title` | ✅ | **5–120** chars (②). | `VALIDATION_ERROR` |
 | `description` | ✅ | **20–5000** chars (②). | `VALIDATION_ERROR` |
 | `budget_min` / `budget_max` | ❌ | `numeric(10,2)`; ≥ 0; if both present, `min ≤ max`; ≤ 2 decimals. | `VALIDATION_ERROR` |
-| `location` | ✅ | city string; ≤ **100** chars. | `VALIDATION_ERROR` |
+| `city` | ✅ | city string; ≤ **100** chars. | `VALIDATION_ERROR` |
 | `preferred_date` | ❌ | date; must be today or later (⑥). | `VALIDATION_ERROR` |
 | `version` (on `PATCH`) | ✅ | integer; must equal the current row version (optimistic lock). | `CONFLICT` |
 | `additional_days` (extend) | ✅ | integer **1–90**. | `VALIDATION_ERROR` |
@@ -121,15 +121,15 @@ State-guarded (service layer, not Bean Validation): edit/delete only in the allo
 | Field | Required | Constraints | Error |
 |---|---|---|---|
 | `reported_user_id` | ✅ | UUID; exists; **≠ caller**; ≤ 1 report per `(reporter, reported)` pair per rolling 24 h. | `CANNOT_REPORT_SELF`; `DUPLICATE_REPORT`; `NOT_FOUND` |
-| `reason` | ✅ | ∈ {`no_show`, `poor_quality`, `non_payment`, `harassment`, `scam`, `inappropriate_content`, `other`}. | `VALIDATION_ERROR` |
+| `reason` | ✅ | ∈ {`NO_SHOW`, `POOR_QUALITY`, `NON_PAYMENT`, `HARASSMENT`, `SCAM`, `INAPPROPRIATE_CONTENT`, `OTHER`}. | `VALIDATION_ERROR` |
 | `description` | ✅ | **10–2000** chars (②). | `VALIDATION_ERROR` |
 | `evidence[]` | ❌ | ≤ **20** files; each ≤ **10 MB**; image / `application/pdf` / `text/plain`. | `FILE_TOO_LARGE` / `INVALID_FILE_TYPE` |
-| decision `decision` | ✅ | ∈ {`dismissed`, `warning`, `suspended`, `banned`, `content_removed`}. | `VALIDATION_ERROR` |
+| decision `decision` | ✅ | ∈ {`DISMISSED`, `WARNING`, `SUSPENDED`, `BANNED`, `CONTENT_REMOVED`}. | `VALIDATION_ERROR` |
 | decision `suspension_days` | conditional | integer **1–365**; required iff `decision = suspended`; presets 3/7/14/30 are UI hints only. | `VALIDATION_ERROR` |
 | decision `notes` | ❌ | ≤ **4000** chars. | `VALIDATION_ERROR` |
 | — | — | `suspended` / `banned` only if target `users.status = ACTIVE`. | `MODERATION_TARGET_NOT_VERIFIED` |
 | ban-appeal `text` | ❌ | ≤ **2000** chars (②); within 30 days of the ban; one per ban. | `APPEAL_WINDOW_EXPIRED`; `APPEAL_ALREADY_EXISTS` |
-| appeal decision `outcome` | ✅ | ∈ {`upheld`, `rejected`}; reviewer ≠ the banning moderator. | `SAME_MODERATOR_REVIEW` |
+| appeal decision `outcome` | ✅ | ∈ {`UPHELD`, `REJECTED`}; reviewer ≠ the banning moderator. | `SAME_MODERATOR_REVIEW` |
 | block target | ✅ | UUID; exists; **≠ caller**; idempotent (re-block is a no-op). | `VALIDATION_ERROR`; `NOT_FOUND` |
 | `category` `name` (moderator) | ✅ | **2–50** chars (③); case-insensitive unique; delete blocked while referenced. | `VALIDATION_ERROR`; `CONFLICT` |
 
@@ -156,7 +156,7 @@ Validated by `FileStorageService` ([7 § 1.6](7%20-%20Application%20Classes.md))
 |---|---|---|---|
 | device `token` | ✅ | non-blank; ≤ **4096** chars (implementation default — FCM tokens are ~160 chars); upsert on the token value. | `VALIDATION_ERROR` |
 | device `platform` | ✅ | ∈ {`ios`, `android`, `web`}. | `VALIDATION_ERROR` |
-| preference rows | ✅ | each `{event_type, channel, enabled}`: `event_type` a known routing key ([9](9%20-%20Event%20Catalog.md)); `channel` ∈ {`push`, `email`, `in_app`}; `enabled` boolean. Unknown `event_type` → ignored (⑤). | `VALIDATION_ERROR` |
+| preference rows | ✅ | each `{event_type, channel, enabled}`: `event_type` a known routing key ([9](9%20-%20Event%20Catalog.md)); `channel` ∈ {`PUSH`, `EMAIL`, `IN_APP`}; `enabled` boolean. Unknown `event_type` → ignored (⑤). | `VALIDATION_ERROR` |
 
 
 ## 11. Search parameters (`GET /search/professionals`)
@@ -195,6 +195,8 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-27 | **D-1.3:** order field `location` → `city`; report reason, decision, appeal outcome and notification channel values are `UPPER_SNAKE_CASE`. |
+| 1.3 | 2026-10-27 | **D-1.2:** `role` is set only via `temp_token` for Google sign-ups; `display_name` source for Google sign-ups. |
 | 1.2 | 2026-09-10 | Standardised to the shared doc format. Cleared the last two stray `(proposed)` markers the v1.1 note claimed were already removed (unknown-JSON-fields row → "gap ⑤"; device-token length → "implementation default"). |
 | 1.1 | 2026-09-07 | **All 6 gaps resolved.** Inline fields reference the decision # (①–⑥) in §12. Adopted: flat 0–70 cap for `years_experience` (no `date_of_birth` field); text-length limits for 8 fields; `display_name` character class; clamp on pagination; ignore unknown JSON fields; `preferred_date` = today or later. |
 | 1.0 | 2026-09-07 | Initial. Global rules + per-field tables for auth, profiles, orders, responses, reviews, messaging, reports/appeals/blocking/moderation, files, device tokens/preferences, search params. 6 spec gaps identified. |

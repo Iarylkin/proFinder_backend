@@ -1,7 +1,7 @@
 # ProFinder — State Machines
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.2
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Mermaid `stateDiagram-v2` state machines for every entity that has one — Order, Professional Profile, Account, Report, Ban Appeal, Review.
 
@@ -84,13 +84,13 @@ Workflow described in [4 - Business logic.md § Report Workflow](4%20-%20Busines
 
 ```mermaid
 stateDiagram-v2
-    [*] --> submitted: user files report
+    [*] --> SUBMITTED: user files report
 
-    submitted --> under_review: moderator picks it up (shared queue, no assignment)
+    SUBMITTED --> UNDER_REVIEW: moderator picks it up (shared queue, no assignment)
 
-    under_review --> resolved: decision made (dismiss / warning / suspend / ban / remove content)
+    UNDER_REVIEW --> RESOLVED: decision made (dismiss / warning / suspend / ban / remove content)
 
-    resolved --> [*]
+    RESOLVED --> [*]
 ```
 
 
@@ -101,13 +101,13 @@ Described in [4 - Business logic.md § Ban Appeals](4%20-%20Business%20logic.md#
 
 ```mermaid
 stateDiagram-v2
-    [*] --> filed: banned user files appeal (within 30 days of ban)
+    [*] --> FILED: banned user files appeal (within 30 days of ban)
 
-    filed --> upheld: different moderator reviews ban lifted, account restored
-    filed --> rejected: different moderator reviews ban stands, final
+    FILED --> UPHELD: different moderator reviews ban lifted, account restored
+    FILED --> REJECTED: different moderator reviews ban stands, final
 
-    upheld --> [*]
-    rejected --> [*]
+    UPHELD --> [*]
+    REJECTED --> [*]
 ```
 
 **Note:** one appeal per ban — there is no appeal of the appeal (see [4 - Business logic.md § Ban Appeals](4%20-%20Business%20logic.md#ban-appeals)).
@@ -138,8 +138,8 @@ stateDiagram-v2
 | Order | DRAFT, ACTIVE, CLOSED | CLOSED is terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#order-lifecycle) |
 | Professional Profile | INCOMPLETE, ACTIVE | No terminal state | [4 - Business logic.md](4%20-%20Business%20logic.md#professional-profile) |
 | Account | PENDING_VERIFICATION, ACTIVE, SUSPENDED, BANNED, DELETED | DELETED → purge is terminal | consolidated, see above |
-| Report | submitted, under_review, resolved | resolved is terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#report-workflow) |
-| Ban Appeal | filed, upheld, rejected | both outcomes terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#ban-appeals) |
+| Report | SUBMITTED, UNDER_REVIEW, RESOLVED | RESOLVED is terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#report-workflow) |
+| Ban Appeal | FILED, UPHELD, REJECTED | both outcomes terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#ban-appeals) |
 | Review / Reply / Portfolio Photo | PUBLISHED, REMOVED | REMOVED is terminal | [4 - Business logic.md](4%20-%20Business%20logic.md#reviews) |
 
 
@@ -148,5 +148,6 @@ stateDiagram-v2
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-27 | **D-1.3:** report and ban-appeal states are `UPPER_SNAKE_CASE`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata block, separators, changelog). Removed the stale "Next" section (Database Schema is done — [6 - Database Schema.md](6%20-%20Database%20Schema.md)). |
 | 1.0 | 2026-09-04 | Initial. Mermaid state machines for Order, Professional Profile, Account (consolidated from 3 scattered sections), Report, Ban Appeal, Review moderation; two gaps found and folded into [4 - Business logic.md](4%20-%20Business%20logic.md). |

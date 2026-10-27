@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.3
+- **Version:** 1.6
 - **Date:** 2026-10-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -71,17 +71,17 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version / task | What we do |
 |---|---|
-| **D-1.1** (before code) | Decide shared database vs schema per service (`docs/3` vs `docs/10` E1, E2, B1). Record it in `docs/3`, `6`, `7`. Decision 7 |
-| **D-1.2** (before code) | Registration: `display_name` is required but not sent; `users.role NOT NULL` vs a Google flow with no role; `POST /auth/role` with no token. Fix `docs/6`, `8`, `13` |
-| **D-1.3** | Naming: `quote_price`/`quote_amount`, `location`/`city`, `CUSTOMER`/`customer_written`, enum case, duplicate codes (`ORDER_CLOSED` vs `ORDER_ALREADY_CLOSED`, `ACCOUNT_LOCKED` vs `RATE_LIMITED`). Choose JSON-B or Jackson. Decide on DTOs as Java `record`s (see 1.7.0): scope, mapper impact, how secret fields are masked in `toString` |
-| **D-1.4** | `docs/6`: add `CHECK` (`budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`), `citext`, `ON DELETE`, `last_active_at`, respect `deleted_at` in the review `UNIQUE`; seed categories with UUID v7, not `gen_random_uuid()` |
+| **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
+| **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
+| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.7.0 |
+| **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
 | **1.1.0** | `Client → Customer`: entity, repository, service, resource, DTOs, mappers, ES documents, tests |
 | **1.2.0** | `Specialist → Professional`, roles `CUSTOMER`/`PROFESSIONAL` in the JWT |
 | **1.3.0** | New paths with deprecated aliases for all of them: `/customers`, `/professionals`, `/auth/register`, `/auth/login`, `PATCH /orders`, `/orders/{id}/close`, `/orders/{id}/responses`, `/categories`, `/conversations`, `/me/profile`, `/search/professionals` |
 | **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
 | **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
 | **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
+| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
 | **1.8.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
 ## M2 — Modular monolith (1.9.0 – 1.14.0)
@@ -253,7 +253,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | # | Question | Needed by |
 |---|---|---|
 | 3 | UUID v7 or `Long` | 1.4.0 (**first**) |
-| 7 | Shared database or schema per service (recommended: one PostgreSQL, one schema per service, no reads across schemas) | D-1.1 |
+| 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
 | 9 | How Notification gets email and recipients (recommended: projection built from events) | D-5.2 |
@@ -283,5 +283,8 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|---|
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
+| 1.6 | 2026-10-27 | D-1.4 closed: schema constraints, `citext`, `ON DELETE`, `last_active_at`, UUID v7 seed. |
+| 1.5 | 2026-10-27 | D-1.3 closed: naming, enum case, error codes, Jackson, records. |
+| 1.4 | 2026-10-27 | D-1.1 and D-1.2 closed; decision 7 recorded. |
 | 1.3 | 2026-10-27 | 1.0.4 row detailed: attempt limit, `413`/`415` for avatars, `%prod` schema `none`, secrets moved to the environment. |
 | 1.2 | 2026-10-26 | 1.0.2: public DTOs drop the account email only (phone stays public per `docs/4`); error codes follow `docs/8`. |

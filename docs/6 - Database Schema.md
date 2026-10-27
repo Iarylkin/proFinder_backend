@@ -1,7 +1,7 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.3
-- **Date:** 2026-09-10
+- **Version:** 1.6
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
 
@@ -11,7 +11,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 
 **A few tables beyond the original roadmap checklist**, needed once the columns were actually worked out — noted here so it's clear they're refinements, not scope creep:
 - `professional_categories` / `professional_cities` — join tables for the professional's many-to-many category/city selections (roadmap only named the parent tables).
-- `ban_appeals` — [5 - State Machines.md § Ban Appeal](5%20-%20State%20Machines.md) has its own lifecycle (filed/upheld/rejected); it needs its own row, it can't live inside `reports`.
+- `ban_appeals` — [5 - State Machines.md § Ban Appeal](5%20-%20State%20Machines.md) has its own lifecycle (`FILED` / `UPHELD` / `REJECTED`); it needs its own row, it can't live inside `reports`.
 - `files` — one polymorphic table instead of separate "files/attachments" per feature (avatar, portfolio, review evidence, report evidence, message attachment) — same shape every time, so one table with an `attached_to_type`/`attached_to_id` pair.
 
 ---
@@ -80,10 +80,10 @@ erDiagram
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | id | uuid | PK |
-| email | string | UNIQUE, case-insensitive, normalized |
+| email | citext | UNIQUE (case-insensitive by type), normalized |
 | password_hash | string | nullable — Google-only users |
 | google_id | string | UNIQUE, nullable — strict 1:1 link |
-| role | user_role | NOT NULL |
+| role | user_role | nullable — `NULL` only for a Google sign-up that has not chosen a role yet; set once via `POST /auth/role`, then immutable |
 | status | account_status | NOT NULL, DEFAULT `PENDING_VERIFICATION` |
 | moderator_level | moderator_level | nullable — only for `role = MODERATOR` |
 | display_name | string(50) | NOT NULL; **2–50 chars**, letters/digits/marks/spaces/`.` `'` `-`, no URLs |
@@ -111,6 +111,7 @@ erDiagram
 | working_hours_end | time | nullable |
 | rating_avg | numeric(3,2) | denormalized, DEFAULT 0 |
 | review_count | int | denormalized, DEFAULT 0 |
+| last_active_at | timestamp | nullable — set when the professional submits a response, edits the profile or toggles `available`; feeds the "most recently active" tie-break in search; `NULL` falls back to `created_at` |
 | version | int | optimistic locking |
 | created_at | timestamp | |
 | updated_at | timestamp | |
@@ -142,7 +143,7 @@ erDiagram
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | professional_id | uuid | PK, FK → `professional_profiles.user_id` |
-| city | string(100) | PK; ≤ 100 chars; case-insensitive dedupe |
+| city | citext(100) | PK; ≤ 100 chars; case-insensitive dedupe by type |
 
 #### `refresh_tokens`
 ---
@@ -200,7 +201,8 @@ Also used for the Google-only "set a password" flow. At most one active row per 
 
 **Constraints worth calling out:**
 - `professional_categories` / `professional_cities` must have **≥1 row per professional once `profile_status = ACTIVE`** — enforced at the application layer (the "replace, don't clear to zero" rule from [5 - State Machines.md § Professional Profile](5%20-%20State%20Machines.md)).
-- `users.role` is immutable in MVP (app-layer check, not a DB constraint — support-only change per FR-Auth-3).
+- `users.role` is `NULL` only between a first Google login and `POST /auth/role`; once set it is immutable in MVP (app-layer check, not a DB constraint — support-only change per FR-Auth-3). Email registration always sets it. While `role` is `NULL` the account gets a limited `temp_token` and every other endpoint returns `ROLE_SELECTION_REQUIRED`.
+- `users.display_name` stays `NOT NULL`: email registration sends it, a Google sign-up takes it from the Google profile name, cleaned to the format in [13 - Validation Rules.md](13%20-%20Validation%20Rules.md) (fallback: the email local-part).
 - `users.moderator_level` is null for everyone except `role = MODERATOR`; `SENIOR` is the "Admin" tier decided in [A3](Documentation%20Roadmap.md).
 
 
@@ -221,7 +223,7 @@ erDiagram
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | id | uuid | PK |
-| name | string(50) | NOT NULL, UNIQUE; **2–50 chars**; case-insensitive unique |
+| name | citext | NOT NULL, UNIQUE; **2–50 chars** (length `CHECK (char_length(name) BETWEEN 2 AND 50)`); case-insensitive unique by type |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -237,13 +239,13 @@ erDiagram
 | title | string(120) | NOT NULL; **5–120 chars** |
 | description | text(5000) | NOT NULL; **20–5000 chars** |
 | budget_min | numeric(10,2) | nullable, USD; **CHECK (budget_min >= 0)** |
-| budget_max | numeric(10,2) | nullable, USD; **CHECK (budget_max >= 0)** |
-| location | string(100) | NOT NULL; city; ≤ 100 chars |
+| budget_max | numeric(10,2) | nullable, USD; **CHECK (budget_max >= 0)**; table **CHECK (budget_min IS NULL OR budget_max IS NULL OR budget_min <= budget_max)** |
+| city | string(100) | NOT NULL; ≤ 100 chars |
 | preferred_date | date | nullable; **must be today or later** (application-layer validation) |
 | expires_at | timestamp | nullable |
 | published_at | timestamp | nullable |
 | closed_at | timestamp | nullable |
-| closed_reason | string | nullable — `manual` \| `account_action` |
+| closed_reason | string | nullable — `MANUAL` \| `ACCOUNT_ACTION` |
 | version | int | optimistic locking |
 | created_at | timestamp | |
 | updated_at | timestamp | |
@@ -287,7 +289,7 @@ erDiagram
 |---|---|---|
 | id | uuid | PK |
 | reviewer_id | uuid | FK → `users.id` |
-| reviewee_id | uuid | FK → `users.id` |
+| reviewee_id | uuid | FK → `users.id`; **CHECK (reviewer_id <> reviewee_id)** |
 | reviewer_role | review_direction | `CUSTOMER` \| `PROFESSIONAL` |
 | rating | smallint | 1–5; **CHECK (rating BETWEEN 1 AND 5)** |
 | text | text(2000) | nullable; ≤ 2000 chars; passes sync moderation check |
@@ -310,7 +312,7 @@ erDiagram
 | updated_at | timestamp | |
 
 **Constraints:**
-- `reviews`: `UNIQUE (reviewer_id, reviewee_id)` — one review per pair, in either direction ([A2 decision](Documentation%20Roadmap.md)).
+- `reviews`: partial unique index `UNIQUE (reviewer_id, reviewee_id) WHERE deleted_at IS NULL` — one live review per pair, in either direction ([A2 decision](Documentation%20Roadmap.md)). A soft-deleted review does not block a new one.
 - `review_replies` only ever attach to a `reviews` row where `reviewer_role = 'CUSTOMER'` (professional replies + customer's own follow-up) — a `PROFESSIONAL`-direction review (customer reliability rating) has **no reply** in MVP. Enforced at the application layer.
 - On insert/update/delete of a non-deleted, non-outlier `reviews` row, the corresponding `rating_avg`/`review_count` (on `professional_profiles` or `customer_profiles`, depending on `reviewer_role`) is recalculated **synchronously in the same transaction**.
 
@@ -393,7 +395,7 @@ erDiagram
 |---|---|---|
 | user_id | uuid | PK, FK → `users.id` |
 | event_type | string | PK |
-| channel | notification_channel | PK — `push` \| `email` \| `in_app` |
+| channel | notification_channel | PK — `PUSH` \| `EMAIL` \| `IN_APP` |
 | enabled | boolean | DEFAULT true |
 
 **Notes:**
@@ -443,7 +445,7 @@ erDiagram
 |---|---|---|
 | id | uuid | PK |
 | report_id | uuid | FK → `reports.id` |
-| type | evidence_type | `text` \| `photo` \| `message_link` |
+| type | evidence_type | `TEXT` \| `PHOTO` \| `MESSAGE_LINK` |
 | content | text | url, text, or message reference |
 | created_at | timestamp | |
 
@@ -457,7 +459,7 @@ erDiagram
 | report_id | uuid | FK → `reports.id`, UNIQUE — the report that led to the ban |
 | text | text(2000) | nullable; ≤ 2000 chars; within 30 days of ban; one per ban |
 | reviewer_id | uuid | FK → `users.id`, nullable — must differ from the banning moderator |
-| status | appeal_status | NOT NULL, DEFAULT `filed` |
+| status | appeal_status | NOT NULL, DEFAULT `FILED` |
 | created_at | timestamp | |
 | resolved_at | timestamp | nullable |
 
@@ -468,7 +470,7 @@ erDiagram
 |---|---|---|
 | id | uuid | PK |
 | blocker_id | uuid | FK → `users.id` |
-| blocked_id | uuid | FK → `users.id` |
+| blocked_id | uuid | FK → `users.id`; **CHECK (blocker_id <> blocked_id)** |
 | created_at | timestamp | |
 
 **Constraints:**
@@ -570,14 +572,16 @@ No FK relationships to business tables by design — events are decoupled via a 
 | `order_status` | `DRAFT`, `ACTIVE`, `CLOSED` | `orders.status` |
 | `review_direction` | `CUSTOMER`, `PROFESSIONAL` | `reviews.reviewer_role` |
 | `message_status` | `SENT`, `DELIVERED`, `READ` | `messages.status` |
-| `notification_channel` | `push`, `email`, `in_app` | `notification_preferences.channel` |
-| `report_reason` | `no_show`, `poor_quality`, `non_payment`, `harassment`, `scam`, `inappropriate_content`, `other` | `reports.reason` |
-| `report_status` | `submitted`, `under_review`, `resolved` | `reports.status` |
-| `report_decision` | `dismissed`, `warning`, `suspended`, `banned`, `content_removed` | `reports.decision` |
-| `evidence_type` | `text`, `photo`, `message_link` | `report_evidence.type` |
-| `appeal_status` | `filed`, `upheld`, `rejected` | `ban_appeals.status` |
+| `notification_channel` | `PUSH`, `EMAIL`, `IN_APP` | `notification_preferences.channel` |
+| `report_reason` | `NO_SHOW`, `POOR_QUALITY`, `NON_PAYMENT`, `HARASSMENT`, `SCAM`, `INAPPROPRIATE_CONTENT`, `OTHER` | `reports.reason` |
+| `report_status` | `SUBMITTED`, `UNDER_REVIEW`, `RESOLVED` | `reports.status` |
+| `report_decision` | `DISMISSED`, `WARNING`, `SUSPENDED`, `BANNED`, `CONTENT_REMOVED` | `reports.decision` |
+| `evidence_type` | `TEXT`, `PHOTO`, `MESSAGE_LINK` | `report_evidence.type` |
+| `appeal_status` | `FILED`, `UPHELD`, `REJECTED` | `ban_appeals.status` |
 
 All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%20Machines.md) — no extra values were introduced here.
+
+- **Case:** every enum value is `UPPER_SNAKE_CASE` in the database, the API and Elasticsearch, and matches the Java enum constant. Event routing keys (`moderation.content_removed`) are not enum values and stay lowercase dotted.
 
 
 ## Key Indexes
@@ -585,11 +589,11 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 
 | Table | Index | Purpose |
 |---|---|---|
-| `orders` | `(status, category_id, location)` | professional browse/search |
+| `orders` | `(status, category_id, city)` | professional browse/search |
 | `orders` | `(customer_id, status)` | customer's own order list |
 | `responses` | `UNIQUE (order_id, professional_id)` | enforce one response per pair |
 | `responses` | `(order_id, created_at)` | paginated response list |
-| `reviews` | `UNIQUE (reviewer_id, reviewee_id)` | enforce one review per pair |
+| `reviews` | `UNIQUE (reviewer_id, reviewee_id) WHERE deleted_at IS NULL` | enforce one live review per pair |
 | `reviews` | `(reviewee_id, deleted_at, is_outlier)` | rating recalculation query |
 | `conversations` | `UNIQUE (customer_id, professional_id)` | conversation keyed by pair |
 | `messages` | `(conversation_id, created_at)` | message history pagination |
@@ -603,6 +607,40 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 | `outbox` | `(sent, created_at)` (partial, `WHERE sent = false`) | poller's unsent-row scan |
 | `processed_events` | `PK (event_id, consumer)` | idempotency dedup |
 
+
+## Schema Ownership
+---
+
+One PostgreSQL instance, one schema per service ([3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md)). A service touches only its own schema: no cross-schema `JOIN`, `UPDATE` or foreign key. A column that points to another schema's row (for example `orders.customer_id`) is a plain `uuid` with no FK; integrity is kept by events and by the application.
+
+| Schema | Tables |
+|---|---|
+| `auth` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
+| `core` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `responses`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
+| `messaging` | `conversations`, `messages`, `outbox`, `processed_events` |
+| `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
+| `moderation` | the rules and decision log tables (Phase 2) |
+
+Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The `users` columns that are profile data (`display_name`, `phone`, `bio`, `avatar_file_id`) and the `users` / profile split are settled with the account-and-profiles change in roadmap version 1.5.0 ([16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
+
+
+## Foreign Keys & ON DELETE
+---
+
+A foreign key exists only between tables of the **same schema** ([Schema Ownership](#schema-ownership)). Every `FK → users.id` (or `files.id`, `categories.id`) in a table of another schema is a **logical reference**: a plain `uuid` column with an index, no database constraint, kept consistent by events.
+
+Rows are almost never hard-deleted (soft delete, see Cross-Cutting Notes), so the default is `ON DELETE RESTRICT`. `CASCADE` is used only for rows that have no meaning without their parent.
+
+| Child column | Parent | `ON DELETE` | Why |
+|---|---|---|---|
+| `refresh_tokens.user_id`, `email_verification_tokens.user_id`, `password_reset_tokens.user_id` | `users.id` (`auth`) | `CASCADE` | tokens are worthless without the account (PII scrub of a `DELETED` user) |
+| `professional_categories.professional_id`, `professional_cities.professional_id` | `professional_profiles.user_id` (`core`) | `CASCADE` | pure join rows |
+| `professional_categories.category_id` | `categories.id` | `RESTRICT` | category delete is blocked while referenced ([13 - Validation Rules.md](13%20-%20Validation%20Rules.md)) |
+| `orders.category_id`, `responses.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.conversation_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
+
+Everything else that references `users` (`orders.customer_id`, `responses.professional_id`, `reviews.*`, `conversations.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
+
+**`citext`:** `users.email`, `categories.name` and `professional_cities.city` use the PostgreSQL `citext` type. The baseline Flyway migration of each schema that uses it runs `CREATE EXTENSION IF NOT EXISTS citext`.
 
 ## Cross-Cutting Notes
 ---
@@ -618,6 +656,9 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-10-27 | **D-1.4:** `citext` for `users.email`, `categories.name`, `professional_cities.city`; `CHECK`s for `budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`; partial unique index on live reviews (respects `deleted_at`); new `professional_profiles.last_active_at`; new § Foreign Keys & ON DELETE (FKs only inside a schema, `RESTRICT` by default, `CASCADE` for tokens and join rows); `closed_reason` values `UPPER_SNAKE_CASE`. |
+| 1.5 | 2026-10-27 | **D-1.3:** `orders.location` → `city`; every enum value is `UPPER_SNAKE_CASE` (notification channel, report reason / status / decision, evidence type, appeal status). |
+| 1.4 | 2026-10-27 | **D-1.1 / D-1.2:** added § Schema Ownership (one schema per service, no cross-schema reads or FKs). `users.role` is nullable until a Google sign-up picks a role; `display_name` stays `NOT NULL` and is taken from the Google profile for Google sign-ups. |
 | 1.3 | 2026-09-10 | Standardised to the shared doc format. **Added `email_verification_tokens` and `password_reset_tokens` tables** (referenced by [10 - Sequence Diagrams.md § A1/A6](10%20-%20Sequence%20Diagrams.md) and [8 - API Specification.md](8%20-%20API%20Specification.md) but previously missing) — added to §1, the ERD, and Key Indexes. Removed the stale "Next" section. |
 | 1.2 | 2026-09-07 | **All string-length + numeric-range constraints added.** `display_name` (2–50), `phone` (≤20), `bio` (≤2000); `years_experience` (0–70 CHECK); `hourly_rate`/`quote_price` sanity caps; all text fields (title 5–120, description 20–5000, message 2000, review/appeal/report 1–2000, notes 4000); `location`/`city` (≤100); `rating` (1–5 CHECK); `ban_appeals.text` added; per [13 - Validation Rules.md](13%20-%20Validation%20Rules.md). `preferred_date` validation deferred to app layer. |
 | 1.1 | 2026-09-04 | Reorganized — columns moved out of Mermaid diagrams into plain markdown tables for readability. |

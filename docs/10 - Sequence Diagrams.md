@@ -1,7 +1,7 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.2
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
 
@@ -620,7 +620,7 @@ sequenceDiagram
         Core->>PG: BEGIN
         Core->>PG: UPDATE users SET status=BANNED
         Core->>PG: UPDATE reports SET status=resolved, decision=banned
-        Core->>PG: (if customer) for each ACTIVE order: status=CLOSED, closed_reason=account_action
+        Core->>PG: (if customer) for each ACTIVE order: status=CLOSED, closed_reason=ACCOUNT_ACTION
         Core->>PG: INSERT outbox: moderation.banned
         Core->>PG: INSERT outbox: report.resolved
         Core->>PG: INSERT outbox: search.professional_reindex (hide)  — and/or one search.order_reindex per closed order
@@ -669,7 +669,7 @@ sequenceDiagram
         Core->>PG: UPDATE users SET status=DELETED, deleted_at=now(), grace_ends_at=now()+30d
         Core->>PG: scrub PII (name -> "Deleted user", email nulled/hashed, phone/bio cleared)
         Core->>PG: hide professional profile
-        Core->>PG: close all ACTIVE orders (account_action)
+        Core->>PG: close all ACTIVE orders (ACCOUNT_ACTION)
         Core->>PG: INSERT outbox: account.deletion_requested + search.professional_reindex + search.order_reindex(s)
         Core->>PG: COMMIT
         Core->>Redis: SET v1:denylist:{user_id} EX 900 + revoke refresh tokens
@@ -706,5 +706,6 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-27 | **D-1.4:** `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Account-deletion guard now returns `409 ACCOUNT_DELETION_BLOCKED` (was bare `409 CONFLICT`), matching [8 - API Specification.md](8%20-%20API%20Specification.md). Token-table inserts renamed to `email_verification_tokens` / `password_reset_tokens` to match [6 - Database Schema.md](6%20-%20Database%20Schema.md). |
 | 1.0 | 2026-09-07 | Initial: 14 sequence diagrams across Auth (register/verify, login, per-request authz, refresh+rotation, Google OAuth, password reset), Orders (publish, respond), Communication (WebSocket chat), Reviews/Search/Files, Moderation/Account (report→ban cascade, deletion→grace→finalize). Diagram A3 states the resolution of the file 3 ↔ file 4 JWT-validation inconsistency (local verify + Redis denylist); file 3 was corrected to match in v1.3. |

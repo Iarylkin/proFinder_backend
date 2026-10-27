@@ -1,7 +1,7 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.6
-- **Date:** 2026-09-10
+- **Version:** 3.8
+- **Date:** 2026-10-27
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
 
@@ -73,7 +73,7 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
   "category_id": "uuid",
   "budget_min": "decimal",
   "budget_max": "decimal",
-  "location": "string",
+  "city": "string",
   "preferred_date": "date",
   "created_at": "timestamp",
   "updated_at": "timestamp"
@@ -120,7 +120,7 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
   "category_id": "uuid",
   "budget_min": "decimal",
   "budget_max": "decimal",
-  "location": "string",
+  "city": "string",
   "preferred_date": "date",
   "response_count": "integer",
   "responses": [
@@ -168,7 +168,7 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
   "category_id": "uuid",
   "budget_min": "decimal",
   "budget_max": "decimal",
-  "location": "string",
+  "city": "string",
   "created_at": "timestamp",
   "published_at": "timestamp",
   "closed_at": "timestamp",
@@ -187,7 +187,7 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
 | DRAFT | ACTIVE | CUSTOMER | `publish()` called | Order becomes visible to professionals; draft can only be published once |
 | DRAFT | (removed) | CUSTOMER | `delete()` called | Permanent hard deletion, no recovery |
 | ACTIVE | CLOSED | CUSTOMER | `closeOrder()` called | Order archived, final state, history preserved |
-| ACTIVE | CLOSED | SYSTEM | Customer is banned / suspended / deletes account | All the customer's ACTIVE orders auto-close (`closed_at` set, reason `account_action`); responding professionals get the normal `order.closed` notification. Nothing is deleted. |
+| ACTIVE | CLOSED | SYSTEM | Customer is banned / suspended / deletes account | All the customer's ACTIVE orders auto-close (`closed_at` set, reason `ACCOUNT_ACTION`); responding professionals get the normal `order.closed` notification. Nothing is deleted. |
 
 There are no other transitions. No soft delete, no moderator deletion of orders, no reopening. A professional being banned/suspended does not change order status — that professional is just removed from search and their responses are filtered out of the customer's list until restored.
 
@@ -439,7 +439,7 @@ Users can file reports against professionals or customers. Reports are entirely 
    - **Suspension:** Moderator enters a number of days (1–365, with 3/7/14/30 quick presets). `suspension_end_date = now + N days`. The account auto-returns to active on expiry (scheduled job / lazy check at next login). A suspended professional is removed from search and their responses are filtered out of customers' lists until restored. There is no indefinite suspension — that is what a ban is for.
    - **Ban:** Permanent by default, but **can be appealed** (see [Ban Appeals](#ban-appeals) below)
    - **Content Removal:** Review or message is deleted immediately, and the affected user is notified afterward (not asked for approval beforehand)
-   - When a **customer** is suspended or banned, all their ACTIVE orders auto-close (reason `account_action`) and responders are notified
+   - When a **customer** is suspended or banned, all their ACTIVE orders auto-close (reason `ACCOUNT_ACTION`) and responders are notified
    - While suspended or banned, a user cannot do anything on the platform except log out, contact support, or (if banned) file one ban appeal — no messaging, no viewing profiles, no submitting orders
 
 4. **Notification**
@@ -468,19 +468,19 @@ A permanently banned user can file an appeal against the ban decision. This is t
   "reported_user_id": "uuid",
   "order_id": "uuid (optional — reports are not tied to a specific order)",
   "report_type": "professional_conduct" | "customer_conduct" | "user_behavior",
-  "reason": "no_show" | "poor_quality" | "non_payment" | "harassment" | "scam" | "inappropriate_content" | "other",
+  "reason": "NO_SHOW" | "POOR_QUALITY" | "NON_PAYMENT" | "HARASSMENT" | "SCAM" | "INAPPROPRIATE_CONTENT" | "OTHER",
   "description": "string",
   "evidence": [
     {
-      "type": "text" | "photo" | "message_link",
+      "type": "TEXT" | "PHOTO" | "MESSAGE_LINK",
       "content": "string or url",
       "timestamp": "timestamp"
     }
   ],
-  "status": "submitted" | "under_review" | "resolved",
+  "status": "SUBMITTED" | "UNDER_REVIEW" | "RESOLVED",
   "moderator_id": "uuid (nullable)",
   "moderator_notes": "string (nullable)",
-  "decision": "dismissed" | "warning" | "suspended" | "banned" | "content_removed" | null,
+  "decision": "DISMISSED" | "WARNING" | "SUSPENDED" | "BANNED" | "CONTENT_REMOVED" | null,
   "action_taken": "string (nullable)",
   "suspension_end_date": "timestamp (nullable)",
   "created_at": "timestamp",
@@ -514,7 +514,7 @@ A permanently banned user can file an appeal against the ban decision. This is t
   "category_id": "uuid",
   "budget_min": "decimal",
   "budget_max": "decimal",
-  "location": "string",
+  "city": "string",
   "preferred_date": "date (optional)",
 
   "responses": [
@@ -837,7 +837,7 @@ Hybrid, event-driven + reconcile:
 ### Delivery Rules
 ---
 
-- **Preferences model:** a matrix `notification_preferences(user_id, event_type, channel, enabled)` with `channel ∈ {push, email, in_app}`. Every cell defaults to enabled; the user toggles any cell in settings.
+- **Preferences model:** a matrix `notification_preferences(user_id, event_type, channel, enabled)` with `channel ∈ {PUSH, EMAIL, IN_APP}`. Every cell defaults to enabled; the user toggles any cell in settings.
 - **Push:** Firebase Cloud Messaging (FCM) directly. Device tokens live in `device_tokens(user_id, token, platform, created_at, last_seen_at)`, upserted on login and on the SDK's `onNewToken` callback. A token is deleted when FCM returns `UNREGISTERED`/`INVALID`, on logout of that device, or after 60 days of inactivity. Every notification carries a deep-link payload `{type, entity_type, entity_id, url}`.
 - **In-app:** stored in PostgreSQL (`notifications(id, user_id, type, entity_type, entity_id, title, body, is_read, created_at, read_at)`). Notification center only — no toast/pop-up. Paginated 20 per page, newest first. Badge = count of unread (index on `(user_id, is_read)`). Mark-as-read and mark-all-read are persisted. A background job purges **read** notifications older than `inapp_retention_days` (default 90, configurable); unread are kept indefinitely.
 - **Email:** real-time per event (no digest in MVP — FR-Notif-6 is Phase 2). `multipart/alternative` (HTML + plain-text) in every email, branded template (Qute). Unsubscribe at two levels: per-event-type toggles, and an "unsubscribe from all email" link in every footer.
@@ -874,7 +874,7 @@ See [Report System](#report-system-separate-from-order-lifecycle) above for the 
 
 - **Optimistic locking:** mutable entities (order, profile) carry a `version` column (Hibernate `@Version`). `UPDATE ... WHERE id=? AND version=?` affecting 0 rows → `409 Conflict`, the client refetches and retries. No last-write-wins.
 - **In-flight response vs. order close:** response creation checks `WHERE status='ACTIVE'` (or `SELECT ... FOR UPDATE` on the order row) in the same transaction. If the order is already `CLOSED` → `409 ORDER_CLOSED`.
-- **Party banned/suspended with an ACTIVE order:** customer → all their ACTIVE orders auto-close (reason `account_action`), responders notified; professional → removed from search, their responses filtered out of customers' lists, restored on reinstatement. Nothing is deleted.
+- **Party banned/suspended with an ACTIVE order:** customer → all their ACTIVE orders auto-close (reason `ACCOUNT_ACTION`), responders notified; professional → removed from search, their responses filtered out of customers' lists, restored on reinstatement. Nothing is deleted.
 - **No orphaned data:** account deletion is a *soft* delete — the DB row is kept and only anonymized (see [Account Deletion](#account-deletion)), so a deleted order with a dangling response / a deleted professional with a dangling review / orphaned messages simply cannot happen.
 
 ### Reliable Event Publishing (Transactional Outbox)
@@ -986,7 +986,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 **Report System:** Part of Core API
 - Separate from order lifecycle, no order required
-- Statuses: submitted → under_review → resolved
+- Statuses: `SUBMITTED` → `UNDER_REVIEW` → `RESOLVED`
 - No SLA, no assignment, no priority levels — shared queue, moderator's own pace
 - Moderator handles decisions and actions; suspension is a moderator-chosen 1–365 days (presets 3/7/14/30) with auto-return on expiry; bans are permanent by default but **can be appealed** within 30 days, reviewed by a different moderator (the one exception to "no appeal")
 
@@ -1005,6 +1005,8 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.8 | 2026-10-27 | **D-1.4:** order `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
+| 3.7 | 2026-10-27 | **D-1.3:** order field `location` → `city`; enum values in payloads and the preferences matrix are `UPPER_SNAKE_CASE`. |
 | 3.6 | 2026-09-10 | Standardised to the shared doc format (title, metadata, separators, changelog). Removed a line duplicated verbatim in *Security & Data Access* ("API versioning: current version only"). Repointed the dead file-5 links (a "Questions" doc that no longer exists) to [2 - Requirements.md](2%20-%20Requirements.md) / this file's own sections. |
 | 3.5 | 2026-09-07 | Reconciled the Events section with [9 - Event Catalog.md](9%20-%20Event%20Catalog.md): dropped `order.draft_created`; split `order.response_received` into `response.created` + `response.edited` (in-app only); added `message.sent` / `message.deleted` / `report.created` / `account.deletion_finalized` / `auth.*`; renamed the reindex events; search-index queue = unlimited retry, no DLQ. |
 | 3.4 | 2026-09-04 | Closed 2 gaps found while state-diagramming: professional can't drop below 1 category / 1 city (replace-only, `ACTIVE` is sticky); a `PENDING_VERIFICATION` account can't be suspended/banned. |
