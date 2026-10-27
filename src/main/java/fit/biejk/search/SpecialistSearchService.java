@@ -23,7 +23,7 @@ public class SpecialistSearchService {
     /**
      * Elasticsearch client used for communication with the search index.
      */
-    private final ElasticsearchClient elasticsearchCustomer;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Indexes a specialist document in Elasticsearch.
@@ -34,7 +34,7 @@ public class SpecialistSearchService {
     public void save(final SpecialistSearchDto dto) {
         try {
             log.info("Saving Specialist with id {} for search", dto.getId());
-            elasticsearchCustomer.index(i -> i
+            elasticsearchClient.index(i -> i
                     .index("specialists")
                     .id(String.valueOf(dto.getId()))
                     .document(dto)
@@ -54,7 +54,7 @@ public class SpecialistSearchService {
     public void delete(final Long id) {
         try {
             log.info("Deleting Specialist with id {} for search", id);
-            elasticsearchCustomer.delete(d -> d
+            elasticsearchClient.delete(d -> d
                     .index("specialists")
                     .id(String.valueOf(id))
             );
@@ -84,7 +84,7 @@ public class SpecialistSearchService {
 
         try {
             log.info("Searching for Specialist with keyword {} and location {}", keyword, location);
-            SearchResponse<SpecialistSearchDto> response = elasticsearchCustomer.search(s -> s
+            SearchResponse<SpecialistSearchDto> response = elasticsearchClient.search(s -> s
                             .index("specialists")
                             .from(from)
                             .size(size)
