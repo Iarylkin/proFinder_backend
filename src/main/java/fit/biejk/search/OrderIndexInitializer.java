@@ -4,8 +4,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import fit.biejk.repository.OrderRepository;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -20,33 +20,30 @@ import java.io.IOException;
  * </p>
  */
 @Startup
-@Singleton
+@ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class OrderIndexInitializer {
 
     /**
      * Mapper responsible for converting Order to OrderSearchDto.
      */
-    @Inject
-    private OrderSearchMapper orderSearchMapper;
+    private final OrderSearchMapper orderSearchMapper;
 
     /**
      * Elasticsearch client used to interact with the Elasticsearch cluster.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Service for accessing orders from the relational database.
      */
-    @Inject
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
     /**
      * Service for indexing orders in Elasticsearch.
      */
-    @Inject
-    private OrderSearchService orderSearchService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Initializes the index after application startup.
@@ -86,6 +83,9 @@ public class OrderIndexInitializer {
                                             .fields("keyword", k -> k.keyword(kk -> kk))
                                     )
                             )
+                            .properties("title", p -> p.text(t -> t))
+                            .properties("description", p -> p.text(t -> t))
+                            .properties("createdAt", p -> p.date(d -> d))
                     )
             );
             load();

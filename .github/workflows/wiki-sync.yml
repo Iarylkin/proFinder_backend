@@ -1,0 +1,33 @@
+name: Wiki Sync
+
+on:
+  # docs/ -> Wiki
+  push:
+    branches: [ develop ]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/wiki-sync.yml'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+# -------------------------------------------------------------
+jobs:
+  docs-to-wiki:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sync docs/ to Wiki
+        uses: newrelic/wiki-sync-action@main
+        with:
+          source: docs
+          destination: wiki
+          token: ${{ secrets.WIKI_ACTION_TOKEN }}
+          gitAuthorName: ${{ github.actor }}
+          gitAuthorEmail: ${{ github.actor }}@users.noreply.github.com

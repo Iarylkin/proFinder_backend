@@ -11,6 +11,15 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       QUARKUS_PROFILE: prod
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:?Set MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set MAIL_PASSWORD}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY}
+      JWT_PRIVATE_KEY_PATH: /keys/privateKey.pem
+      JWT_PUBLIC_KEY_PATH: /keys/publicKey.pem
+    volumes:
+      - ./keys:/keys:ro
     networks:
       - elk
     depends_on:
@@ -97,7 +106,7 @@ services:
     environment:
       POSTGRES_DB: profinder_db
       POSTGRES_USER: iarylser
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -112,8 +121,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: iarylser
-      MINIO_ROOT_PASSWORD: 1234567890
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?Set MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?Set MINIO_SECRET_KEY}
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data

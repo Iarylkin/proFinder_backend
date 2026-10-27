@@ -1,6 +1,7 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.ClientDto;
+import fit.biejk.dto.ClientPublicDto;
 import fit.biejk.entity.Client;
 import org.mapstruct.Mapper;
 
@@ -20,6 +21,14 @@ public interface ClientMapper {
      * @return the corresponding ClientDto
      */
     ClientDto toDto(Client entity);
+
+    /**
+     * Converts a Client entity to its public DTO (without contact data).
+     *
+     * @param entity the Client entity
+     * @return the corresponding ClientPublicDto
+     */
+    ClientPublicDto toPublicDto(Client entity);
 
     /**
      * Converts a Client DTO to its corresponding entity.

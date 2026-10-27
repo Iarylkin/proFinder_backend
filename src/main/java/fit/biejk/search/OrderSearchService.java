@@ -6,7 +6,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,13 +18,13 @@ import java.util.List;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class OrderSearchService {
 
     /**
      * Elasticsearch client used to perform operations on the search index.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Saves or updates an {@link OrderSearchDto} document in the Elasticsearch "orders" index.
@@ -90,43 +90,47 @@ public class OrderSearchService {
                             .from(from)
                             .size(size)
                             .query(q -> q
-                                    .bool(b -> b
-                                            .must(m -> m
+                                    .bool(b -> {
+                                        if (hasText(keyword)) {
+                                            b.must(m -> m
                                                     .multiMatch(mm -> mm
                                                             .fields("title", "description")
-                                                            .query(keyword != null ? keyword : "")
+                                                            .query(keyword)
                                                             .fuzziness("AUTO")
                                                     )
-                                            )
-                                            .filter(f -> f
+                                            );
+                                        }
+                                        if (hasText(location)) {
+                                            b.filter(f -> f
                                                     .term(t -> t
                                                             .field("location.keyword")
-                                                            .value(location != null ? location : "")
+                                                            .value(location)
                                                     )
-                                            )
-                                            .filter(f -> {
-                                                if (services != null && !services.isEmpty()) {
-                                                    return f.terms(t -> t
+                                            );
+                                        }
+                                        if (services != null && !services.isEmpty()) {
+                                            b.filter(f -> f
+                                                    .terms(t -> t
                                                             .field("services.keyword")
                                                             .terms(ts -> ts
                                                                     .value(services.stream()
                                                                             .map(FieldValue::of)
                                                                             .toList())
                                                             )
-                                                    );
-                                                }
-                                                return f.matchAll(ma -> ma);
-                                            })
-                                            .filter(f -> f
-                                                    .terms(t -> t
-                                                            .field("status.keyword")
-                                                            .terms(ts -> ts
-                                                                    .value(List.of(FieldValue.of("CREATED"),
-                                                                            FieldValue.of("CLIENT_PENDING")))
-                                                            )
                                                     )
-                                            )
-                                    )
+                                            );
+                                        }
+                                        b.filter(f -> f
+                                                .terms(t -> t
+                                                        .field("status.keyword")
+                                                        .terms(ts -> ts
+                                                                .value(List.of(FieldValue.of("CREATED"),
+                                                                        FieldValue.of("CLIENT_PENDING")))
+                                                        )
+                                                )
+                                        );
+                                        return b;
+                                    })
                             )
                             .sort(so -> so
                                     .field(f -> f
@@ -146,5 +150,9 @@ public class OrderSearchService {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    private static boolean hasText(final String value) {
+        return value != null && !value.isBlank();
     }
 }

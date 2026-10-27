@@ -12,10 +12,10 @@ import fit.biejk.service.UserService;
 import io.smallrye.jwt.auth.principal.JWTParser;
 import io.smallrye.jwt.auth.principal.ParseException;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.websocket.*;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 @ServerEndpoint(
         value = "/v1/chats/{chatId}",
         decoders = ChatMessageDecoder.class,
@@ -38,38 +39,32 @@ public class ChatSocket {
     /**
      * Parses JWT tokens to extract user information.
      */
-    @Inject
-    private JWTParser jwtParser;
+    private final JWTParser jwtParser;
 
     /**
      * Service for creating and storing chat messages.
      */
-    @Inject
-    private ChatMessageService chatMessageService;
+    private final ChatMessageService chatMessageService;
 
     /**
      * Executor for running background tasks outside IO thread.
      */
-    @Inject
-    private ManagedExecutor executor;
+    private final ManagedExecutor executor;
 
     /**
      * Service for chat-related operations such as validation.
      */
-    @Inject
-    private ChatService chatService;
+    private final ChatService chatService;
 
     /**
      * Mapper to convert between entity and DTO for chat messages.
      */
-    @Inject
-    private ChatMessageMapper chatMessageMapper;
+    private final ChatMessageMapper chatMessageMapper;
 
     /**
      * Service for managing user-related logic.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Map storing active chat sessions, keyed by chat ID.
@@ -106,6 +101,12 @@ public class ChatSocket {
             return;
         }
 
+        if (!chatService.isParticipant(chatId, userId)) {
+            log.warn("User {} tried to join chat {} without being a participant", userId, chatId);
+            closeSession(session, "Forbidden");
+            return;
+        }
+
         session.getUserProperties().put("userId", userId);
         CHAT_SESSIONS.computeIfAbsent(chatId, k -> ConcurrentHashMap.newKeySet()).add(session);
 
@@ -139,7 +140,7 @@ public class ChatSocket {
         try {
             ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.getContent());
             ChatOutputMessage outputMessage = chatMessageMapper.toDto(message);
-            log.info("Sending message in chat {}: {}", chatId, outputMessage);
+            log.info("Sending message {} in chat {}", message.getId(), chatId);
             broadcastMessage(chatId, outputMessage);
         } catch (Exception e) {
             log.error("Failed to process message", e);

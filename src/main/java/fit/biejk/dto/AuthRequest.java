@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * Data Transfer Object for authentication requests.
@@ -30,6 +31,7 @@ public class AuthRequest {
      * User password, must not be blank.
      */
     @NotBlank
+    @ToString.Exclude
     private String password;
 
     /**

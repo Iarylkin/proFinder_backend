@@ -27,7 +27,7 @@ public class OrderProposalRepository implements PanacheRepository<OrderProposal>
      */
     public List<OrderProposal> findByOrderId(final Long orderId, final int page, final int size) {
         return find("order.id", orderId)
-                .page(page, size)
+                .page(page - 1, size)
                 .list();
     }
 
@@ -52,7 +52,7 @@ public class OrderProposalRepository implements PanacheRepository<OrderProposal>
      */
     public List<OrderProposal> findBySpecialistId(final Long specialistId, final int page, final int size) {
         return find("specialist.id", specialistId)
-                .page(page, size)
+                .page(page - 1, size)
                 .list();
     }
 

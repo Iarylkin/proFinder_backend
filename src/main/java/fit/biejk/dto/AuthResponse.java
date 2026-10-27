@@ -2,6 +2,7 @@ package fit.biejk.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * Data Transfer Object for authentication responses.
@@ -16,5 +17,6 @@ public class AuthResponse {
     /**
      * JWT authentication token.
      */
+    @ToString.Exclude
     private String token;
 }

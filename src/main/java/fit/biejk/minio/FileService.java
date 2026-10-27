@@ -1,15 +1,19 @@
-package fit.biejk.minIO;
+package fit.biejk.minio;
 
 import fit.biejk.dto.AvatarData;
 import fit.biejk.entity.User;
+import fit.biejk.exception.FileTooLargeException;
+import fit.biejk.exception.InvalidFileTypeException;
 import fit.biejk.service.UserService;
 import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.InternalServerErrorException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -18,6 +22,7 @@ import java.io.InputStream;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class FileService {
 
     /**
@@ -30,52 +35,76 @@ public class FileService {
      */
     private static final String BUCKET = "user-avatars";
 
+    /**
+     * Maximum avatar size in bytes (5 MB).
+     */
+    private static final int AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
 
     /**
      * MinIO client for interacting with the S3-compatible storage.
      */
-    @Inject
-    private MinioClient minioClient;
+    private final MinioClient minioClient;
 
     /**
      * Service for accessing and updating {@link User} entities.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Uploads the avatar to MinIO and saves the avatar key to the user.
      *
      * @param userId          the ID of the user
      * @param fileInputStream file data to upload
-     * @param contentType     MIME type of the file (e.g. image/png)
-     * @throws Exception if MinIO operation fails or user not found
+     * @throws FileTooLargeException       if the file exceeds {@value #AVATAR_MAX_BYTES} bytes
+     * @throws InvalidFileTypeException    if its content is not a supported image
+     * @throws InternalServerErrorException if reading or storing the file fails
      */
     @Transactional
-    public void uploadAvatar(final Long userId,
-                             final InputStream fileInputStream,
-                             final String contentType) throws Exception {
+    public void uploadAvatar(final Long userId, final InputStream fileInputStream) {
         log.info("Uploading avatar for userId={}", userId);
 
         User user = userService.getById(userId);
-        byte[] fileBytes = fileInputStream.readAllBytes();
+        byte[] fileBytes = readAvatar(fileInputStream);
+        if (fileBytes.length > AVATAR_MAX_BYTES) {
+            log.warn("Avatar rejected, too large: userId={}", userId);
+            throw new FileTooLargeException();
+        }
+        ImageType type = ImageType.detect(fileBytes).orElseThrow(() -> {
+            log.warn("Avatar rejected, unsupported type: userId={}", userId);
+            return new InvalidFileTypeException();
+        });
         String avatarKey = "avatars/" + userId;
 
-        ensureBucketExists();
+        try {
+            ensureBucketExists();
 
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(BUCKET)
-                        .object(avatarKey)
-                        .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
-                        .contentType(contentType)
-                        .build()
-        );
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(BUCKET)
+                            .object(avatarKey)
+                            .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
+                            .contentType(type.getMimeType())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Failed to store avatar for userId={}", userId, e);
+            throw new InternalServerErrorException("Failed to upload avatar");
+        }
 
         user.setAvatarKey(avatarKey);
         user.persist();
 
         log.debug("Avatar uploaded and key set for userId={}", userId);
+    }
+
+    private byte[] readAvatar(final InputStream fileInputStream) {
+        try {
+            return fileInputStream.readNBytes(AVATAR_MAX_BYTES + 1);
+        } catch (IOException e) {
+            log.error("Failed to read the uploaded avatar", e);
+            throw new InternalServerErrorException("Failed to upload avatar");
+        }
     }
 
     /**
