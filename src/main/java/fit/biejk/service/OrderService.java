@@ -27,6 +27,12 @@ import java.util.List;
 public class OrderService {
 
     /**
+     * Log message for a user who tries to change an order that belongs to someone else.
+     */
+    private static final String NOT_ORDER_OWNER_MESSAGE =
+            "User is not the owner of this order. orderId={}, customerId={}";
+
+    /**
      * Service for indexing orders in Elasticsearch.
      */
     private final OrderSearchService orderSearchService;
@@ -84,7 +90,7 @@ public class OrderService {
         log.info("Update order: orderId={}, newDescription={}", orderId, order.getDescription());
         Order old = getById(orderId);
         if (!authService.isCurrentUser(old.getCustomer().getId())) {
-            log.error("User is not the owner of this order. orderId={}, customerId={}",
+            log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, old.getCustomer().getId());
             throw new IllegalArgumentException();
         }
@@ -112,7 +118,7 @@ public class OrderService {
         log.info("Delete order: orderId={}", orderId);
         Order order = getById(orderId);
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
-            log.error("User is not the owner of this order. orderId={}, customerId={}",
+            log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
@@ -134,7 +140,7 @@ public class OrderService {
         log.info("Cancel order: orderId={}", orderId);
         Order order = getById(orderId);
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
-            log.error("User is not the owner of this order. orderId={}, customerId={}",
+            log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
