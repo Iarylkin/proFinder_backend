@@ -15,6 +15,9 @@ import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Locale;
+import java.util.Optional;
+
 /**
  * Service responsible for authentication logic.
  * <p>
@@ -30,6 +33,11 @@ public class AuthService {
      * Length of the verification code used for password reset (in digits).
      */
     private static final int PASSWORD_LENGTH = 6;
+
+    /**
+     * Redis key prefix for password reset codes.
+     */
+    private static final String RESET_CODE_PREFIX = "forgot-password:";
 
     /**
      * Service for sending emails.
@@ -152,22 +160,31 @@ public class AuthService {
      */
     @Transactional
     public void forgotPassword(final String email) {
-        User user = userService.getByEmail(email);
-        if (user == null) {
-            log.warn("Attempt to reset password for non-existent user: {}", email);
+        Optional<User> user = userService.findByEmail(email);
+        if (user.isEmpty()) {
+            log.warn("Password reset requested for an unknown account");
             return;
         }
 
         String code = CryptoUtils.generateNumericCode(PASSWORD_LENGTH);
         String hashedCode = CryptoUtils.hash(code);
 
-        String key = "forgot-password:" + email;
-        redisClient.setex(key, "600", hashedCode);
+        redisClient.setex(RESET_CODE_PREFIX + normalizeEmail(email), "600", hashedCode);
 
         String message = "Your password reset code is: " + code + "\nIt is valid for 10 minutes.";
 
         mailService.send(email, "Reset password", message);
-        log.debug("Reset code issued for userId={}", user.getId());
+        log.debug("Reset code issued for userId={}", user.get().getId());
+    }
+
+    /**
+     * Normalizes an email for use in cache keys: trimmed and lower-cased.
+     *
+     * @param email raw email
+     * @return normalized email
+     */
+    static String normalizeEmail(final String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -184,7 +201,7 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid new password");
         }
 
-        String key = "forgot-password:" + request.getEmail();
+        String key = RESET_CODE_PREFIX + normalizeEmail(request.getEmail());
         Response response = redisClient.get(key);
         String savedHashedCode = response != null ? response.toString() : null;
 

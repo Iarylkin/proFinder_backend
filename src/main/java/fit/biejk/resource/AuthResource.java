@@ -73,14 +73,14 @@ public class AuthResource {
      * Initiates password reset by generating and emailing a verification code to the user.
      *
      * @param request contains the email address of the user
-     * @return HTTP 200 response if the operation succeeds (even if user does not exist)
+     * @return HTTP 202 response, whether or not a user with this email exists
      */
     @POST
     @Path("/password-recovery")
     @PermitAll
     public Response createRecoveryRequest(@Valid final ForgotPasswordRequest request) {
         authService.forgotPassword(request.getEmail());
-        return Response.ok().build();
+        return Response.accepted().build();
     }
 
     /**

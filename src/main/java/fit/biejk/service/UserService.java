@@ -57,6 +57,16 @@ public class UserService {
     }
 
     /**
+     * Finds a user by their email without failing when the user does not exist.
+     *
+     * @param email email of the user
+     * @return the user, or an empty optional if there is none
+     */
+    public Optional<User> findByEmail(final String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
      * Retrieves a user by their email.
      *
      * @param email email of the user
