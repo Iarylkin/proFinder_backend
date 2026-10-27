@@ -4,7 +4,7 @@ import fit.biejk.entity.ServiceOffering;
 import fit.biejk.entity.Professional;
 import fit.biejk.service.ProfessionalService;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +15,7 @@ import java.util.List;
  * Used for transforming data between the database and the Elasticsearch index.
  * </p>
  */
+@RequiredArgsConstructor
 @ApplicationScoped
 public class ProfessionalSearchMapper {
 
@@ -24,8 +25,7 @@ public class ProfessionalSearchMapper {
      * Used for reverse-mapping from DTOs back to entities by ID.
      * </p>
      */
-    @Inject
-    private ProfessionalService professionalService;
+    private final ProfessionalService professionalService;
 
     /**
      * Converts a {@link Professional} entity to a {@link ProfessionalSearchDto}.

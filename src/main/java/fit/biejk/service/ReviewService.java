@@ -5,8 +5,8 @@ import fit.biejk.entity.Review;
 import fit.biejk.entity.Professional;
 import fit.biejk.repository.ReviewRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -19,20 +19,18 @@ import java.util.List;
  * </p>
  */
 @Slf4j
+@RequiredArgsConstructor
 @ApplicationScoped
 public class ReviewService {
 
     /** Repository for accessing persisted reviews. */
-    @Inject
-    private ReviewRepository reviewRepository;
+    private final ReviewRepository reviewRepository;
 
     /** Service for retrieving and updating professionals. */
-    @Inject
-    private ProfessionalService professionalService;
+    private final ProfessionalService professionalService;
 
     /** Service for retrieving customers. */
-    @Inject
-    private CustomerService customerService;
+    private final CustomerService customerService;
 
     /**
      * Persists a new review and updates the professional's average rating.

@@ -9,10 +9,10 @@ import fit.biejk.search.OrderSearchService;
 import fit.biejk.service.*;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
@@ -24,52 +24,46 @@ import java.util.List;
  */
 @Path("/v1/orders")
 @Slf4j
+@RequiredArgsConstructor
 public class OrderResource {
 
     /** Service for managing order proposals. */
-    @Inject
-    private OrderProposalService orderProposalService;
+    private final OrderProposalService orderProposalService;
+
     /**
      * Service handling order-related business logic.
      */
-    @Inject
-    private  OrderService orderService;
+    private final OrderService orderService;
 
     /**
      * Service for searching and filtering orders.
      */
-    @Inject
-    private OrderSearchService orderSearchService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Mapper for converting order search results and criteria.
      */
-    @Inject
-    private OrderSearchMapper orderSearchMapper;
+    private final OrderSearchMapper orderSearchMapper;
 
     /**
      * Mapper for converting between Order entities and DTOs.
      */
-    @Inject
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     /**
      * Service for accessing customer information.
      */
-    @Inject
-    private CustomerService customerService;
+    private final CustomerService customerService;
 
     /**
      * Service for authentication and identity resolution.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Mapper for converting between OrderProposal entities and DTOs.
      */
-    @Inject
-    private OrderProposalMapper orderProposalMapper;
+    private final OrderProposalMapper orderProposalMapper;
 
 
     /**
