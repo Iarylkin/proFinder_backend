@@ -5,10 +5,9 @@ import fit.biejk.entity.User;
 import fit.biejk.repository.UserRepository;
 import fit.biejk.utilits.CryptoUtils;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
@@ -21,26 +20,23 @@ import java.util.Optional;
  * </p>
  */
 @Slf4j
-@NoArgsConstructor
+@RequiredArgsConstructor
 @ApplicationScoped
 public class UserService {
 
     /**
      * Repository for accessing user data.
      */
-    @Inject
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
 
     /**
      * Service for managing locations.
      */
-    @Inject
-    private LocationService locationService;
+    private final LocationService locationService;
 
     /** Service for sending user notifications via email. */
-    @Inject
-    private MailService mailService;
+    private final MailService mailService;
 
     /**
      * Checks if the given email is unique.

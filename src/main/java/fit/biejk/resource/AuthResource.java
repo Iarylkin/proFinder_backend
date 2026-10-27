@@ -3,12 +3,12 @@ package fit.biejk.resource;
 import fit.biejk.dto.*;
 import fit.biejk.service.AuthService;
 import jakarta.annotation.security.PermitAll;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,14 +20,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Path("/v1/auth")
 @Slf4j
+@RequiredArgsConstructor
 public class AuthResource {
 
     /**
      * Service for handling authentication logic such as user registration, signIn,
      * password reset, and password change.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Registers a new user account.
