@@ -13,7 +13,7 @@ import java.util.List;
  * Entity representing an order placed by a customer.
  * <p>
  * Contains details about specialization, status, price, deadline,
- * proposals from specialists, and a linked review after completion.
+ * proposals from professionals, and a linked review after completion.
  * </p>
  */
 @Data

@@ -2,7 +2,7 @@ package fit.biejk.service;
 
 import fit.biejk.entity.Customer;
 import fit.biejk.entity.Review;
-import fit.biejk.entity.Specialist;
+import fit.biejk.entity.Professional;
 import fit.biejk.repository.ReviewRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -14,8 +14,8 @@ import java.util.List;
 /**
  * Service for managing {@link Review} entities.
  * <p>
- * Provides functionality for creating reviews and retrieving them by customer, specialist, or order.
- * Also updates the average rating of specialists upon new review creation.
+ * Provides functionality for creating reviews and retrieving them by customer, professional, or order.
+ * Also updates the average rating of professionals upon new review creation.
  * </p>
  */
 @Slf4j
@@ -26,49 +26,49 @@ public class ReviewService {
     @Inject
     private ReviewRepository reviewRepository;
 
-    /** Service for retrieving and updating specialists. */
+    /** Service for retrieving and updating professionals. */
     @Inject
-    private SpecialistService specialistService;
+    private ProfessionalService professionalService;
 
     /** Service for retrieving customers. */
     @Inject
     private CustomerService customerService;
 
     /**
-     * Persists a new review and updates the specialist's average rating.
+     * Persists a new review and updates the professional's average rating.
      *
      * @param review the review to be saved
      * @return the persisted {@link Review}
      */
     @Transactional
     public Review create(final Review review) {
-        log.info("Creating review: specialistId={}, customerId={}, rating={}",
-                review.getSpecialist().getId(),
+        log.info("Creating review: professionalId={}, customerId={}, rating={}",
+                review.getProfessional().getId(),
                 review.getCustomer().getId(),
                 review.getRating());
 
         reviewRepository.persist(review);
         log.debug("Review persisted: reviewId={}", review.getId());
 
-        specialistService.computeAverageRating(review.getSpecialist().getId());
-        log.debug("Average rating recalculated for specialistId={}", review.getSpecialist().getId());
+        professionalService.computeAverageRating(review.getProfessional().getId());
+        log.debug("Average rating recalculated for professionalId={}", review.getProfessional().getId());
 
         return review;
     }
 
     /**
-     * Retrieves all reviews written for a specific specialist.
+     * Retrieves all reviews written for a specific professional.
      *
-     * @param specialistId the specialist's ID
+     * @param professionalId the professional's ID
      * @param page         page number for pagination
      * @param size         number of reviews per page
-     * @return list of reviews for the specialist
+     * @return list of reviews for the professional
      */
-    public List<Review> getBySpecialistId(final Long specialistId, final int page, final int size) {
-        log.info("Fetching reviews for specialistId={}", specialistId);
-        Specialist specialist = specialistService.getById(specialistId);
-        List<Review> reviews = reviewRepository.findBySpecialist(specialist, page, size);
-        log.debug("Found {} reviews for specialistId={}", reviews.size(), specialistId);
+    public List<Review> getByProfessionalId(final Long professionalId, final int page, final int size) {
+        log.info("Fetching reviews for professionalId={}", professionalId);
+        Professional professional = professionalService.getById(professionalId);
+        List<Review> reviews = reviewRepository.findByProfessional(professional, page, size);
+        log.debug("Found {} reviews for professionalId={}", reviews.size(), professionalId);
         return reviews;
     }
 

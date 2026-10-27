@@ -26,9 +26,9 @@ public class OrderProposalDto {
     private Long orderId;
 
     /**
-     * Identifier of the specialist making the proposal.
+     * Identifier of the professional making the proposal.
      */
-    private Long specialistId;
+    private Long professionalId;
 
     /**
      * Description of the proposal. Must not be blank.

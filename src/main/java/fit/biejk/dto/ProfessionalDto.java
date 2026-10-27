@@ -12,16 +12,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Data Transfer Object representing a specialist.
+ * Data Transfer Object representing a professional.
  * <p>
- * Used to transfer specialist data between layers of the application.
+ * Used to transfer professional data between layers of the application.
  * Contains personal information, location, rating, services, and avatar link.
  * </p>
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SpecialistDto {
+public class ProfessionalDto {
 
     /**
      * Maximum allowed length for firstName and lastName.
@@ -34,7 +34,7 @@ public class SpecialistDto {
     public static final int PHONE_MAX_LENGTH = 20;
 
     /**
-     * Unique identifier of the specialist.
+     * Unique identifier of the professional.
      */
     private Long id;
 
@@ -44,31 +44,31 @@ public class SpecialistDto {
     private double averageRating;
 
     /**
-     * Specialist's email address (must be valid format).
+     * Professional's email address (must be valid format).
      */
     @Email
     private String email;
 
     /**
-     * First name of the specialist.
+     * First name of the professional.
      */
     @Length(max = NAME_MAX_LENGTH)
     private String firstName;
 
     /**
-     * Last name of the specialist.
+     * Last name of the professional.
      */
     @Length(max = NAME_MAX_LENGTH)
     private String lastName;
 
     /**
-     * Phone number of the specialist.
+     * Phone number of the professional.
      */
     @Length(max = PHONE_MAX_LENGTH)
     private String phoneNumber;
 
     /**
-     * Geographic location of the specialist.
+     * Geographic location of the professional.
      */
     private Location location;
 
@@ -78,12 +78,12 @@ public class SpecialistDto {
     private LocalDateTime createAt;
 
     /**
-     * Services offered by the specialist.
+     * Services offered by the professional.
      */
     private List<ServiceOffering> serviceOfferings;
 
     /**
-     * Detailed description of the specialist's expertise.
+     * Detailed description of the professional's expertise.
      */
     private String description;
 }

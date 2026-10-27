@@ -34,7 +34,7 @@ INSERT INTO service_offering (name) VALUES
 ('Pet Grooming'),
 ('Fitness Coaching');
 
--- Users (Specialists) IDs 100–109
+-- Users (Professionals) IDs 100–109
 INSERT INTO users (id, email, password, first_name, last_name, phone_number, location_id, role, createat) VALUES
 (100, 'spec1@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Eva',    'Kralova',    '555555555', 1, 'SPECIALIST', now()),
 (101, 'spec2@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Tomas',  'Dvorak',     '444444444', 2, 'SPECIALIST', now()),
@@ -47,7 +47,7 @@ INSERT INTO users (id, email, password, first_name, last_name, phone_number, loc
 (108, 'spec9@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Alena',  'Kozlova',    '777888999', 1, 'SPECIALIST', now()),
 (109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'SPECIALIST', now());
 
--- Specialist data
+-- Professional data
 INSERT INTO specialist (id, average_rating, description) VALUES
 (100, 4.7, 'Experienced hair stylist with over 10 years in the business.'),
 (101, 4.2, 'Certified tax consultant helping small businesses.'),
@@ -55,12 +55,12 @@ INSERT INTO specialist (id, average_rating, description) VALUES
 (103, 4.3, 'Tech enthusiast offering laptop and phone repair.'),
 (104, 4.6, 'Haircuts and grooming for men and women.'),
 (105, 4.1, 'Professional resume and job application advisor.'),
-(106, 4.4, 'Skincare specialist with years of experience.'),
+(106, 4.4, 'Skincare professional with years of experience.'),
 (107, 4.0, 'Document translation and business help services.'),
 (108, 4.8, 'Photo editing and logo design expert.'),
 (109, 4.9, 'Website development and IT consulting.');
 
--- Specialist ⟷ Services
+-- Professional ⟷ Services
 INSERT INTO specialist_service_offering (specialist_id, serviceofferings_id) VALUES
 (100, 1), (100, 4),
 (101, 3), (101, 2),

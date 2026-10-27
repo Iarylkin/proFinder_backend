@@ -19,20 +19,20 @@ public interface ReviewMapper {
      * @return the corresponding DTO
      */
     @Mapping(source = "customer.id", target = "customerId")
-    @Mapping(source = "specialist.id", target = "specialistId")
+    @Mapping(source = "professional.id", target = "professionalId")
     ReviewDto toDto(Review entity);
 
     /**
      * Maps a {@link ReviewDto} to a {@link Review} entity.
      * <p>
-     * Relations (customer, specialist, order) should be set manually in service.
+     * Relations (customer, professional, order) should be set manually in service.
      * </p>
      *
      * @param dto the review DTO
      * @return the entity (without full relations)
      */
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "specialist", ignore = true)
+    @Mapping(target = "professional", ignore = true)
     @Mapping(target = "createAt", ignore = true)
     Review toEntity(ReviewDto dto);
 

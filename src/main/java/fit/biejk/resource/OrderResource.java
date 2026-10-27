@@ -128,7 +128,7 @@ public class OrderResource {
     }
 
     /**
-     * Submits a proposal for an order by the authenticated specialist.
+     * Submits a proposal for an order by the authenticated professional.
      *
      * @param orderId      ID of the order to propose on
      * @param proposalDto  proposal data
@@ -142,9 +142,9 @@ public class OrderResource {
             @Valid final OrderProposalDto proposalDto) {
         log.info("Proposal request: orderId={}, proposalDto={}", orderId, proposalDto);
         OrderProposal proposal = orderProposalMapper.toEntity(proposalDto);
-        Long specialistId = authService.getCurrentUserId();
+        Long professionalId = authService.getCurrentUserId();
 
-        OrderProposal result = orderService.proposal(orderId, specialistId, proposal);
+        OrderProposal result = orderService.proposal(orderId, professionalId, proposal);
 
         log.debug("Proposal created with ID={}", result.getId());
         return Response.status(Response.Status.CREATED).entity(orderProposalMapper.toDto(result)).build();

@@ -13,12 +13,12 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Service for indexing, deleting, and searching specialists in Elasticsearch.
+ * Service for indexing, deleting, and searching professionals in Elasticsearch.
  */
 @Slf4j
 @ApplicationScoped
 @RequiredArgsConstructor
-public class SpecialistSearchService {
+public class ProfessionalSearchService {
 
     /**
      * Elasticsearch client used for communication with the search index.
@@ -26,14 +26,14 @@ public class SpecialistSearchService {
     private final ElasticsearchClient elasticsearchClient;
 
     /**
-     * Indexes a specialist document in Elasticsearch.
+     * Indexes a professional document in Elasticsearch.
      *
-     * @param dto the specialist data to be indexed
+     * @param dto the professional data to be indexed
      */
     @Transactional
-    public void save(final SpecialistSearchDto dto) {
+    public void save(final ProfessionalSearchDto dto) {
         try {
-            log.info("Saving Specialist with id {} for search", dto.getId());
+            log.info("Saving Professional with id {} for search", dto.getId());
             elasticsearchClient.index(i -> i
                     .index("specialists")
                     .id(String.valueOf(dto.getId()))
@@ -46,14 +46,14 @@ public class SpecialistSearchService {
     }
 
     /**
-     * Deletes a specialist document from Elasticsearch by ID.
+     * Deletes a professional document from Elasticsearch by ID.
      *
-     * @param id the ID of the specialist to delete
+     * @param id the ID of the professional to delete
      */
     @Transactional
     public void delete(final Long id) {
         try {
-            log.info("Deleting Specialist with id {} for search", id);
+            log.info("Deleting Professional with id {} for search", id);
             elasticsearchClient.delete(d -> d
                     .index("specialists")
                     .id(String.valueOf(id))
@@ -65,17 +65,17 @@ public class SpecialistSearchService {
     }
 
     /**
-     * Searches for specialists using keyword and location.
+     * Searches for professionals using keyword and location.
      * The results are sorted by averageRating in descending order.
      * Supports fuzzy matching for keyword.
      *
      * @param keyword  the search keyword (e.g., service name or description)
-     * @param location the city to filter specialists by
+     * @param location the city to filter professionals by
      * @param page     page number for pagination (1-based)
-     * @param size     number of specialists per page
-     * @return a list of matching specialists
+     * @param size     number of professionals per page
+     * @return a list of matching professionals
      */
-    public List<SpecialistSearchDto> search(final String keyword,
+    public List<ProfessionalSearchDto> search(final String keyword,
                                             final String location,
                                             final int page,
                                             final int size) {
@@ -83,8 +83,8 @@ public class SpecialistSearchService {
         int from = (page - 1) * size;
 
         try {
-            log.info("Searching for Specialist with keyword {} and location {}", keyword, location);
-            SearchResponse<SpecialistSearchDto> response = elasticsearchClient.search(s -> s
+            log.info("Searching for Professional with keyword {} and location {}", keyword, location);
+            SearchResponse<ProfessionalSearchDto> response = elasticsearchClient.search(s -> s
                             .index("specialists")
                             .from(from)
                             .size(size)
@@ -117,7 +117,7 @@ public class SpecialistSearchService {
                                             .order(SortOrder.Desc)
                                     )
                             ),
-                    SpecialistSearchDto.class
+                    ProfessionalSearchDto.class
             );
 
             return response.hits().hits().stream()

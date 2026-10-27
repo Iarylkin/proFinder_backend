@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * Repository class for performing CRUD operations on {@link OrderProposal} entities.
  * <p>
- * Provides custom query methods for accessing proposals by order ID and specialist ID.
+ * Provides custom query methods for accessing proposals by order ID and professional ID.
  * Uses Quarkus Panache to simplify database interactions.
  * </p>
  */
@@ -43,15 +43,15 @@ public class OrderProposalRepository implements PanacheRepository<OrderProposal>
     }
 
     /**
-     * Retrieves all proposals submitted by a specific specialist.
+     * Retrieves all proposals submitted by a specific professional.
      *
-     * @param specialistId the ID of the specialist
+     * @param professionalId the ID of the professional
      * @param page         page number for pagination
      * @param size         number of proposals per page
-     * @return a list of {@link OrderProposal} entities submitted by the given specialist
+     * @return a list of {@link OrderProposal} entities submitted by the given professional
      */
-    public List<OrderProposal> findBySpecialistId(final Long specialistId, final int page, final int size) {
-        return find("specialist.id", specialistId)
+    public List<OrderProposal> findByProfessionalId(final Long professionalId, final int page, final int size) {
+        return find("professional.id", professionalId)
                 .page(page - 1, size)
                 .list();
     }

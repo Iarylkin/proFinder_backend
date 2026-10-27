@@ -11,7 +11,7 @@ public enum UserRole {
     CUSTOMER,
 
     /**
-     * Role for users providing services (specialists).
+     * Role for users providing services (professionals).
      */
     SPECIALIST
 }

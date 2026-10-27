@@ -14,7 +14,7 @@ class ChatTest {
     private static Chat chatBetween(final long firstId, final long secondId) {
         Customer first = new Customer();
         first.setId(firstId);
-        Specialist second = new Specialist();
+        Professional second = new Professional();
         second.setId(secondId);
         Chat chat = new Chat();
         chat.setUser1(first);

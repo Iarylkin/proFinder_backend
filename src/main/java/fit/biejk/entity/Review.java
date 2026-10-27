@@ -32,11 +32,11 @@ public class Review {
     private Customer customer;
 
     /**
-     * The specialist being reviewed.
+     * The professional being reviewed.
      */
     @ManyToOne
     @JoinColumn(name = "specialist_id", nullable = false)
-    private Specialist specialist;
+    private Professional professional;
 
     /**
      * Rating score from 1 to 5.

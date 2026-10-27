@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 /**
  * Data Transfer Object representing a user.
  * <p>
- * Serves as the base user data structure for customers and specialists.
+ * Serves as the base user data structure for customers and professionals.
  * Includes common user attributes such as personal details, location,
  * contact information, and avatar image reference.
  * </p>

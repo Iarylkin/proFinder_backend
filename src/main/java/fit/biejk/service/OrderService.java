@@ -45,8 +45,8 @@ public class OrderService {
      */
     private final OrderProposalService orderProposalService;
 
-    /** Service for handling business logic related to specialists. */
-    private final SpecialistService specialistService;
+    /** Service for handling business logic related to professionals. */
+    private final ProfessionalService professionalService;
 
     /**
      * Service for user identity validation.
@@ -183,27 +183,27 @@ public class OrderService {
      * Adds a new proposal to an order.
      *
      * @param orderId  ID of the order
-     * @param specialistId ID of the specialist
+     * @param professionalId ID of the professional
      * @param proposal proposal entity
      * @return created proposal
      */
     @Transactional
-    public OrderProposal proposal(final Long orderId, final Long specialistId, final OrderProposal proposal) {
-        log.info("Create proposal: orderId={}, specialistId={}", orderId, proposal.getSpecialist().getId());
+    public OrderProposal proposal(final Long orderId, final Long professionalId, final OrderProposal proposal) {
+        log.info("Create proposal: orderId={}, professionalId={}", orderId, proposal.getProfessional().getId());
         Order order = getById(orderId);
         if (!order.getStatus().acceptsProposals()) {
             log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
-        if (haveSpecialistProposal(order, proposal)) {
-            log.error("Order proposal already exists for this specialist. orderId={}, specialistId={}",
-                    orderId, proposal.getSpecialist().getId());
+        if (haveProfessionalProposal(order, proposal)) {
+            log.error("Order proposal already exists for this professional. orderId={}, professionalId={}",
+                    orderId, proposal.getProfessional().getId());
             throw new IllegalArgumentException("Order proposal already exists");
         }
         proposal.setOrder(order);
 
-        Specialist specialist = specialistService.getById(specialistId);
-        proposal.setSpecialist(specialist);
+        Professional professional = professionalService.getById(professionalId);
+        proposal.setProfessional(professional);
 
         orderProposalService.create(proposal);
         order.getOrderProposals().add(proposal);
@@ -218,19 +218,19 @@ public class OrderService {
     }
 
     /**
-     * Checks if the given specialist already has a proposal for the order.
+     * Checks if the given professional already has a proposal for the order.
      *
      * @param order    the order
      * @param proposal the proposal to check
      * @return true if proposal already exists, false otherwise
      */
-    public boolean haveSpecialistProposal(final Order order, final OrderProposal proposal) {
-        log.info("Check if specialist proposal already exists: orderId={}, specialistId={}",
-                order.getId(), proposal.getSpecialist().getId());
+    public boolean haveProfessionalProposal(final Order order, final OrderProposal proposal) {
+        log.info("Check if professional proposal already exists: orderId={}, professionalId={}",
+                order.getId(), proposal.getProfessional().getId());
         List<OrderProposal> orderProposals = order.getOrderProposals();
         for (OrderProposal orderProposal : orderProposals) {
-            if (orderProposal.getSpecialist().getId().equals(proposal.getSpecialist().getId())) {
-                log.debug("Proposal already exists for specialistId={}", proposal.getSpecialist().getId());
+            if (orderProposal.getProfessional().getId().equals(proposal.getProfessional().getId())) {
+                log.debug("Proposal already exists for professionalId={}", proposal.getProfessional().getId());
                 return true;
             }
         }
@@ -259,24 +259,24 @@ public class OrderService {
     }
 
     /**
-     * Retrieves all orders assigned to the specified specialist.
+     * Retrieves all orders assigned to the specified professional.
      * <p>
-     * Ensures that the requesting user is the same as the target specialist.
+     * Ensures that the requesting user is the same as the target professional.
      * </p>
      *
-     * @param specialistId ID of the specialist
+     * @param professionalId ID of the professional
      * @param page         page number for pagination
      * @param size         number of orders per page
-     * @return list of orders currently assigned to the specialist
-     * @throws IllegalArgumentException if the current user is not the same as the specialist
+     * @return list of orders currently assigned to the professional
+     * @throws IllegalArgumentException if the current user is not the same as the professional
      */
-    public List<Order> getBySpecialistId(final Long specialistId, final int page, final int size) {
-        log.info("Get orders by specialistId={}", specialistId);
-        if (!authService.isCurrentUser(specialistId)) {
+    public List<Order> getByProfessionalId(final Long professionalId, final int page, final int size) {
+        log.info("Get orders by professionalId={}", professionalId);
+        if (!authService.isCurrentUser(professionalId)) {
             log.warn("User is not logged in");
             throw new IllegalArgumentException("User is not logged in");
         }
-        return orderRepository.findBySpecialistId(specialistId, page, size);
+        return orderRepository.findByProfessionalId(professionalId, page, size);
     }
 
 
