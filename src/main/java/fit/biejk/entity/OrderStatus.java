@@ -48,6 +48,15 @@ public enum OrderStatus {
     }
 
     /**
+     * Checks whether an order in this status still accepts new proposals.
+     *
+     * @return {@code true} for open orders, {@code false} for cancelled or completed ones.
+     */
+    public boolean acceptsProposals() {
+        return this == CREATED || this == CLIENT_PENDING;
+    }
+
+    /**
      * Checks if transitioning from the current status to the specified new status is allowed.
      *
      * @param newStatus The status to transition to.

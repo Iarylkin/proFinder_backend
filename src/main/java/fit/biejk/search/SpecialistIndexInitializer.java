@@ -4,8 +4,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import fit.biejk.repository.SpecialistRepository;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,33 +18,30 @@ import java.io.IOException;
  * </p>
  */
 @Startup
-@Singleton
+@ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class SpecialistIndexInitializer {
 
     /**
      * Elasticsearch client used to interact with the Elasticsearch cluster.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Service used to retrieve specialist data from the PostgreSQL database.
      */
-    @Inject
-    private SpecialistRepository specialistRepository;
+    private final SpecialistRepository specialistRepository;
 
     /**
      * Service used to persist specialist data to the Elasticsearch index.
      */
-    @Inject
-    private SpecialistSearchService specialistSearchService;
+    private final SpecialistSearchService specialistSearchService;
 
     /**
      * Mapper for converting {@link fit.biejk.entity.Specialist} entities into {@link SpecialistSearchDto}.
      */
-    @Inject
-    private SpecialistSearchMapper specialistSearchMapper;
+    private final SpecialistSearchMapper specialistSearchMapper;
 
     /**
      * Called after the bean is constructed.

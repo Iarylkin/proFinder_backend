@@ -36,4 +36,19 @@ public class OrderSearchDto {
      * Name of the location where the order is to be performed.
      */
     private String location;
+
+    /**
+     * Title of the order, searched by keyword.
+     */
+    private String title;
+
+    /**
+     * Description of the order, searched by keyword.
+     */
+    private String description;
+
+    /**
+     * Creation time of the order in ISO-8601 format, used for sorting.
+     */
+    private String createdAt;
 }

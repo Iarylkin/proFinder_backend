@@ -5,8 +5,8 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,13 +17,13 @@ import java.util.List;
  */
 @Slf4j
 @ApplicationScoped
+@RequiredArgsConstructor
 public class SpecialistSearchService {
 
     /**
      * Elasticsearch client used for communication with the search index.
      */
-    @Inject
-    private ElasticsearchClient elasticsearchClient;
+    private final ElasticsearchClient elasticsearchClient;
 
     /**
      * Indexes a specialist document in Elasticsearch.
@@ -89,22 +89,27 @@ public class SpecialistSearchService {
                             .from(from)
                             .size(size)
                             .query(q -> q
-                                    .bool(b -> b
-                                            .must(m -> m
+                                    .bool(b -> {
+                                        if (hasText(keyword)) {
+                                            b.must(m -> m
                                                     .multiMatch(mm -> mm
                                                             .fields("firstName", "lastName",
                                                                     "description", "services")
                                                             .query(keyword)
                                                             .fuzziness("AUTO")
                                                     )
-                                            )
-                                            .filter(f -> f
+                                            );
+                                        }
+                                        if (hasText(location)) {
+                                            b.filter(f -> f
                                                     .term(t -> t
                                                             .field("location.keyword")
                                                             .value(location)
                                                     )
-                                            )
-                                    )
+                                            );
+                                        }
+                                        return b;
+                                    })
                             )
                             .sort(so -> so
                                     .field(f -> f
@@ -124,5 +129,9 @@ public class SpecialistSearchService {
             e.printStackTrace();
             return List.of();
         }
+    }
+
+    private static boolean hasText(final String value) {
+        return value != null && !value.isBlank();
     }
 }

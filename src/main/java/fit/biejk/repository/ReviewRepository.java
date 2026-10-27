@@ -24,7 +24,7 @@ public class ReviewRepository implements PanacheRepository<Review> {
      */
     public List<Review> findBySpecialist(final Specialist specialist, final int page, final int size) {
         return find("specialist", specialist)
-                .page(page, size)
+                .page(page - 1, size)
                 .list();
     }
 

@@ -3,10 +3,9 @@ package fit.biejk.service;
 import fit.biejk.entity.Client;
 import fit.biejk.repository.ClientRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -19,21 +18,19 @@ import java.util.List;
  * </p>
  */
 @Slf4j
-@NoArgsConstructor
+@RequiredArgsConstructor
 @ApplicationScoped
 public class ClientService {
 
     /**
      * Repository for accessing client data.
      */
-    @Inject
-    private ClientRepository clientRepository;
+    private final ClientRepository clientRepository;
 
     /**
      * Service for shared user operations (validation, deletion, etc.).
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Creates a new client and persists it to the database.
@@ -59,7 +56,7 @@ public class ClientService {
      */
     public List<Client> getAll(final int page, final int size) {
         log.info("Get all clients");
-        List<Client> result = clientRepository.findAll().page(page, size).list();
+        List<Client> result = clientRepository.findAll().page(page - 1, size).list();
         log.debug("Found {} clients", result.size());
         return result;
     }
