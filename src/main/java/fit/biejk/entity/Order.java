@@ -34,7 +34,7 @@ public class Order {
      * Customer who placed the order.
      */
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
     /**

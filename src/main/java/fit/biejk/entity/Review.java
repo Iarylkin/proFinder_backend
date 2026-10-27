@@ -28,7 +28,7 @@ public class Review {
      * The customer who submitted the review.
      */
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
     /**

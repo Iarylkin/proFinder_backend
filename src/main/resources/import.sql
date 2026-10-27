@@ -79,12 +79,12 @@ INSERT INTO users (id, email, password, first_name, last_name, phone_number, loc
 (111, 'customer2@example.com', '$2a$10$examplehashcustomer2', 'David', 'Svoboda','222222222', 2, 'CUSTOMER', now());
 
 -- Customer data
-INSERT INTO client (id) VALUES
+INSERT INTO customer (id) VALUES
 (110),
 (111);
 
 -- Orders IDs 120–125
-INSERT INTO orders (id, client_id, status, description, price, review_id, createat, deadline, location_id) VALUES
+INSERT INTO orders (id, customer_id, status, description, price, review_id, createat, deadline, location_id) VALUES
 (120, 110, 'CREATED', 'I need a haircut before my wedding.',               0, NULL, now(), now() + interval '5 days',  1),
 (121, 110, 'CREATED', 'My phone screen is cracked. Need a repair ASAP.',   0, NULL, now(), now() + interval '2 days',  2),
 (122, 111, 'CREATED', 'I need help with tax filing for my small business.',0, NULL, now(), now() + interval '10 days', 2),

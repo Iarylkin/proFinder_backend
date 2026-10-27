@@ -28,7 +28,7 @@ import java.util.List;
  * Provides endpoints for retrieving and managing customer data.
  * </p>
  */
-@Path("/v1/clients")
+@Path("/v1/customers")
 @Slf4j
 @RequiredArgsConstructor
 public class CustomerResource {

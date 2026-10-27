@@ -23,7 +23,7 @@ import java.util.List;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "client")
+@Table(name = "customer")
 public class Customer extends User {
 
     /**
