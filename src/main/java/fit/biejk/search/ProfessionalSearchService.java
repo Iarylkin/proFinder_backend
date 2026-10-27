@@ -21,6 +21,11 @@ import java.util.List;
 public class ProfessionalSearchService {
 
     /**
+     * Name of the Elasticsearch index that holds professional documents.
+     */
+    static final String INDEX_NAME = "professionals";
+
+    /**
      * Elasticsearch client used for communication with the search index.
      */
     private final ElasticsearchClient elasticsearchClient;
@@ -35,7 +40,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Saving Professional with id {} for search", dto.getId());
             elasticsearchClient.index(i -> i
-                    .index("professionals")
+                    .index(INDEX_NAME)
                     .id(String.valueOf(dto.getId()))
                     .document(dto)
             );
@@ -55,7 +60,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Deleting Professional with id {} for search", id);
             elasticsearchClient.delete(d -> d
-                    .index("professionals")
+                    .index(INDEX_NAME)
                     .id(String.valueOf(id))
             );
         } catch (IOException e) {
@@ -85,7 +90,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Searching for Professional with keyword {} and location {}", keyword, location);
             SearchResponse<ProfessionalSearchDto> response = elasticsearchClient.search(s -> s
-                            .index("professionals")
+                            .index(INDEX_NAME)
                             .from(from)
                             .size(size)
                             .query(q -> q
