@@ -15,10 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * REST resource for managing order proposals submitted by specialists.
+ * REST resource for managing order proposals submitted by professionals.
  * <p>
- * This resource allows retrieval of proposals by specialist, by proposal ID, or by order ID.
- * It also supports confirming proposals by the client and fetching related order data.
+ * This resource allows retrieval of proposals by professional, by proposal ID, or by order ID.
+ * It also supports confirming proposals by the customer and fetching related order data.
  * </p>
  */
 @Slf4j
@@ -43,14 +43,14 @@ public class OrderProposalResource {
 
     /**
      * Retrieves a specific proposal by its ID.
-     * Available only to the owner of the order and the specialist who made the proposal.
+     * Available only to the owner of the order and the professional who made the proposal.
      *
      * @param proposalId the ID of the proposal
      * @return the corresponding proposal
      */
     @GET
     @Path("/{proposalId}")
-    @RolesAllowed({"CLIENT", "SPECIALIST"})
+    @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
     public Response getById(@PathParam("proposalId") final Long proposalId) {
         log.info("Get proposal: proposalId={}", proposalId);
         OrderProposal result = orderProposalService.getByIdForCurrentUser(proposalId);
@@ -60,9 +60,9 @@ public class OrderProposalResource {
     /**
      * Confirms an order proposal and transitions the order to the next stage.
      * <p>
-     * This endpoint allows a client to accept a specific specialist's proposal.
+     * This endpoint allows a customer to accept a specific professional's proposal.
      * By confirming, the system updates the order with the final agreed-upon terms
-     * and assigns the specialist to the project.
+     * and assigns the professional to the project.
      * </p>
      *
      * @param proposalId the unique ID of the proposal to be confirmed
@@ -71,7 +71,7 @@ public class OrderProposalResource {
      */
     @POST
     @Path("/{proposalId}/confirm")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response confirm(@PathParam("proposalId") final Long proposalId,
                             @Valid final ConfirmProposal confirm) {
 

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Entity representing a specialist.
+ * Entity representing a professional.
  * <p>
  * Inherits from {@link User} and includes domain-specific information such as specialization, description,
  * rating, submitted proposals, schedule, and received reviews.
@@ -21,44 +21,44 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "specialist")
-public class Specialist extends User {
+@Table(name = "professional")
+public class Professional extends User {
 
     /**
-     * Specialist's professional area of expertise.
+     * Professional's area of expertise.
      */
     @ManyToMany
     private List<ServiceOffering> serviceOfferings;
 
     /**
-     * Average rating calculated from client reviews.
+     * Average rating calculated from customer reviews.
      */
     @Column(name = "average_rating")
     private Double averageRating = 0.0;
 
     /**
-     * Short description of the specialist's services or qualifications.
+     * Short description of the professional's services or qualifications.
      */
     @Column(name = "description")
     private String description;
 
     /**
-     * List of all proposals submitted by the specialist to various orders.
+     * List of all proposals submitted by the professional to various orders.
      * <p>
      * Ignored during JSON serialization to prevent recursion and reduce payload size.
      * </p>
      */
-    @OneToMany(mappedBy = "specialist", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
     private List<OrderProposal> orderProposals;
 
     /**
-     * List of reviews received from clients for completed orders.
+     * List of reviews received from customers for completed orders.
      * <p>
      * Ignored during JSON serialization to prevent infinite loops or heavy response objects.
      * </p>
      */
-    @OneToMany(mappedBy = "specialist", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
     private List<Review> reviews;
 }

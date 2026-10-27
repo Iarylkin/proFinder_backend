@@ -1,7 +1,7 @@
 package fit.biejk.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import fit.biejk.repository.SpecialistRepository;
+import fit.biejk.repository.ProfessionalRepository;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,17 +11,17 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 
 /**
- * Initializes the Elasticsearch index for storing specialist data.
+ * Initializes the Elasticsearch index for storing professional data.
  * <p>
  * This class deletes the existing index on startup, recreates it with the correct mappings,
- * and populates it from the database using the {@link SpecialistRepository}.
+ * and populates it from the database using the {@link ProfessionalRepository}.
  * </p>
  */
 @Startup
 @ApplicationScoped
 @Slf4j
 @RequiredArgsConstructor
-public class SpecialistIndexInitializer {
+public class ProfessionalIndexInitializer {
 
     /**
      * Elasticsearch client used to interact with the Elasticsearch cluster.
@@ -29,19 +29,19 @@ public class SpecialistIndexInitializer {
     private final ElasticsearchClient elasticsearchClient;
 
     /**
-     * Service used to retrieve specialist data from the PostgreSQL database.
+     * Service used to retrieve professional data from the PostgreSQL database.
      */
-    private final SpecialistRepository specialistRepository;
+    private final ProfessionalRepository professionalRepository;
 
     /**
-     * Service used to persist specialist data to the Elasticsearch index.
+     * Service used to persist professional data to the Elasticsearch index.
      */
-    private final SpecialistSearchService specialistSearchService;
+    private final ProfessionalSearchService professionalSearchService;
 
     /**
-     * Mapper for converting {@link fit.biejk.entity.Specialist} entities into {@link SpecialistSearchDto}.
+     * Mapper for converting {@link fit.biejk.entity.Professional} entities into {@link ProfessionalSearchDto}.
      */
-    private final SpecialistSearchMapper specialistSearchMapper;
+    private final ProfessionalSearchMapper professionalSearchMapper;
 
     /**
      * Called after the bean is constructed.
@@ -52,7 +52,7 @@ public class SpecialistIndexInitializer {
      */
     @PostConstruct
     void init() {
-        String indexName = "specialists";
+        String indexName = ProfessionalSearchService.INDEX_NAME;
 
         try {
             boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
@@ -79,18 +79,18 @@ public class SpecialistIndexInitializer {
             );
             load();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to create index {}", indexName, e);
         }
     }
 
     /**
-     * Loads all specialists from the database and saves them into the Elasticsearch index.
+     * Loads all professionals from the database and saves them into the Elasticsearch index.
      */
     void load() {
-        log.info("Loading specialists from database");
-        specialistRepository.listAll()
-                .forEach(specialist ->
-                        specialistSearchService.save(specialistSearchMapper.toDto(specialist))
+        log.info("Loading professionals from database");
+        professionalRepository.listAll()
+                .forEach(professional ->
+                        professionalSearchService.save(professionalSearchMapper.toDto(professional))
                 );
     }
 }

@@ -12,9 +12,9 @@ class ChatTest {
     private static final long OUTSIDER_ID = 3L;
 
     private static Chat chatBetween(final long firstId, final long secondId) {
-        Client first = new Client();
+        Customer first = new Customer();
         first.setId(firstId);
-        Specialist second = new Specialist();
+        Professional second = new Professional();
         second.setId(secondId);
         Chat chat = new Chat();
         chat.setUser1(first);

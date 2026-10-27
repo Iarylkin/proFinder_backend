@@ -26,9 +26,9 @@ public enum OrderStatus {
     CANCELLED,
 
     /**
-     * Status indicating the client needs to take action (e.g., review proposals).
+     * Status indicating the customer needs to take action (e.g., review proposals).
      */
-    CLIENT_PENDING,
+    CUSTOMER_PENDING,
 
     /**
      * Status indicating the order has been fulfilled and is now completed.
@@ -41,8 +41,8 @@ public enum OrderStatus {
     private static final Map<OrderStatus, Set<OrderStatus>> VALID_TRANSITIONS = new HashMap<>();
 
     static {
-        VALID_TRANSITIONS.put(CREATED, Set.of(CANCELLED, CLIENT_PENDING));
-        VALID_TRANSITIONS.put(CLIENT_PENDING, Set.of(CLIENT_PENDING, CANCELLED, COMPLETED));
+        VALID_TRANSITIONS.put(CREATED, Set.of(CANCELLED, CUSTOMER_PENDING));
+        VALID_TRANSITIONS.put(CUSTOMER_PENDING, Set.of(CUSTOMER_PENDING, CANCELLED, COMPLETED));
         VALID_TRANSITIONS.put(COMPLETED, Set.of()); // final state
         VALID_TRANSITIONS.put(CANCELLED, Set.of()); // final state
     }
@@ -53,7 +53,7 @@ public enum OrderStatus {
      * @return {@code true} for open orders, {@code false} for cancelled or completed ones.
      */
     public boolean acceptsProposals() {
-        return this == CREATED || this == CLIENT_PENDING;
+        return this == CREATED || this == CUSTOMER_PENDING;
     }
 
     /**

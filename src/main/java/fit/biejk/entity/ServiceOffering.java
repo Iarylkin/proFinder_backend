@@ -33,7 +33,7 @@ public class ServiceOffering {
     private String name;
 
     /**
-     * List of users (specialists) who offer this service.
+     * List of users (professionals) who offer this service.
      * This field is excluded from JSON serialization.
      */
     @ManyToMany

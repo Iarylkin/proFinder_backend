@@ -16,23 +16,23 @@ public interface OrderMapper {
 
     /**
      * Converts an OrderDto to an Order entity.
-     * Ignores the 'client' and 'orderProposals' fields during mapping.
+     * Ignores the 'customer' and 'orderProposals' fields during mapping.
      *
      * @param orderDto the DTO to convert
      * @return the mapped Order entity
      */
-    @Mapping(target = "client", ignore = true)
+    @Mapping(target = "customer", ignore = true)
     @Mapping(target = "orderProposals", ignore = true)
     Order toEntity(OrderDto orderDto);
 
     /**
      * Converts an Order entity to an OrderDto.
-     * Maps the client ID from the nested client entity.
+     * Maps the customer ID from the nested customer entity.
      *
      * @param order the entity to convert
      * @return the mapped OrderDto
      */
-    @Mapping(target = "clientId", source = "client.id")
+    @Mapping(target = "customerId", source = "customer.id")
     OrderDto toDto(Order order);
 
     /**

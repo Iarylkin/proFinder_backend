@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Base entity representing a system user.
  * <p>
- * This class is extended by more specific user types, such as {@link Client} and {@link Specialist}.
+ * This class is extended by more specific user types, such as {@link Customer} and {@link Professional}.
  * It stores common attributes such as contact details, role, and avatar reference.
  * </p>
  */
@@ -81,7 +81,7 @@ public class User extends PanacheEntityBase {
     private Location location;
 
     /**
-     * Role assigned to the user (e.g., CLIENT, SPECIALIST).
+     * Role assigned to the user (e.g., CUSTOMER, PROFESSIONAL).
      */
     @Column(name = "role")
     @Enumerated(EnumType.STRING)

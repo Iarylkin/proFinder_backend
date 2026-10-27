@@ -10,43 +10,43 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Public view of a specialist, returned to anyone browsing specialists.
+ * Public view of a professional, returned to anyone browsing professionals.
  * <p>
- * Unlike {@link SpecialistDto} it does not contain the account (login) email.
+ * Unlike {@link ProfessionalDto} it does not contain the account (login) email.
  * </p>
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class SpecialistPublicDto {
+public class ProfessionalPublicDto {
 
     /**
-     * Unique identifier of the specialist.
+     * Unique identifier of the professional.
      */
     private Long id;
 
     /**
-     * Average rating based on client reviews.
+     * Average rating based on customer reviews.
      */
     private double averageRating;
 
     /**
-     * First name of the specialist.
+     * First name of the professional.
      */
     private String firstName;
 
     /**
-     * Last name of the specialist.
+     * Last name of the professional.
      */
     private String lastName;
 
     /**
-     * Phone number of the specialist.
+     * Phone number of the professional.
      */
     private String phoneNumber;
 
     /**
-     * Geographic location of the specialist.
+     * Geographic location of the professional.
      */
     private Location location;
 
@@ -56,12 +56,12 @@ public class SpecialistPublicDto {
     private LocalDateTime createAt;
 
     /**
-     * Services offered by the specialist.
+     * Services offered by the professional.
      */
     private List<ServiceOffering> serviceOfferings;
 
     /**
-     * Detailed description of the specialist's expertise.
+     * Detailed description of the professional's expertise.
      */
     private String description;
 }

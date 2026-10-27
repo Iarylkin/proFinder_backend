@@ -5,23 +5,23 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * DTO for filtering specialist search results.
+ * DTO for filtering professional search results.
  * <p>
  * Extends {@link PageRequest} to include pagination along with search criteria.
  * </p>
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SpecialistFilterCriteria extends PageRequest {
+public class ProfessionalFilterCriteria extends PageRequest {
 
     /**
-     * Search query for specialist name or description.
+     * Search query for professional name or description.
      */
     @QueryParam("query")
     private String query;
 
     /**
-     * Location filter for specialists.
+     * Location filter for professionals.
      */
     @QueryParam("location")
     private String location;

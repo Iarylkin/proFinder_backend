@@ -10,10 +10,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Entity representing an order placed by a client.
+ * Entity representing an order placed by a customer.
  * <p>
  * Contains details about specialization, status, price, deadline,
- * proposals from specialists, and a linked review after completion.
+ * proposals from professionals, and a linked review after completion.
  * </p>
  */
 @Data
@@ -31,11 +31,11 @@ public class Order {
     private Long id;
 
     /**
-     * Client who placed the order.
+     * Customer who placed the order.
      */
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
-    private Client client;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     /**
      * Specialization required for fulfilling the order.
@@ -66,7 +66,7 @@ public class Order {
     private String title;
 
     /**
-     * Description provided by the client for the order.
+     * Description provided by the customer for the order.
      */
     @Column(name = "description")
     private String description;

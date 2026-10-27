@@ -57,9 +57,9 @@ public class OrderProposalService {
      * @return the newly persisted proposal
      */
     public OrderProposal create(final OrderProposal orderProposal) {
-        log.info("Creating new proposal: orderId={}, specialistId={}",
+        log.info("Creating new proposal: orderId={}, professionalId={}",
                 orderProposal.getOrder().getId(),
-                orderProposal.getSpecialist().getId());
+                orderProposal.getProfessional().getId());
 
         orderProposal.setStatus(ProposalStatus.CREATED);
         orderProposalRepository.persist(orderProposal);
@@ -81,7 +81,7 @@ public class OrderProposalService {
      * @param dto the confirmation data containing the final agreed price and deadline
      * @return the updated and persisted order
      * @throws NotFoundException if the proposal does not exist
-     * @throws ForbiddenException if the current user is not the client who created the order
+     * @throws ForbiddenException if the current user is not the customer who created the order
      */
     @Transactional
     public Order confirmAndAssign(final Long proposalId, final ConfirmProposal dto) {
@@ -90,7 +90,7 @@ public class OrderProposalService {
 
         Order order = proposal.getOrder();
 
-        if (!authService.isCurrentUser(order.getClient().getId())) {
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
 
@@ -141,7 +141,7 @@ public class OrderProposalService {
 
     /**
      * Retrieves a proposal visible to the current user: the owner of the order
-     * or the specialist who submitted the proposal.
+     * or the professional who submitted the proposal.
      *
      * @param proposalId the ID of the proposal
      * @return the proposal
@@ -150,8 +150,8 @@ public class OrderProposalService {
      */
     public OrderProposal getByIdForCurrentUser(final Long proposalId) {
         OrderProposal proposal = getById(proposalId);
-        boolean isOrderOwner = authService.isCurrentUser(proposal.getOrder().getClient().getId());
-        boolean isAuthor = authService.isCurrentUser(proposal.getSpecialist().getId());
+        boolean isOrderOwner = authService.isCurrentUser(proposal.getOrder().getCustomer().getId());
+        boolean isAuthor = authService.isCurrentUser(proposal.getProfessional().getId());
         if (!isOrderOwner && !isAuthor) {
             throw new ForbiddenException("You do not have access to this proposal");
         }
@@ -176,7 +176,7 @@ public class OrderProposalService {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        if (!authService.isCurrentUser(order.getClient().getId())) {
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
 
@@ -202,20 +202,20 @@ public class OrderProposalService {
     }
 
     /**
-     * Returns the specialist whose proposal has been approved for a given order.
+     * Returns the professional whose proposal has been approved for a given order.
      *
      * @param orderId the ID of the order
-     * @return the approved specialist, or {@code null} if no approved proposal is found
+     * @return the approved professional, or {@code null} if no approved proposal is found
      */
-    public Specialist getConfirmedSpecialist(final Long orderId) {
-        log.info("Searching for confirmed specialist for order ID={}", orderId);
+    public Professional getConfirmedProfessional(final Long orderId) {
+        log.info("Searching for confirmed professional for order ID={}", orderId);
 
         List<OrderProposal> proposals = getAllByOrderId(orderId);
         for (OrderProposal proposal : proposals) {
             if (ProposalStatus.APPROVED.equals(proposal.getStatus())) {
-                log.debug("Confirmed specialist found: specialistId={}, proposalId={}",
-                        proposal.getSpecialist().getId(), proposal.getId());
-                return proposal.getSpecialist();
+                log.debug("Confirmed professional found: professionalId={}, proposalId={}",
+                        proposal.getProfessional().getId(), proposal.getId());
+                return proposal.getProfessional();
             }
         }
 
@@ -224,22 +224,22 @@ public class OrderProposalService {
     }
 
     /**
-     * Retrieves all proposals submitted by a specific specialist.
+     * Retrieves all proposals submitted by a specific professional.
      * <p>
-     * The caller must be the same as the specialist whose ID is provided.
+     * The caller must be the same as the professional whose ID is provided.
      * </p>
      *
-     * @param specialistId the ID of the specialist
+     * @param professionalId the ID of the professional
      * @param page         page number for pagination
      * @param size         number of proposals per page
-     * @return list of proposals submitted by the specialist
-     * @throws IllegalArgumentException if the caller is not the same as the specialist
+     * @return list of proposals submitted by the professional
+     * @throws IllegalArgumentException if the caller is not the same as the professional
      */
-    public List<OrderProposal> getBySpecialistId(final Long specialistId, final int page, final int size) {
-        log.info("Searching for proposal by specialist ID={}", specialistId);
-        if (!authService.isCurrentUser(specialistId)) {
-            throw new IllegalArgumentException("Specialist ID " + specialistId + " not authorized");
+    public List<OrderProposal> getByProfessionalId(final Long professionalId, final int page, final int size) {
+        log.info("Searching for proposal by professional ID={}", professionalId);
+        if (!authService.isCurrentUser(professionalId)) {
+            throw new IllegalArgumentException("Professional ID " + professionalId + " not authorized");
         }
-        return orderProposalRepository.findBySpecialistId(specialistId, page, size);
+        return orderProposalRepository.findByProfessionalId(professionalId, page, size);
     }
 }

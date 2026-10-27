@@ -9,10 +9,10 @@ import fit.biejk.search.OrderSearchService;
 import fit.biejk.service.*;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
@@ -24,69 +24,63 @@ import java.util.List;
  */
 @Path("/v1/orders")
 @Slf4j
+@RequiredArgsConstructor
 public class OrderResource {
 
     /** Service for managing order proposals. */
-    @Inject
-    private OrderProposalService orderProposalService;
+    private final OrderProposalService orderProposalService;
+
     /**
      * Service handling order-related business logic.
      */
-    @Inject
-    private  OrderService orderService;
+    private final OrderService orderService;
 
     /**
      * Service for searching and filtering orders.
      */
-    @Inject
-    private OrderSearchService orderSearchService;
+    private final OrderSearchService orderSearchService;
 
     /**
      * Mapper for converting order search results and criteria.
      */
-    @Inject
-    private OrderSearchMapper orderSearchMapper;
+    private final OrderSearchMapper orderSearchMapper;
 
     /**
      * Mapper for converting between Order entities and DTOs.
      */
-    @Inject
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     /**
-     * Service for accessing client information.
+     * Service for accessing customer information.
      */
-    @Inject
-    private ClientService clientService;
+    private final CustomerService customerService;
 
     /**
      * Service for authentication and identity resolution.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Mapper for converting between OrderProposal entities and DTOs.
      */
-    @Inject
-    private OrderProposalMapper orderProposalMapper;
+    private final OrderProposalMapper orderProposalMapper;
 
 
     /**
-     * Creates a new order for the authenticated client.
+     * Creates a new order for the authenticated customer.
      *
      * @param dto order data
      * @return created order
      */
     @POST
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response create(@Valid final OrderDto dto) {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
-        Long clientId = authService.getCurrentUserId();
-        Client client = clientService.getById(clientId);
-        order.setClient(client);
-        order.setLocation(client.getLocation());
+        Long customerId = authService.getCurrentUserId();
+        Customer customer = customerService.getById(customerId);
+        order.setCustomer(customer);
+        order.setLocation(customer.getLocation());
         Order result = orderService.create(order);
         log.debug("Order created with ID={}", result.getId());
 
@@ -102,7 +96,7 @@ public class OrderResource {
      */
     @PUT
     @Path("/{orderId}")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderDto dto) {
         log.info("Update order request: orderId={}, dto={}", orderId, dto);
         Order order = orderMapper.toEntity(dto);
@@ -119,7 +113,7 @@ public class OrderResource {
      */
     @POST
     @Path("/{orderId}:cancel")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response cancel(@PathParam("orderId") final Long orderId) {
         log.info("Cancel order request: orderId={}", orderId);
         Order result = orderService.cancel(orderId);
@@ -128,7 +122,7 @@ public class OrderResource {
     }
 
     /**
-     * Submits a proposal for an order by the authenticated specialist.
+     * Submits a proposal for an order by the authenticated professional.
      *
      * @param orderId      ID of the order to propose on
      * @param proposalDto  proposal data
@@ -136,15 +130,15 @@ public class OrderResource {
      */
     @POST
     @Path("/{orderId}/proposals")
-    @RolesAllowed("SPECIALIST")
+    @RolesAllowed("PROFESSIONAL")
     public Response proposal(
             @PathParam("orderId") final Long orderId,
             @Valid final OrderProposalDto proposalDto) {
         log.info("Proposal request: orderId={}, proposalDto={}", orderId, proposalDto);
         OrderProposal proposal = orderProposalMapper.toEntity(proposalDto);
-        Long specialistId = authService.getCurrentUserId();
+        Long professionalId = authService.getCurrentUserId();
 
-        OrderProposal result = orderService.proposal(orderId, specialistId, proposal);
+        OrderProposal result = orderService.proposal(orderId, professionalId, proposal);
 
         log.debug("Proposal created with ID={}", result.getId());
         return Response.status(Response.Status.CREATED).entity(orderProposalMapper.toDto(result)).build();
@@ -159,7 +153,7 @@ public class OrderResource {
      */
     @GET
     @Path("/{orderId}/proposals")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response getProposals(
             @PathParam("orderId") final Long orderId,
             @BeanParam final PageRequest pagination
@@ -232,7 +226,7 @@ public class OrderResource {
      */
     @DELETE
     @Path("/{orderId}")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response delete(@PathParam("orderId") final Long orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);

@@ -34,34 +34,34 @@ INSERT INTO service_offering (name) VALUES
 ('Pet Grooming'),
 ('Fitness Coaching');
 
--- Users (Specialists) IDs 100–109
+-- Users (Professionals) IDs 100–109
 INSERT INTO users (id, email, password, first_name, last_name, phone_number, location_id, role, createat) VALUES
-(100, 'spec1@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Eva',    'Kralova',    '555555555', 1, 'SPECIALIST', now()),
-(101, 'spec2@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Tomas',  'Dvorak',     '444444444', 2, 'SPECIALIST', now()),
-(102, 'spec3@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Lucie',  'Horakova',   '111222333', 1, 'SPECIALIST', now()),
-(103, 'spec4@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Petr',   'Novotny',    '222333444', 2, 'SPECIALIST', now()),
-(104, 'spec5@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Karel',  'Sedlak',     '333444555', 1, 'SPECIALIST', now()),
-(105, 'spec6@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Monika', 'Urbanova',   '444555666', 2, 'SPECIALIST', now()),
-(106, 'spec7@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Jana',   'Prochazkova','555666777', 1, 'SPECIALIST', now()),
-(107, 'spec8@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Martin', 'Cerny',      '666777888', 2, 'SPECIALIST', now()),
-(108, 'spec9@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Alena',  'Kozlova',    '777888999', 1, 'SPECIALIST', now()),
-(109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'SPECIALIST', now());
+(100, 'spec1@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Eva',    'Kralova',    '555555555', 1, 'PROFESSIONAL', now()),
+(101, 'spec2@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Tomas',  'Dvorak',     '444444444', 2, 'PROFESSIONAL', now()),
+(102, 'spec3@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Lucie',  'Horakova',   '111222333', 1, 'PROFESSIONAL', now()),
+(103, 'spec4@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Petr',   'Novotny',    '222333444', 2, 'PROFESSIONAL', now()),
+(104, 'spec5@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Karel',  'Sedlak',     '333444555', 1, 'PROFESSIONAL', now()),
+(105, 'spec6@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Monika', 'Urbanova',   '444555666', 2, 'PROFESSIONAL', now()),
+(106, 'spec7@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Jana',   'Prochazkova','555666777', 1, 'PROFESSIONAL', now()),
+(107, 'spec8@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Martin', 'Cerny',      '666777888', 2, 'PROFESSIONAL', now()),
+(108, 'spec9@example.com', '$2a$10$abcdefghijklmnopqrstuv', 'Alena',  'Kozlova',    '777888999', 1, 'PROFESSIONAL', now()),
+(109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'PROFESSIONAL', now());
 
--- Specialist data
-INSERT INTO specialist (id, average_rating, description) VALUES
+-- Professional data
+INSERT INTO professional (id, average_rating, description) VALUES
 (100, 4.7, 'Experienced hair stylist with over 10 years in the business.'),
 (101, 4.2, 'Certified tax consultant helping small businesses.'),
 (102, 4.5, 'Expert in legal consulting and personal finance.'),
 (103, 4.3, 'Tech enthusiast offering laptop and phone repair.'),
 (104, 4.6, 'Haircuts and grooming for men and women.'),
 (105, 4.1, 'Professional resume and job application advisor.'),
-(106, 4.4, 'Skincare specialist with years of experience.'),
+(106, 4.4, 'Skincare professional with years of experience.'),
 (107, 4.0, 'Document translation and business help services.'),
 (108, 4.8, 'Photo editing and logo design expert.'),
 (109, 4.9, 'Website development and IT consulting.');
 
--- Specialist ⟷ Services
-INSERT INTO specialist_service_offering (specialist_id, serviceofferings_id) VALUES
+-- Professional ⟷ Services
+INSERT INTO professional_service_offering (professional_id, serviceofferings_id) VALUES
 (100, 1), (100, 4),
 (101, 3), (101, 2),
 (102, 2), (102, 3),
@@ -73,18 +73,18 @@ INSERT INTO specialist_service_offering (specialist_id, serviceofferings_id) VAL
 (108, 10), (108, 15),
 (109, 16), (109, 8);
 
--- Users (Clients) IDs 110–111
+-- Users (Customers) IDs 110–111
 INSERT INTO users (id, email, password, first_name, last_name, phone_number, location_id, role, createat) VALUES
-(110, 'client1@example.com', '$2a$10$examplehashclient1', 'Anna',  'Novak',  '111111111', 1, 'CLIENT', now()),
-(111, 'client2@example.com', '$2a$10$examplehashclient2', 'David', 'Svoboda','222222222', 2, 'CLIENT', now());
+(110, 'customer1@example.com', '$2a$10$examplehashcustomer1', 'Anna',  'Novak',  '111111111', 1, 'CUSTOMER', now()),
+(111, 'customer2@example.com', '$2a$10$examplehashcustomer2', 'David', 'Svoboda','222222222', 2, 'CUSTOMER', now());
 
--- Client data
-INSERT INTO client (id) VALUES
+-- Customer data
+INSERT INTO customer (id) VALUES
 (110),
 (111);
 
 -- Orders IDs 120–125
-INSERT INTO orders (id, client_id, status, description, price, review_id, createat, deadline, location_id) VALUES
+INSERT INTO orders (id, customer_id, status, description, price, review_id, createat, deadline, location_id) VALUES
 (120, 110, 'CREATED', 'I need a haircut before my wedding.',               0, NULL, now(), now() + interval '5 days',  1),
 (121, 110, 'CREATED', 'My phone screen is cracked. Need a repair ASAP.',   0, NULL, now(), now() + interval '2 days',  2),
 (122, 111, 'CREATED', 'I need help with tax filing for my small business.',0, NULL, now(), now() + interval '10 days', 2),

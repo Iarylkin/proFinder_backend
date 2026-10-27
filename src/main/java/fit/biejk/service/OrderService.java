@@ -27,6 +27,12 @@ import java.util.List;
 public class OrderService {
 
     /**
+     * Log message for a user who tries to change an order that belongs to someone else.
+     */
+    private static final String NOT_ORDER_OWNER_MESSAGE =
+            "User is not the owner of this order. orderId={}, customerId={}";
+
+    /**
      * Service for indexing orders in Elasticsearch.
      */
     private final OrderSearchService orderSearchService;
@@ -45,8 +51,8 @@ public class OrderService {
      */
     private final OrderProposalService orderProposalService;
 
-    /** Service for handling business logic related to specialists. */
-    private final SpecialistService specialistService;
+    /** Service for handling business logic related to professionals. */
+    private final ProfessionalService professionalService;
 
     /**
      * Service for user identity validation.
@@ -61,7 +67,7 @@ public class OrderService {
      */
     @Transactional
     public Order create(final Order order) {
-        log.info("Create order: clientId={}, description={}", order.getClient().getId(), order.getDescription());
+        log.info("Create order: customerId={}, description={}", order.getCustomer().getId(), order.getDescription());
         order.setStatus(OrderStatus.getStartOrder());
         orderRepository.persist(order);
         log.debug("Order created with ID={}", order.getId());
@@ -83,9 +89,9 @@ public class OrderService {
     public Order update(final Long orderId, final Order order) {
         log.info("Update order: orderId={}, newDescription={}", orderId, order.getDescription());
         Order old = getById(orderId);
-        if (!authService.isCurrentUser(old.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, old.getClient().getId());
+        if (!authService.isCurrentUser(old.getCustomer().getId())) {
+            log.error(NOT_ORDER_OWNER_MESSAGE,
+                    orderId, old.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         old.setServiceOfferings(order.getServiceOfferings());
@@ -111,9 +117,9 @@ public class OrderService {
     public void delete(final Long orderId) {
         log.info("Delete order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, order.getClient().getId());
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+            log.error(NOT_ORDER_OWNER_MESSAGE,
+                    orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         orderRepository.delete(order);
@@ -133,9 +139,9 @@ public class OrderService {
     public Order cancel(final Long orderId) {
         log.info("Cancel order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getClient().getId())) {
-            log.error("User is not the owner of this order. orderId={}, clientId={}",
-                    orderId, order.getClient().getId());
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+            log.error(NOT_ORDER_OWNER_MESSAGE,
+                    orderId, order.getCustomer().getId());
             throw new IllegalArgumentException();
         }
         order.setStatus(order.getStatus().transitionTo(OrderStatus.CANCELLED));
@@ -183,31 +189,31 @@ public class OrderService {
      * Adds a new proposal to an order.
      *
      * @param orderId  ID of the order
-     * @param specialistId ID of the specialist
+     * @param professionalId ID of the professional
      * @param proposal proposal entity
      * @return created proposal
      */
     @Transactional
-    public OrderProposal proposal(final Long orderId, final Long specialistId, final OrderProposal proposal) {
-        log.info("Create proposal: orderId={}, specialistId={}", orderId, proposal.getSpecialist().getId());
+    public OrderProposal proposal(final Long orderId, final Long professionalId, final OrderProposal proposal) {
+        log.info("Create proposal: orderId={}, professionalId={}", orderId, proposal.getProfessional().getId());
         Order order = getById(orderId);
         if (!order.getStatus().acceptsProposals()) {
             log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
-        if (haveSpecialistProposal(order, proposal)) {
-            log.error("Order proposal already exists for this specialist. orderId={}, specialistId={}",
-                    orderId, proposal.getSpecialist().getId());
+        if (haveProfessionalProposal(order, proposal)) {
+            log.error("Order proposal already exists for this professional. orderId={}, professionalId={}",
+                    orderId, proposal.getProfessional().getId());
             throw new IllegalArgumentException("Order proposal already exists");
         }
         proposal.setOrder(order);
 
-        Specialist specialist = specialistService.getById(specialistId);
-        proposal.setSpecialist(specialist);
+        Professional professional = professionalService.getById(professionalId);
+        proposal.setProfessional(professional);
 
         orderProposalService.create(proposal);
         order.getOrderProposals().add(proposal);
-        order.setStatus(order.getStatus().transitionTo(OrderStatus.CLIENT_PENDING));
+        order.setStatus(order.getStatus().transitionTo(OrderStatus.CUSTOMER_PENDING));
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);
@@ -218,19 +224,19 @@ public class OrderService {
     }
 
     /**
-     * Checks if the given specialist already has a proposal for the order.
+     * Checks if the given professional already has a proposal for the order.
      *
      * @param order    the order
      * @param proposal the proposal to check
      * @return true if proposal already exists, false otherwise
      */
-    public boolean haveSpecialistProposal(final Order order, final OrderProposal proposal) {
-        log.info("Check if specialist proposal already exists: orderId={}, specialistId={}",
-                order.getId(), proposal.getSpecialist().getId());
+    public boolean haveProfessionalProposal(final Order order, final OrderProposal proposal) {
+        log.info("Check if professional proposal already exists: orderId={}, professionalId={}",
+                order.getId(), proposal.getProfessional().getId());
         List<OrderProposal> orderProposals = order.getOrderProposals();
         for (OrderProposal orderProposal : orderProposals) {
-            if (orderProposal.getSpecialist().getId().equals(proposal.getSpecialist().getId())) {
-                log.debug("Proposal already exists for specialistId={}", proposal.getSpecialist().getId());
+            if (orderProposal.getProfessional().getId().equals(proposal.getProfessional().getId())) {
+                log.debug("Proposal already exists for professionalId={}", proposal.getProfessional().getId());
                 return true;
             }
         }
@@ -238,45 +244,45 @@ public class OrderService {
     }
 
     /**
-     * Retrieves all orders created by the specified client.
+     * Retrieves all orders created by the specified customer.
      * <p>
-     * Ensures that the requesting user is the same as the target client.
+     * Ensures that the requesting user is the same as the target customer.
      * </p>
      *
-     * @param userId ID of the client
+     * @param userId ID of the customer
      * @param page   page number for pagination
      * @param size   number of orders per page
-     * @return list of orders belonging to the client
-     * @throws IllegalArgumentException if the current user is not the same as the client
+     * @return list of orders belonging to the customer
+     * @throws IllegalArgumentException if the current user is not the same as the customer
      */
-    public List<Order> getByClientId(final Long userId, final int page, final int size) {
-        log.info("Get orders by clientId={}", userId);
+    public List<Order> getByCustomerId(final Long userId, final int page, final int size) {
+        log.info("Get orders by customerId={}", userId);
         if (!authService.isCurrentUser(userId)) {
             log.warn("User is not logged in");
             throw new IllegalArgumentException("User is not logged in");
         } // todo delete, when admin system will be created
-        return orderRepository.findByClientId(userId, page, size);
+        return orderRepository.findByCustomerId(userId, page, size);
     }
 
     /**
-     * Retrieves all orders assigned to the specified specialist.
+     * Retrieves all orders assigned to the specified professional.
      * <p>
-     * Ensures that the requesting user is the same as the target specialist.
+     * Ensures that the requesting user is the same as the target professional.
      * </p>
      *
-     * @param specialistId ID of the specialist
+     * @param professionalId ID of the professional
      * @param page         page number for pagination
      * @param size         number of orders per page
-     * @return list of orders currently assigned to the specialist
-     * @throws IllegalArgumentException if the current user is not the same as the specialist
+     * @return list of orders currently assigned to the professional
+     * @throws IllegalArgumentException if the current user is not the same as the professional
      */
-    public List<Order> getBySpecialistId(final Long specialistId, final int page, final int size) {
-        log.info("Get orders by specialistId={}", specialistId);
-        if (!authService.isCurrentUser(specialistId)) {
+    public List<Order> getByProfessionalId(final Long professionalId, final int page, final int size) {
+        log.info("Get orders by professionalId={}", professionalId);
+        if (!authService.isCurrentUser(professionalId)) {
             log.warn("User is not logged in");
             throw new IllegalArgumentException("User is not logged in");
         }
-        return orderRepository.findBySpecialistId(specialistId, page, size);
+        return orderRepository.findByProfessionalId(professionalId, page, size);
     }
 
 

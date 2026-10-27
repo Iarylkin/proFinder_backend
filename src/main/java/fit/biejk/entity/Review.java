@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Entity representing a review submitted by a client after an order is completed.
+ * Entity representing a review submitted by a customer after an order is completed.
  */
 @Entity
 @Data
@@ -25,18 +25,18 @@ public class Review {
     private Long id;
 
     /**
-     * The client who submitted the review.
+     * The customer who submitted the review.
      */
     @ManyToOne
-    @JoinColumn(name = "client_id", nullable = false)
-    private Client client;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     /**
-     * The specialist being reviewed.
+     * The professional being reviewed.
      */
     @ManyToOne
-    @JoinColumn(name = "specialist_id", nullable = false)
-    private Specialist specialist;
+    @JoinColumn(name = "professional_id", nullable = false)
+    private Professional professional;
 
     /**
      * Rating score from 1 to 5.
@@ -45,7 +45,7 @@ public class Review {
     private int rating;
 
     /**
-     * Textual comment provided by the client (max 1000 characters).
+     * Textual comment provided by the customer (max 1000 characters).
      */
     @Column(name = "comment")
     private String comment;

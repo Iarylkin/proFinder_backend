@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Data Transfer Object representing an order.
  * <p>
- * Contains information about the order, including client ID, services,
+ * Contains information about the order, including customer ID, services,
  * status, description, price, creation date, deadline, and location.
  * </p>
  */
@@ -29,9 +29,9 @@ public class OrderDto {
     private Long id;
 
     /**
-     * Identifier of the client who placed the order.
+     * Identifier of the customer who placed the order.
      */
-    private Long clientId;
+    private Long customerId;
 
     /**
      * List of services included in this order.

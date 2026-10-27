@@ -40,8 +40,7 @@ public class OrderSearchService {
                     .document(dto)
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to index order {}", dto.getId(), e);
         }
     }
 
@@ -58,14 +57,13 @@ public class OrderSearchService {
                     .id(String.valueOf(id))
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to delete order {} from the index", id, e);
         }
     }
 
     /**
      * Searches for orders that match the specified service names and location.
-     * Only orders with status "CREATED" or "CLIENT_PENDING" are returned.
+     * Only orders with status "CREATED" or "CUSTOMER_PENDING" are returned.
      *
      * @param keyword  the search keyword (e.g., title or description)
      * @param location the city/location to filter orders by
@@ -125,7 +123,7 @@ public class OrderSearchService {
                                                         .field("status.keyword")
                                                         .terms(ts -> ts
                                                                 .value(List.of(FieldValue.of("CREATED"),
-                                                                        FieldValue.of("CLIENT_PENDING")))
+                                                                        FieldValue.of("CUSTOMER_PENDING")))
                                                         )
                                                 )
                                         );
@@ -146,8 +144,7 @@ public class OrderSearchService {
                     .toList();
 
         } catch (IOException e) {
-            log.warn("Search failed: {}", e.getMessage());
-            e.printStackTrace();
+            log.warn("Order search failed", e);
             return List.of();
         }
     }

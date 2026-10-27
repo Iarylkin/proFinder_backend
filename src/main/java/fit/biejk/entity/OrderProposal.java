@@ -15,7 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Entity representing a specialist's proposal for fulfilling an order.
+ * Entity representing a professional's proposal for fulfilling an order.
  */
 @Entity
 @Data
@@ -32,11 +32,11 @@ public class OrderProposal {
     private Long id;
 
     /**
-     * Specialist who submitted the proposal.
+     * Professional who submitted the proposal.
      */
     @ManyToOne
-    @JoinColumn(name = "specialist_id", nullable = false)
-    private Specialist specialist;
+    @JoinColumn(name = "professional_id", nullable = false)
+    private Professional professional;
 
     /**
      * Order associated with this proposal.
@@ -46,7 +46,7 @@ public class OrderProposal {
     private Order order;
 
     /**
-     * Description provided by the specialist in the proposal.
+     * Description provided by the professional in the proposal.
      */
     @Column(name = "description")
     private String description;

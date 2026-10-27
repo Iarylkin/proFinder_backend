@@ -1,8 +1,8 @@
 package fit.biejk.service;
 
 import fit.biejk.dto.ResetPasswordRequest;
-import fit.biejk.entity.Client;
-import fit.biejk.entity.Specialist;
+import fit.biejk.entity.Customer;
+import fit.biejk.entity.Professional;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
 import fit.biejk.exception.InvalidResetCodeException;
@@ -68,14 +68,14 @@ public class AuthService {
     private final LocationService locationService;
 
     /**
-     * Service for managing specialists.
+     * Service for managing professionals.
      */
-    private final SpecialistService specialistService;
+    private final ProfessionalService professionalService;
 
     /**
-     * Service for managing clients.
+     * Service for managing customers.
      */
-    private final ClientService clientService;
+    private final CustomerService customerService;
 
     /**
      * Service for managing users.
@@ -96,7 +96,7 @@ public class AuthService {
     private final TokenService tokenService;
 
     /**
-     * Registers a new user (client or specialist) and returns a JWT token.
+     * Registers a new user (customer or professional) and returns a JWT token.
      *
      * @param email    user email
      * @param password plain text password
@@ -106,8 +106,8 @@ public class AuthService {
     public String signUp(final String email, final String password, final UserRole role) {
         log.info("Sign up: email={}, role={}", email, role);
         User created = switch (role) {
-            case SPECIALIST -> specialistService.create(newUser(new Specialist(), email, password, role));
-            case CLIENT -> clientService.create(newUser(new Client(), email, password, role));
+            case PROFESSIONAL -> professionalService.create(newUser(new Professional(), email, password, role));
+            case CUSTOMER -> customerService.create(newUser(new Customer(), email, password, role));
             default -> {
                 log.warn("Sign up with unsupported role={}", role);
                 throw new BadRequestException("Unsupported role");

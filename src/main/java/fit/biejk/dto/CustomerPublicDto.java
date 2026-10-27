@@ -8,38 +8,38 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Public view of a client, returned to any authenticated user who knows the client ID.
+ * Public view of a customer, returned to any authenticated user who knows the customer ID.
  * <p>
- * Unlike {@link ClientDto} it contains no contact data (email, phone number).
+ * Unlike {@link CustomerDto} it contains no contact data (email, phone number).
  * </p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ClientPublicDto {
+public class CustomerPublicDto {
 
     /**
-     * Unique identifier of the client.
+     * Unique identifier of the customer.
      */
     private Long id;
 
     /**
-     * First name of the client.
+     * First name of the customer.
      */
     private String firstName;
 
     /**
-     * Last name of the client.
+     * Last name of the customer.
      */
     private String lastName;
 
     /**
-     * Geographical location associated with the client.
+     * Geographical location associated with the customer.
      */
     private Location location;
 
     /**
-     * Timestamp of when the client account was created.
+     * Timestamp of when the customer account was created.
      */
     private LocalDateTime createAt;
 }

@@ -11,7 +11,7 @@ class DtoToStringTest {
 
     @Test
     void authRequestHidesPassword() {
-        AuthRequest dto = new AuthRequest("a@b.c", SECRET, UserRole.CLIENT);
+        AuthRequest dto = new AuthRequest("a@b.c", SECRET, UserRole.CUSTOMER);
         assertFalse(dto.toString().contains(SECRET));
     }
 

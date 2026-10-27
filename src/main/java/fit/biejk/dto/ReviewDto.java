@@ -23,14 +23,14 @@ public class ReviewDto {
     private Long id;
 
     /**
-     * ID of the specialist receiving the review.
+     * ID of the professional receiving the review.
      */
-    private Long specialistId;
+    private Long professionalId;
 
     /**
-     * ID of the client who submitted the review.
+     * ID of the customer who submitted the review.
      */
-    private Long clientId;
+    private Long customerId;
 
     /**
      * ID of the order that the review is related to.
