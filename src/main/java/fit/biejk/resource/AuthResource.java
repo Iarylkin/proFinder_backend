@@ -3,12 +3,12 @@ package fit.biejk.resource;
 import fit.biejk.dto.*;
 import fit.biejk.service.AuthService;
 import jakarta.annotation.security.PermitAll;
-import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,14 +20,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Path("/v1/auth")
 @Slf4j
+@RequiredArgsConstructor
 public class AuthResource {
 
     /**
      * Service for handling authentication logic such as user registration, signIn,
      * password reset, and password change.
      */
-    @Inject
-    private AuthService authService;
+    private final AuthService authService;
 
     /**
      * Registers a new user account.
@@ -73,14 +73,14 @@ public class AuthResource {
      * Initiates password reset by generating and emailing a verification code to the user.
      *
      * @param request contains the email address of the user
-     * @return HTTP 200 response if the operation succeeds (even if user does not exist)
+     * @return HTTP 202 response, whether or not a user with this email exists
      */
     @POST
     @Path("/password-recovery")
     @PermitAll
     public Response createRecoveryRequest(@Valid final ForgotPasswordRequest request) {
         authService.forgotPassword(request.getEmail());
-        return Response.ok().build();
+        return Response.accepted().build();
     }
 
     /**

@@ -5,6 +5,8 @@ import fit.biejk.entity.Client;
 import fit.biejk.entity.Specialist;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
+import fit.biejk.exception.InvalidResetCodeException;
+import fit.biejk.exception.TooManyAttemptsException;
 import fit.biejk.utilits.CryptoUtils;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -14,6 +16,10 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Service responsible for authentication logic.
@@ -30,6 +36,26 @@ public class AuthService {
      * Length of the verification code used for password reset (in digits).
      */
     private static final int PASSWORD_LENGTH = 6;
+
+    /**
+     * Redis key prefix for password reset codes.
+     */
+    private static final String RESET_CODE_PREFIX = "forgot-password:";
+
+    /**
+     * Redis key prefix for the counter of wrong password reset codes.
+     */
+    private static final String RESET_FAILURE_PREFIX = "reset_fail:";
+
+    /**
+     * Number of wrong reset codes allowed within the attempt window.
+     */
+    private static final int MAX_RESET_ATTEMPTS = 5;
+
+    /**
+     * Length of the attempt window for wrong reset codes, in seconds (15 minutes).
+     */
+    private static final int RESET_ATTEMPT_WINDOW_SECONDS = 900;
 
     /**
      * Service for sending emails.
@@ -152,46 +178,66 @@ public class AuthService {
      */
     @Transactional
     public void forgotPassword(final String email) {
-        User user = userService.getByEmail(email);
-        if (user == null) {
-            log.warn("Attempt to reset password for non-existent user: {}", email);
+        Optional<User> user = userService.findByEmail(email);
+        if (user.isEmpty()) {
+            log.warn("Password reset requested for an unknown account");
             return;
         }
 
         String code = CryptoUtils.generateNumericCode(PASSWORD_LENGTH);
         String hashedCode = CryptoUtils.hash(code);
 
-        String key = "forgot-password:" + email;
-        redisClient.setex(key, "600", hashedCode);
+        redisClient.setex(RESET_CODE_PREFIX + normalizeEmail(email), "600", hashedCode);
 
         String message = "Your password reset code is: " + code + "\nIt is valid for 10 minutes.";
 
         mailService.send(email, "Reset password", message);
-        log.debug("Reset code issued for userId={}", user.getId());
+        log.debug("Reset code issued for userId={}", user.get().getId());
+    }
+
+    /**
+     * Normalizes an email for use in cache keys: trimmed and lower-cased.
+     *
+     * @param email raw email
+     * @return normalized email
+     */
+    static String normalizeEmail(final String email) {
+        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     /**
      * Resets the password using the provided verification code.
+     * <p>
+     * The code is single-use. After {@value #MAX_RESET_ATTEMPTS} wrong codes within
+     * {@value #RESET_ATTEMPT_WINDOW_SECONDS} seconds the code is discarded and further attempts
+     * are rejected with 429 until the window expires.
+     * </p>
      *
      * @param request reset password request containing email, code, and new password
      * @return new JWT token after successful password reset
-     * @throws IllegalArgumentException if validation fails
+     * @throws BadRequestException       if the passwords differ
+     * @throws InvalidResetCodeException if the code is invalid or expired
+     * @throws TooManyAttemptsException  if there were too many wrong codes
      */
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            log.error("New password and confirmation do not match");
-            throw new IllegalArgumentException("Invalid new password");
+            log.warn("New password and confirmation do not match");
+            throw new BadRequestException("Passwords do not match");
         }
 
-        String key = "forgot-password:" + request.getEmail();
-        Response response = redisClient.get(key);
-        String savedHashedCode = response != null ? response.toString() : null;
+        String email = normalizeEmail(request.getEmail());
+        String codeKey = RESET_CODE_PREFIX + email;
+        String failureKey = RESET_FAILURE_PREFIX + email;
+        ensureNotLocked(failureKey);
 
-        if (!CryptoUtils.verify(request.getVerificationCode(), savedHashedCode)) {
-            log.error("Invalid verification code");
-            throw new IllegalArgumentException("Invalid verification code");
+        Response saved = redisClient.get(codeKey);
+        if (saved == null || !CryptoUtils.verify(request.getVerificationCode(), saved.toString())) {
+            registerFailure(codeKey, failureKey);
+            log.warn("Invalid or expired password reset code");
+            throw new InvalidResetCodeException();
         }
+        redisClient.del(List.of(codeKey, failureKey));
 
         User user = userService.getByEmail(request.getEmail());
         User updatedUser = userService.updatePassword(user.getId(), request.getNewPassword());
@@ -199,5 +245,25 @@ public class AuthService {
         log.debug("Updated user with ID={}", updatedUser.getId());
 
         return tokenService.generateToken(updatedUser);
+    }
+
+    private void ensureNotLocked(final String failureKey) {
+        Response failures = redisClient.get(failureKey);
+        if (failures == null || failures.toInteger() < MAX_RESET_ATTEMPTS) {
+            return;
+        }
+        Response ttl = redisClient.ttl(failureKey);
+        long retryAfter = ttl != null && ttl.toLong() > 0 ? ttl.toLong() : RESET_ATTEMPT_WINDOW_SECONDS;
+        throw new TooManyAttemptsException(retryAfter);
+    }
+
+    private void registerFailure(final String codeKey, final String failureKey) {
+        long failures = redisClient.incr(failureKey).toLong();
+        if (failures == 1) {
+            redisClient.expire(failureKey, String.valueOf(RESET_ATTEMPT_WINDOW_SECONDS));
+        }
+        if (failures >= MAX_RESET_ATTEMPTS) {
+            redisClient.del(List.of(codeKey));
+        }
     }
 }

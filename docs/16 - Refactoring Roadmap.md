@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.2
-- **Date:** 2026-10-26
+- **Version:** 1.3
+- **Date:** 2026-10-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -61,7 +61,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **1.0.1** | Remove JWTs, reset codes, passwords and chat content from logs. Override `toString` on DTOs that carry passwords |
 | **1.0.2** | Check chat membership (REST and WS), check order ownership for proposals, close the public `/clients` list; `GET /clients/{id}` stays for authenticated users with a public DTO without email and phone; remove the account email from public specialist DTOs (phone stays public per `docs/4`; a separate public contact email comes with 2.5.0). Foreign chat or proposal returns `403 FORBIDDEN`, a missing one `404 NOT_FOUND` per `docs/8` |
 | **1.0.3** | `findBySpecialistId`, `createAt` sort in `ChatMessageRepository`, 1-based pagination everywhere, `signUp` with an unknown role, null-safe specialist search, index `title` and `description` of orders, response to a closed order |
-| **1.0.4** | Password reset: single-use code, `SecureRandom`, attempt limit, `202` without revealing whether the email exists. Avatars: size and type limits. `drop-and-create` and `import.sql` only in `%dev`, Swagger not in `%prod` |
+| **1.0.4** | Password reset: `SecureRandom` code, single-use, 5 wrong codes per 15 minutes then `429` + `Retry-After` (Redis `reset_fail:{email}`), normalized email, `202` always without revealing whether the email exists, `400` for a wrong or expired code. Avatars: 5 MB limit (`413`), type by magic bytes (`415`). `drop-and-create`, `import.sql` and SQL logging only in `%dev`, `%prod` schema generation `none`, Swagger not in `%prod`. Credentials and JWT keys move to the environment (`.env.example`, `scripts/generate-dev-keys.sh`) |
 | **D-0.1** | `docs/15`: describe the `hotfix/*` and `release/x.y` branches this plan uses. Remove the steps that push straight to `develop` and `main` (they contradict branch protection) |
 | **T-0.2** | Hooks in `.claude/settings.json`: replace relative paths with absolute ones so they do not break outside the repository root. Fix `CLAUDE.md` (there is no `IN_PROGRESS` status and no `completeOrder()`) |
 | Outside versions | Rotate secrets (DB and MinIO passwords, Mailtrap, `privateKey.pem`) and move them to environment variables. Needs action from the owner |
@@ -283,4 +283,5 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|---|
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
+| 1.3 | 2026-10-27 | 1.0.4 row detailed: attempt limit, `413`/`415` for avatars, `%prod` schema `none`, secrets moved to the environment. |
 | 1.2 | 2026-10-26 | 1.0.2: public DTOs drop the account email only (phone stays public per `docs/4`); error codes follow `docs/8`. |
