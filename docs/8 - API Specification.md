@@ -1,7 +1,7 @@
 # ProFinder — API Specification
 
-- **Version:** 1.9
-- **Date:** 2026-10-26
+- **Version:** 1.10
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
 
@@ -423,8 +423,8 @@ No domain-specific codes beyond the generic ones — posting/editing a review is
 
 | Code | HTTP | Message | Trigger |
 |---|---|---|---|
-| `FILE_TOO_LARGE` | 400 | "File exceeds the size limit" | upload exceeds the per-type limit ([4 - Business logic.md § File Storage](4%20-%20Business%20logic.md#file-storage)) |
-| `INVALID_FILE_TYPE` | 400 | "This file type isn't allowed here" | magic-byte check fails (wrong type for the upload purpose, or an executable in a message attachment) |
+| `FILE_TOO_LARGE` | 413 | "File exceeds the size limit" | upload exceeds the per-type limit ([4 - Business logic.md § File Storage](4%20-%20Business%20logic.md#file-storage)) |
+| `INVALID_FILE_TYPE` | 415 | "This file type isn't allowed here" | magic-byte check fails (wrong type for the upload purpose, or an executable in a message attachment) |
 | `STORAGE_UNAVAILABLE` | 503 | "Upload failed, please try again" | MinIO is down — upload fails immediately, no queueing ([4 - Business logic.md § System-Failure Behaviour](4%20-%20Business%20logic.md#system-failure-behaviour)) |
 
 
@@ -456,6 +456,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-10-27 | `FILE_TOO_LARGE` is now `413` and `INVALID_FILE_TYPE` is `415` (they were `400`), so clients can tell a size error from a type error by the status code. |
 | 1.9 | 2026-10-26 | Added `GET /customers/{id}`: a public customer view for any authenticated user, without contact data, and no customer list. |
 | 1.8 | 2026-09-10 | Standardised to the shared doc format (metadata, separators, changelog). Added the **`DELETE /me`** account-deletion endpoint (used by files 10, 11, 13 but previously undocumented). `ACCOUNT_DELETION_BLOCKED` status **403 → 409** to match [10 - Sequence Diagrams.md § E2](10%20-%20Sequence%20Diagrams.md) and [13 - Validation Rules.md](13%20-%20Validation%20Rules.md). Wired `GOOGLE_ACCOUNT_ALREADY_LINKED` to the Google-callback endpoint. Removed the stale "Next" section (Event Catalog is done — [9 - Event Catalog.md](9%20-%20Event%20Catalog.md)). |
 | 1.7 | 2026-09-07 | Added the **UUID v7** and **enums returned raw** conventions — closed the last two open "API conventions" items. |
