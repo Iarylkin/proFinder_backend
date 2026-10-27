@@ -79,30 +79,25 @@ public class AuthService {
      */
     public String signUp(final String email, final String password, final UserRole role) {
         log.info("Sign up: email={}, role={}", email, role);
-        String jwtToken = "";
-        if (role == UserRole.SPECIALIST) {
-            Specialist specialist = new Specialist();
-            specialist.setEmail(email);
-            specialist.setPassword(CryptoUtils.hash(password));
-            specialist.setRole(role);
-            specialist.setLocation(locationService.getDefault());
-            Specialist newSpecialist = specialistService.create(specialist);
-            log.debug("Created specialist with ID={}", newSpecialist.getId());
-            jwtToken = tokenService.generateToken(newSpecialist);
-        } else if (role == UserRole.CLIENT) {
-            Client client = new Client();
-            client.setEmail(email);
-            client.setPassword(CryptoUtils.hash(password));
-            client.setRole(role);
-            client.setLocation(locationService.getDefault());
-            Client newClient = clientService.create(client);
-            log.debug("Created client with ID={}", newClient.getId());
-            jwtToken = tokenService.generateToken(newClient);
-        } else {
-            log.warn("Sign up with unsupported role={}", role);
-            throw new BadRequestException("Unsupported role");
-        }
-        return jwtToken;
+        User created = switch (role) {
+            case SPECIALIST -> specialistService.create(newUser(new Specialist(), email, password, role));
+            case CLIENT -> clientService.create(newUser(new Client(), email, password, role));
+            default -> {
+                log.warn("Sign up with unsupported role={}", role);
+                throw new BadRequestException("Unsupported role");
+            }
+        };
+        log.debug("Created user with ID={}, role={}", created.getId(), role);
+        return tokenService.generateToken(created);
+    }
+
+    private <T extends User> T newUser(final T user, final String email, final String password,
+                                       final UserRole role) {
+        user.setEmail(email);
+        user.setPassword(CryptoUtils.hash(password));
+        user.setRole(role);
+        user.setLocation(locationService.getDefault());
+        return user;
     }
 
     /**
