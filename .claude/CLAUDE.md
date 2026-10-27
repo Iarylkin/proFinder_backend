@@ -15,7 +15,6 @@ be aware of:
 | --- | --- | --- |
 | Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`fit.biejk`) |
 | Async / events | RabbitMQ topic exchange + transactional outbox ([`9 - Event Catalog.md`](../docs/9%20-%20Event%20Catalog.md)) | in-process service calls |
-| Domain language | `Customer` / `Professional` | `Customer` / `Specialist` entities (`Specialist` → `Professional` follows in 1.2.0) |
 | Schema management | Flyway migrations | Hibernate `drop-and-create` (dev) |
 
 When the code and `docs/` disagree, `docs/` is the intended design and the code is
@@ -58,7 +57,7 @@ docker-compose up -d                              # Start all services (PostgreS
 ### Tech Stack
 - **Framework:** Quarkus (Java 21) with RESTful API
 - **Database:** PostgreSQL with Hibernate ORM + Panache
-- **Search:** Elasticsearch 8.15 (indexed documents for Orders & Specialists)
+- **Search:** Elasticsearch 8.15 (indexed documents for Orders & Professionals)
 - **Cache:** Redis
 - **File Storage:** MinIO (S3-like)
 - **Security:** JWT (SmallRye) + BCrypt password hashing
@@ -70,14 +69,14 @@ docker-compose up -d                              # Start all services (PostgreS
 #### `/src/main/java/fit/biejk`
 Main application code organized by layers:
 
-- **`entity/`** — JPA entities (User, Order, Specialist, Customer, OrderProposal, Chat, ChatMessage, Review, ServiceOffering, Location)
-  - Inheritance hierarchy: `User` → `Customer` / `Specialist`
+- **`entity/`** — JPA entities (User, Order, Professional, Customer, OrderProposal, Chat, ChatMessage, Review, ServiceOffering, Location)
+  - Inheritance hierarchy: `User` → `Customer` / `Professional`
   - `OrderStatus`, `ProposalStatus`, `UserRole` enums
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
   - `AuthResource` — Sign-up, sign-in, password recovery (`/password-recovery`)
   - `UserResource` — Avatar upload/download, email/password changes
-  - `CustomerResource`, `SpecialistResource` — Profile CRUD & search; reviews are exposed here (`POST /specialists/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`)
+  - `CustomerResource`, `ProfessionalResource` — Profile CRUD & search; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`)
   - `OrderResource`, `OrderProposalResource` — Job posting & proposal workflows
   - `ChatResource` — Chat creation and history; WebSocket communication in `ChatSocket`
   - `LocationResource`, `ServiceOfferingResource` — Reference data
@@ -85,7 +84,7 @@ Main application code organized by layers:
 - **`service/`** — Business logic (one service per domain entity)
   - `AuthService` — Registration, JWT token generation, password recovery flows
   - `UserService` — Profile updates, email/password changes
-  - `OrderService`, `CustomerService`, `SpecialistService` — CRUD + queries
+  - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
   - `OrderProposalService` — Proposal lifecycle (create, accept, reject, confirm)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
@@ -103,13 +102,13 @@ Main application code organized by layers:
   - Message encoding/decoding via `ChatMessageEncoder`/`ChatMessageDecoder`
 
 - **`search/`** — Elasticsearch integration
-  - `OrderSearchService`, `SpecialistSearchService` — Query building & execution
-  - `OrderSearchMapper`, `SpecialistSearchMapper` — DTO mapping for search results
-  - `OrderIndexInitializer`, `SpecialistIndexInitializer` — Index schema setup
+  - `OrderSearchService`, `ProfessionalSearchService` — Query building & execution
+  - `OrderSearchMapper`, `ProfessionalSearchMapper` — DTO mapping for search results
+  - `OrderIndexInitializer`, `ProfessionalIndexInitializer` — Index schema setup
 
 - **`dto/`** — Data transfer objects for API requests/responses
   - Paired with `@Valid` validation annotations
-  - DTOs: AuthRequest/AuthResponse, OrderDto, UserDto, CustomerDto, SpecialistDto, PageRequest, filter criteria, etc.
+  - DTOs: AuthRequest/AuthResponse, OrderDto, UserDto, CustomerDto, ProfessionalDto, PageRequest, filter criteria, etc.
 
 - **`minio/`** — File storage integration
   - `FileService` — Upload/download avatars to MinIO (max 5 MB, type checked by magic bytes)
@@ -152,21 +151,21 @@ Unit tests (JUnit 5 + REST Assured):
 ### Key Features & Workflows
 
 #### User Registration & Authentication
-1. `AuthResource.signUp()` (`POST /v1/auth/sign-up`) → `AuthService.signUp()` → create Customer/Specialist by role, hash password
+1. `AuthResource.signUp()` (`POST /v1/auth/sign-up`) → `AuthService.signUp()` → create Customer/Professional by role, hash password
 2. `AuthResource.signIn()` (`POST /v1/auth/sign-in`) → `TokenService.generateToken()` returns a JWT with userId and role
 3. The current user ID is read from the `SecurityIdentity` via `AuthService.getCurrentUserId()`
 4. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
 
-#### Order Lifecycle (Customer → Specialist workflow)
+#### Order Lifecycle (Customer → Professional workflow)
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
-2. Specialists browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
-3. Specialist submits a proposal via `OrderResource.proposal()` (`POST /v1/orders/{id}/proposals`) → `OrderService.proposal()`; a closed order returns `409`; the order moves `CREATED` → `CLIENT_PENDING`
+2. Professionals browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
+3. Professional submits a proposal via `OrderResource.proposal()` (`POST /v1/orders/{id}/proposals`) → `OrderService.proposal()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
 4. The order owner lists proposals (`GET /v1/orders/{id}/proposals`) and accepts one via `OrderProposalResource.confirm()` (`POST /v1/proposals/{id}/confirm`)
 5. Upon acceptance, the order status becomes `COMPLETED` and the other proposals are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
-6. An order can be cancelled via `OrderResource.cancel()` (`POST /v1/orders/{id}:cancel`); a customer can review a specialist via `POST /v1/specialists/{id}/reviews`
+6. An order can be cancelled via `OrderResource.cancel()` (`POST /v1/orders/{id}:cancel`); a customer can review a professional via `POST /v1/professionals/{id}/reviews`
 
 #### Search
-- Orders & Specialists indexed in Elasticsearch via `*IndexInitializer` (the indexes are recreated on startup)
+- Orders & Professionals indexed in Elasticsearch via `*IndexInitializer` (the indexes are recreated on startup)
 - Keyword and location filters are applied only when provided; orders are searchable by title and description; pagination is 1-based everywhere
 - Index updated on entity create/update via service layer
 
@@ -184,7 +183,7 @@ Unit tests (JUnit 5 + REST Assured):
 
 ### Common Patterns & Conventions
 
-1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/specialists`)
+1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
 2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
 3. **Validation:** Use Jakarta `@Valid` annotations; validation errors return 400 Bad Request
 4. **Exception Handling:** Custom exception handling (if implemented) centralized in resources
