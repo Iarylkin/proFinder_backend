@@ -65,7 +65,7 @@ public class OrderSearchService {
 
     /**
      * Searches for orders that match the specified service names and location.
-     * Only orders with status "CREATED" or "CLIENT_PENDING" are returned.
+     * Only orders with status "CREATED" or "CUSTOMER_PENDING" are returned.
      *
      * @param keyword  the search keyword (e.g., title or description)
      * @param location the city/location to filter orders by
@@ -125,7 +125,7 @@ public class OrderSearchService {
                                                         .field("status.keyword")
                                                         .terms(ts -> ts
                                                                 .value(List.of(FieldValue.of("CREATED"),
-                                                                        FieldValue.of("CLIENT_PENDING")))
+                                                                        FieldValue.of("CUSTOMER_PENDING")))
                                                         )
                                                 )
                                         );

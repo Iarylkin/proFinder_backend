@@ -10,7 +10,7 @@ class OrderStatusTest {
     @Test
     void openOrdersAcceptProposals() {
         assertTrue(OrderStatus.CREATED.acceptsProposals());
-        assertTrue(OrderStatus.CLIENT_PENDING.acceptsProposals());
+        assertTrue(OrderStatus.CUSTOMER_PENDING.acceptsProposals());
     }
 
     @Test

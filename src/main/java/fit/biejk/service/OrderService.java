@@ -207,7 +207,7 @@ public class OrderService {
 
         orderProposalService.create(proposal);
         order.getOrderProposals().add(proposal);
-        order.setStatus(order.getStatus().transitionTo(OrderStatus.CLIENT_PENDING));
+        order.setStatus(order.getStatus().transitionTo(OrderStatus.CUSTOMER_PENDING));
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);

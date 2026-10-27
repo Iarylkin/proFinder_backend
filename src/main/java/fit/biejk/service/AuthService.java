@@ -107,7 +107,7 @@ public class AuthService {
         log.info("Sign up: email={}, role={}", email, role);
         User created = switch (role) {
             case SPECIALIST -> specialistService.create(newUser(new Specialist(), email, password, role));
-            case CLIENT -> customerService.create(newUser(new Customer(), email, password, role));
+            case CUSTOMER -> customerService.create(newUser(new Customer(), email, password, role));
             default -> {
                 log.warn("Sign up with unsupported role={}", role);
                 throw new BadRequestException("Unsupported role");

@@ -79,7 +79,7 @@ public class OrderResource {
      * @return created order
      */
     @POST
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response create(@Valid final OrderDto dto) {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
@@ -102,7 +102,7 @@ public class OrderResource {
      */
     @PUT
     @Path("/{orderId}")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderDto dto) {
         log.info("Update order request: orderId={}, dto={}", orderId, dto);
         Order order = orderMapper.toEntity(dto);
@@ -119,7 +119,7 @@ public class OrderResource {
      */
     @POST
     @Path("/{orderId}:cancel")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response cancel(@PathParam("orderId") final Long orderId) {
         log.info("Cancel order request: orderId={}", orderId);
         Order result = orderService.cancel(orderId);
@@ -159,7 +159,7 @@ public class OrderResource {
      */
     @GET
     @Path("/{orderId}/proposals")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response getProposals(
             @PathParam("orderId") final Long orderId,
             @BeanParam final PageRequest pagination
@@ -232,7 +232,7 @@ public class OrderResource {
      */
     @DELETE
     @Path("/{orderId}")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response delete(@PathParam("orderId") final Long orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);

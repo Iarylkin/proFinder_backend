@@ -256,7 +256,7 @@ public class SpecialistResource {
      */
     @POST
     @Path("/{specialistId}/reviews")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response createReview(@PathParam("specialistId") final Long specialistId,
                                  @Valid final ReviewDto dto
     ) {

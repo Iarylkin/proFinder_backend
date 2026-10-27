@@ -91,7 +91,7 @@ public class CustomerResource {
      */
     @GET
     @Path("/{customerId}")
-    @RolesAllowed({"CLIENT", "SPECIALIST"})
+    @RolesAllowed({"CUSTOMER", "SPECIALIST"})
     public Response getById(@PathParam("customerId") final Long customerId) {
         log.info("getById request: {}", customerId);
         Customer result = customerService.getById(customerId);
@@ -142,7 +142,7 @@ public class CustomerResource {
      */
     @GET
     @Path("/me")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response getProfile() {
         log.info("getProfile request");
         Long customerId = authService.getCurrentUserId();
@@ -159,7 +159,7 @@ public class CustomerResource {
      */
     @PUT
     @Path("/me")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response updateProfile(@Valid final CustomerDto dto) {
         log.info("updateProfile request: {}", dto);
         Long id = authService.getCurrentUserId();
@@ -175,7 +175,7 @@ public class CustomerResource {
      */
     @DELETE
     @Path("/me")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response deleteProfile() {
         log.info("deleteProfile request");
         Long id = authService.getCurrentUserId();
@@ -192,7 +192,7 @@ public class CustomerResource {
      */
     @GET
     @Path("/me/reviews")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response getReviews(
             @BeanParam final PageRequest pagination
     ) {
@@ -207,7 +207,7 @@ public class CustomerResource {
     /**
      * Retrieves all orders created by a specific customer.
      * <p>
-     * Only accessible to authenticated users with the CLIENT role.
+     * Only accessible to authenticated users with the CUSTOMER role.
      * </p>
      *
      * @param pagination the pagination parameters (page and size)
@@ -215,7 +215,7 @@ public class CustomerResource {
      */
     @GET
     @Path("/me/orders")
-    @RolesAllowed("CLIENT")
+    @RolesAllowed("CUSTOMER")
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {
