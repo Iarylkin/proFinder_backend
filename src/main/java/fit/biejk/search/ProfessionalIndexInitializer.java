@@ -79,7 +79,7 @@ public class ProfessionalIndexInitializer {
             );
             load();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to create index {}", indexName, e);
         }
     }
 

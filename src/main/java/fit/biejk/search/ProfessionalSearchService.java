@@ -45,8 +45,7 @@ public class ProfessionalSearchService {
                     .document(dto)
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to index professional {}", dto.getId(), e);
         }
     }
 
@@ -64,8 +63,7 @@ public class ProfessionalSearchService {
                     .id(String.valueOf(id))
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to delete professional {} from the index", id, e);
         }
     }
 
@@ -130,8 +128,7 @@ public class ProfessionalSearchService {
                     .toList();
 
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Professional search failed", e);
             return List.of();
         }
     }

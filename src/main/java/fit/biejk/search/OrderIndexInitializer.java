@@ -90,7 +90,7 @@ public class OrderIndexInitializer {
             );
             load();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to create index {}", indexName, e);
         }
     }
 

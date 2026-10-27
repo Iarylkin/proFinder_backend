@@ -40,8 +40,7 @@ public class OrderSearchService {
                     .document(dto)
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to index order {}", dto.getId(), e);
         }
     }
 
@@ -58,8 +57,7 @@ public class OrderSearchService {
                     .id(String.valueOf(id))
             );
         } catch (IOException e) {
-            log.warn(e.getMessage());
-            e.printStackTrace();
+            log.warn("Failed to delete order {} from the index", id, e);
         }
     }
 
@@ -146,8 +144,7 @@ public class OrderSearchService {
                     .toList();
 
         } catch (IOException e) {
-            log.warn("Search failed: {}", e.getMessage());
-            e.printStackTrace();
+            log.warn("Order search failed", e);
             return List.of();
         }
     }
