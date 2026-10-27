@@ -126,7 +126,7 @@ jobs:
           SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
 
       - name: Check SonarQube quality gate
-        uses: sonarsource/sonarqube-quality-gate-action@v1.2.0
+        uses: sonarsource/sonarqube-quality-gate-action@v1.2.1
         with:
           scanMetadataReportFile: target/sonar/report-task.txt
         env:
