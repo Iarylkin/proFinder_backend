@@ -12,9 +12,11 @@ import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.WebApplicationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -38,6 +40,26 @@ public class AuthService {
      * Redis key prefix for password reset codes.
      */
     private static final String RESET_CODE_PREFIX = "forgot-password:";
+
+    /**
+     * Redis key prefix for the counter of wrong password reset codes.
+     */
+    private static final String RESET_FAILURE_PREFIX = "reset_fail:";
+
+    /**
+     * Number of wrong reset codes allowed within the attempt window.
+     */
+    private static final int MAX_RESET_ATTEMPTS = 5;
+
+    /**
+     * Length of the attempt window for wrong reset codes, in seconds (15 minutes).
+     */
+    private static final int RESET_ATTEMPT_WINDOW_SECONDS = 900;
+
+    /**
+     * HTTP status code 429, not available in {@code Response.Status}.
+     */
+    private static final int TOO_MANY_REQUESTS = 429;
 
     /**
      * Service for sending emails.
@@ -189,26 +211,36 @@ public class AuthService {
 
     /**
      * Resets the password using the provided verification code.
+     * <p>
+     * The code is single-use. After {@value #MAX_RESET_ATTEMPTS} wrong codes within
+     * {@value #RESET_ATTEMPT_WINDOW_SECONDS} seconds the code is discarded and further attempts
+     * are rejected with 429 until the window expires.
+     * </p>
      *
      * @param request reset password request containing email, code, and new password
      * @return new JWT token after successful password reset
-     * @throws IllegalArgumentException if validation fails
+     * @throws BadRequestException     if the passwords differ or the code is invalid or expired
+     * @throws WebApplicationException with status 429 if there were too many wrong codes
      */
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            log.error("New password and confirmation do not match");
-            throw new IllegalArgumentException("Invalid new password");
+            log.warn("New password and confirmation do not match");
+            throw new BadRequestException("Passwords do not match");
         }
 
-        String key = RESET_CODE_PREFIX + normalizeEmail(request.getEmail());
-        Response response = redisClient.get(key);
-        String savedHashedCode = response != null ? response.toString() : null;
+        String email = normalizeEmail(request.getEmail());
+        String codeKey = RESET_CODE_PREFIX + email;
+        String failureKey = RESET_FAILURE_PREFIX + email;
+        ensureNotLocked(failureKey);
 
-        if (!CryptoUtils.verify(request.getVerificationCode(), savedHashedCode)) {
-            log.error("Invalid verification code");
-            throw new IllegalArgumentException("Invalid verification code");
+        Response saved = redisClient.get(codeKey);
+        if (saved == null || !CryptoUtils.verify(request.getVerificationCode(), saved.toString())) {
+            registerFailure(codeKey, failureKey);
+            log.warn("Invalid or expired password reset code");
+            throw new BadRequestException("Invalid or expired verification code");
         }
+        redisClient.del(List.of(codeKey, failureKey));
 
         User user = userService.getByEmail(request.getEmail());
         User updatedUser = userService.updatePassword(user.getId(), request.getNewPassword());
@@ -216,5 +248,28 @@ public class AuthService {
         log.debug("Updated user with ID={}", updatedUser.getId());
 
         return tokenService.generateToken(updatedUser);
+    }
+
+    private void ensureNotLocked(final String failureKey) {
+        Response failures = redisClient.get(failureKey);
+        if (failures == null || failures.toInteger() < MAX_RESET_ATTEMPTS) {
+            return;
+        }
+        Response ttl = redisClient.ttl(failureKey);
+        long retryAfter = ttl != null && ttl.toLong() > 0 ? ttl.toLong() : RESET_ATTEMPT_WINDOW_SECONDS;
+        throw new WebApplicationException(
+                jakarta.ws.rs.core.Response.status(TOO_MANY_REQUESTS)
+                        .header("Retry-After", retryAfter)
+                        .build());
+    }
+
+    private void registerFailure(final String codeKey, final String failureKey) {
+        long failures = redisClient.incr(failureKey).toLong();
+        if (failures == 1) {
+            redisClient.expire(failureKey, String.valueOf(RESET_ATTEMPT_WINDOW_SECONDS));
+        }
+        if (failures >= MAX_RESET_ATTEMPTS) {
+            redisClient.del(List.of(codeKey));
+        }
     }
 }
