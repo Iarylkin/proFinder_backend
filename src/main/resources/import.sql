@@ -48,7 +48,7 @@ INSERT INTO users (id, email, password, first_name, last_name, phone_number, loc
 (109, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', 2, 'PROFESSIONAL', now());
 
 -- Professional data
-INSERT INTO specialist (id, average_rating, description) VALUES
+INSERT INTO professional (id, average_rating, description) VALUES
 (100, 4.7, 'Experienced hair stylist with over 10 years in the business.'),
 (101, 4.2, 'Certified tax consultant helping small businesses.'),
 (102, 4.5, 'Expert in legal consulting and personal finance.'),
@@ -61,7 +61,7 @@ INSERT INTO specialist (id, average_rating, description) VALUES
 (109, 4.9, 'Website development and IT consulting.');
 
 -- Professional ⟷ Services
-INSERT INTO specialist_service_offering (specialist_id, serviceofferings_id) VALUES
+INSERT INTO professional_service_offering (professional_id, serviceofferings_id) VALUES
 (100, 1), (100, 4),
 (101, 3), (101, 2),
 (102, 2), (102, 3),

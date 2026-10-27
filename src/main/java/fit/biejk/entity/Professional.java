@@ -21,7 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "specialist")
+@Table(name = "professional")
 public class Professional extends User {
 
     /**

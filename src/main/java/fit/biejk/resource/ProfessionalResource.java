@@ -30,7 +30,7 @@ import java.util.List;
  * as well as accessing and modifying the current professional's profile.
  * </p>
  */
-@Path("/v1/specialists")
+@Path("/v1/professionals")
 @Slf4j
 @RequiredArgsConstructor
 public class ProfessionalResource {

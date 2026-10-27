@@ -35,7 +35,7 @@ public class OrderProposal {
      * Professional who submitted the proposal.
      */
     @ManyToOne
-    @JoinColumn(name = "specialist_id", nullable = false)
+    @JoinColumn(name = "professional_id", nullable = false)
     private Professional professional;
 
     /**

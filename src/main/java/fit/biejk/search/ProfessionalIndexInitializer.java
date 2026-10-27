@@ -52,7 +52,7 @@ public class ProfessionalIndexInitializer {
      */
     @PostConstruct
     void init() {
-        String indexName = "specialists";
+        String indexName = "professionals";
 
         try {
             boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();

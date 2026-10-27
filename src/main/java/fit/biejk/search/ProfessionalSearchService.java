@@ -35,7 +35,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Saving Professional with id {} for search", dto.getId());
             elasticsearchClient.index(i -> i
-                    .index("specialists")
+                    .index("professionals")
                     .id(String.valueOf(dto.getId()))
                     .document(dto)
             );
@@ -55,7 +55,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Deleting Professional with id {} for search", id);
             elasticsearchClient.delete(d -> d
-                    .index("specialists")
+                    .index("professionals")
                     .id(String.valueOf(id))
             );
         } catch (IOException e) {
@@ -85,7 +85,7 @@ public class ProfessionalSearchService {
         try {
             log.info("Searching for Professional with keyword {} and location {}", keyword, location);
             SearchResponse<ProfessionalSearchDto> response = elasticsearchClient.search(s -> s
-                            .index("specialists")
+                            .index("professionals")
                             .from(from)
                             .size(size)
                             .query(q -> q
