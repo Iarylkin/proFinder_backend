@@ -6,6 +6,8 @@ import fit.biejk.service.UserService;
 import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +33,11 @@ public class FileService {
      */
     private static final String BUCKET = "user-avatars";
 
+    /**
+     * Maximum avatar size in bytes (5 MB).
+     */
+    private static final int AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+
 
     /**
      * MinIO client for interacting with the S3-compatible storage.
@@ -47,17 +54,25 @@ public class FileService {
      *
      * @param userId          the ID of the user
      * @param fileInputStream file data to upload
-     * @param contentType     MIME type of the file (e.g. image/png)
-     * @throws Exception if MinIO operation fails or user not found
+     * @throws ClientErrorException with status 413 if the file exceeds {@value #AVATAR_MAX_BYTES} bytes
+     *                              or 415 if its content is not a supported image
+     * @throws Exception            if MinIO operation fails or user not found
      */
     @Transactional
     public void uploadAvatar(final Long userId,
-                             final InputStream fileInputStream,
-                             final String contentType) throws Exception {
+                             final InputStream fileInputStream) throws Exception {
         log.info("Uploading avatar for userId={}", userId);
 
         User user = userService.getById(userId);
-        byte[] fileBytes = fileInputStream.readAllBytes();
+        byte[] fileBytes = fileInputStream.readNBytes(AVATAR_MAX_BYTES + 1);
+        if (fileBytes.length > AVATAR_MAX_BYTES) {
+            log.warn("Avatar rejected, too large: userId={}", userId);
+            throw new ClientErrorException("Avatar exceeds the size limit", Response.Status.REQUEST_ENTITY_TOO_LARGE);
+        }
+        ImageType type = ImageType.detect(fileBytes).orElseThrow(() -> {
+            log.warn("Avatar rejected, unsupported type: userId={}", userId);
+            return new ClientErrorException("Unsupported image type", Response.Status.UNSUPPORTED_MEDIA_TYPE);
+        });
         String avatarKey = "avatars/" + userId;
 
         ensureBucketExists();
@@ -67,7 +82,7 @@ public class FileService {
                         .bucket(BUCKET)
                         .object(avatarKey)
                         .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
-                        .contentType(contentType)
+                        .contentType(type.getMimeType())
                         .build()
         );
 

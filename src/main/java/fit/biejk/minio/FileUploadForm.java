@@ -11,7 +11,7 @@ import java.io.InputStream;
  * Represents a multipart form used for uploading a file.
  * <p>
  * This class is used in REST endpoints to receive file data
- * and its associated content type from a client.
+ * from a client. The content type is detected from the file itself.
  * </p>
  */
 @Data
@@ -28,10 +28,4 @@ public class FileUploadForm {
      */
     @RestForm
     private InputStream file;
-
-    /**
-     * The MIME type of the uploaded file (e.g., image/jpeg, application/pdf).
-     */
-    @RestForm
-    private String contentType;
 }
