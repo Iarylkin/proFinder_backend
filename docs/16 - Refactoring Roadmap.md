@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.6
+- **Version:** 1.7
 - **Date:** 2026-10-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -75,9 +75,9 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
 | **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.7.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
-| **1.1.0** | `Client → Customer`: entity, repository, service, resource, DTOs, mappers, ES documents, tests |
-| **1.2.0** | `Specialist → Professional`, roles `CUSTOMER`/`PROFESSIONAL` in the JWT |
-| **1.3.0** | New paths with deprecated aliases for all of them: `/customers`, `/professionals`, `/auth/register`, `/auth/login`, `PATCH /orders`, `/orders/{id}/close`, `/orders/{id}/responses`, `/categories`, `/conversations`, `/me/profile`, `/search/professionals` |
+| **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.5.0) |
+| **1.2.0** | Not used: its content (`Specialist → Professional`, the new roles) shipped in 1.1.0. The number stays free so the later versions keep their numbers |
+| **1.3.0** | New paths with deprecated aliases for the old ones (`/customers` and `/professionals` already exist since 1.1.0 and have no alias): `/auth/register`, `/auth/login`, `PATCH /orders`, `/orders/{id}/close`, `/orders/{id}/responses`, `/categories`, `/conversations`, `/me/profile`, `/search/professionals` |
 | **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
 | **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
 | **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
@@ -281,6 +281,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-10-27 | 1.1.0 now covers `Client → Customer` and `Specialist → Professional` together with the roles, table, index and path names; 1.2.0 is not used; 1.3.0 no longer lists `/customers` and `/professionals`. |
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
 | 1.6 | 2026-10-27 | D-1.4 closed: schema constraints, `citext`, `ON DELETE`, `last_active_at`, UUID v7 seed. |
