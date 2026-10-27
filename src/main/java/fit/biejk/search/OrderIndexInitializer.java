@@ -4,7 +4,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import fit.biejk.repository.OrderRepository;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,7 +20,7 @@ import java.io.IOException;
  * </p>
  */
 @Startup
-@Singleton
+@ApplicationScoped
 @Slf4j
 @RequiredArgsConstructor
 public class OrderIndexInitializer {

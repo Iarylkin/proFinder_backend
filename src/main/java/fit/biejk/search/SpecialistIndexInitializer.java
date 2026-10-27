@@ -4,8 +4,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import fit.biejk.repository.SpecialistRepository;
 import io.quarkus.runtime.Startup;
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.io.IOException;
  * </p>
  */
 @Startup
-@Singleton
+@ApplicationScoped
 @Slf4j
 public class SpecialistIndexInitializer {
 
