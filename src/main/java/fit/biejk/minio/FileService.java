@@ -2,16 +2,18 @@ package fit.biejk.minio;
 
 import fit.biejk.dto.AvatarData;
 import fit.biejk.entity.User;
+import fit.biejk.exception.FileTooLargeException;
+import fit.biejk.exception.InvalidFileTypeException;
 import fit.biejk.service.UserService;
 import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.ClientErrorException;
-import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.InternalServerErrorException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -54,42 +56,55 @@ public class FileService {
      *
      * @param userId          the ID of the user
      * @param fileInputStream file data to upload
-     * @throws ClientErrorException with status 413 if the file exceeds {@value #AVATAR_MAX_BYTES} bytes
-     *                              or 415 if its content is not a supported image
-     * @throws Exception            if MinIO operation fails or user not found
+     * @throws FileTooLargeException       if the file exceeds {@value #AVATAR_MAX_BYTES} bytes
+     * @throws InvalidFileTypeException    if its content is not a supported image
+     * @throws InternalServerErrorException if reading or storing the file fails
      */
     @Transactional
-    public void uploadAvatar(final Long userId,
-                             final InputStream fileInputStream) throws Exception {
+    public void uploadAvatar(final Long userId, final InputStream fileInputStream) {
         log.info("Uploading avatar for userId={}", userId);
 
         User user = userService.getById(userId);
-        byte[] fileBytes = fileInputStream.readNBytes(AVATAR_MAX_BYTES + 1);
+        byte[] fileBytes = readAvatar(fileInputStream);
         if (fileBytes.length > AVATAR_MAX_BYTES) {
             log.warn("Avatar rejected, too large: userId={}", userId);
-            throw new ClientErrorException("Avatar exceeds the size limit", Response.Status.REQUEST_ENTITY_TOO_LARGE);
+            throw new FileTooLargeException();
         }
         ImageType type = ImageType.detect(fileBytes).orElseThrow(() -> {
             log.warn("Avatar rejected, unsupported type: userId={}", userId);
-            return new ClientErrorException("Unsupported image type", Response.Status.UNSUPPORTED_MEDIA_TYPE);
+            return new InvalidFileTypeException();
         });
         String avatarKey = "avatars/" + userId;
 
-        ensureBucketExists();
+        try {
+            ensureBucketExists();
 
-        minioClient.putObject(
-                PutObjectArgs.builder()
-                        .bucket(BUCKET)
-                        .object(avatarKey)
-                        .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
-                        .contentType(type.getMimeType())
-                        .build()
-        );
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket(BUCKET)
+                            .object(avatarKey)
+                            .stream(new ByteArrayInputStream(fileBytes), fileBytes.length, -1)
+                            .contentType(type.getMimeType())
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Failed to store avatar for userId={}", userId, e);
+            throw new InternalServerErrorException("Failed to upload avatar");
+        }
 
         user.setAvatarKey(avatarKey);
         user.persist();
 
         log.debug("Avatar uploaded and key set for userId={}", userId);
+    }
+
+    private byte[] readAvatar(final InputStream fileInputStream) {
+        try {
+            return fileInputStream.readNBytes(AVATAR_MAX_BYTES + 1);
+        } catch (IOException e) {
+            log.error("Failed to read the uploaded avatar", e);
+            throw new InternalServerErrorException("Failed to upload avatar");
+        }
     }
 
     /**

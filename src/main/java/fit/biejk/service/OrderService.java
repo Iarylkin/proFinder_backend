@@ -1,15 +1,14 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.*;
+import fit.biejk.exception.OrderClosedException;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -194,7 +193,7 @@ public class OrderService {
         Order order = getById(orderId);
         if (!order.getStatus().acceptsProposals()) {
             log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
-            throw new ClientErrorException("This order is closed", Response.Status.CONFLICT);
+            throw new OrderClosedException();
         }
         if (haveSpecialistProposal(order, proposal)) {
             log.error("Order proposal already exists for this specialist. orderId={}, specialistId={}",

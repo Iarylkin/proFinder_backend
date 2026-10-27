@@ -62,16 +62,9 @@ public class UserResource {
         Long userId = authService.getCurrentUserId();
         log.info("Received avatar upload request from userId={}", userId);
 
-        try {
-            fileService.uploadAvatar(userId, form.getFile());
-            log.debug("Avatar uploaded successfully for userId={}", userId);
-            return Response.ok().build();
-        } catch (WebApplicationException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to upload avatar for userId={}: {}", userId, e.getMessage(), e);
-            throw new InternalServerErrorException("Failed to upload avatar");
-        }
+        fileService.uploadAvatar(userId, form.getFile());
+        log.debug("Avatar uploaded successfully for userId={}", userId);
+        return Response.ok().build();
     }
 
     /**

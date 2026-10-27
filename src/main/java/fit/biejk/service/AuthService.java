@@ -5,6 +5,8 @@ import fit.biejk.entity.Client;
 import fit.biejk.entity.Specialist;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
+import fit.biejk.exception.InvalidResetCodeException;
+import fit.biejk.exception.TooManyAttemptsException;
 import fit.biejk.utilits.CryptoUtils;
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -12,7 +14,6 @@ import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.WebApplicationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,11 +56,6 @@ public class AuthService {
      * Length of the attempt window for wrong reset codes, in seconds (15 minutes).
      */
     private static final int RESET_ATTEMPT_WINDOW_SECONDS = 900;
-
-    /**
-     * HTTP status code 429, not available in {@code Response.Status}.
-     */
-    private static final int TOO_MANY_REQUESTS = 429;
 
     /**
      * Service for sending emails.
@@ -219,8 +215,9 @@ public class AuthService {
      *
      * @param request reset password request containing email, code, and new password
      * @return new JWT token after successful password reset
-     * @throws BadRequestException     if the passwords differ or the code is invalid or expired
-     * @throws WebApplicationException with status 429 if there were too many wrong codes
+     * @throws BadRequestException       if the passwords differ
+     * @throws InvalidResetCodeException if the code is invalid or expired
+     * @throws TooManyAttemptsException  if there were too many wrong codes
      */
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
@@ -238,7 +235,7 @@ public class AuthService {
         if (saved == null || !CryptoUtils.verify(request.getVerificationCode(), saved.toString())) {
             registerFailure(codeKey, failureKey);
             log.warn("Invalid or expired password reset code");
-            throw new BadRequestException("Invalid or expired verification code");
+            throw new InvalidResetCodeException();
         }
         redisClient.del(List.of(codeKey, failureKey));
 
@@ -257,10 +254,7 @@ public class AuthService {
         }
         Response ttl = redisClient.ttl(failureKey);
         long retryAfter = ttl != null && ttl.toLong() > 0 ? ttl.toLong() : RESET_ATTEMPT_WINDOW_SECONDS;
-        throw new WebApplicationException(
-                jakarta.ws.rs.core.Response.status(TOO_MANY_REQUESTS)
-                        .header("Retry-After", retryAfter)
-                        .build());
+        throw new TooManyAttemptsException(retryAfter);
     }
 
     private void registerFailure(final String codeKey, final String failureKey) {
