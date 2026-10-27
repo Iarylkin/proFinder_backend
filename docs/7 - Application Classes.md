@@ -1,7 +1,7 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.3
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
 
@@ -10,6 +10,8 @@
 - A join table modeled as a plain `@ManyToMany` / `@ElementCollection` (e.g. `professional_categories`, `professional_cities`) does **not** get its own Entity class — it's a collection field on the owning entity, not a first-class object.
 - **Service** rows list the key methods (business behavior — this is the part that doesn't exist anywhere else, unlike Entity/Repository which mirror the DB schema).
 - **DTO** rows are named but not field-by-field — fields mirror either the entity (response DTOs) or the request shape implied by the endpoint; full request/response bodies live in [8 - API Specification.md](8%20-%20API%20Specification.md).
+- **DTOs are Java `record`s** (immutable), serialized with Jackson (`quarkus-rest-jackson`). A record that carries a secret (password, reset code, token) overrides `toString` so the secret is masked. Entities are never returned from a Resource.
+- **Data ownership:** each service reads and writes only its own schema ([3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md), [6 - Database Schema.md § Schema Ownership](6%20-%20Database%20Schema.md)). A Repository never queries another service's tables; data from another service arrives through its API client or an event consumer's local projection.
 
 ---
 
@@ -291,5 +293,7 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-27 | **D-1.3:** DTOs are Java records serialized with Jackson; records with secrets mask `toString`. |
+| 1.2 | 2026-10-27 | **D-1.1:** added the data ownership convention (schema per service, no cross-schema repositories). |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Added **§1.8 Account** (`AccountService` / `AccountController` for `DELETE /me` — referenced by files 9 & 10 but previously missing). Removed the stale "not-yet-written Error Catalog" wording and the "inconsistency worth flagging" note about JWT validation (file 3 v1.3 resolved it). Removed the stale "Next" section (API Spec / Error Catalog / Event Catalog are all done). |
 | 1.0 | 2026-09-04 | Initial. Full Entity/Repository/Service/Controller/DTO breakdown per microservice + a Shared/Cross-Service section. |

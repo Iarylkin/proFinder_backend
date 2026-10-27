@@ -1,7 +1,7 @@
 # ProFinder — Requirements
 
-- **Version:** 1.6
-- **Date:** 2026-09-10
+- **Version:** 1.7
+- **Date:** 2026-10-27
 - **Status:** In Development
 - **Purpose:** Complete MVP requirements — functional requirements, non-functional requirements, use cases, scope, and the technology stack. Backend focus.
 
@@ -160,7 +160,7 @@ ProFinder is a free marketplace platform that connects customers with profession
 | FR-Notif-1 | Event Types | Notifications for: new order match, professional response, order status changes, messages, reviews & review replies, moderation decisions, account deletion/reactivation. (No payment events — there are no payments.) |
 | FR-Notif-2 | Push Notifications | Firebase Cloud Messaging directly. Device-token table with refresh (`onNewToken`) and invalidation (FCM `UNREGISTERED`, logout, 60-day inactivity). Deep-link payload `{type, entity_type, entity_id, url}`. |
 | FR-Notif-3 | In-App Notifications | PostgreSQL-backed notification center, paginated 20/page, unread badge, mark-(all-)read persisted. Purge **read** notifications > 90 days (configurable); unread kept indefinitely. Notification center only — no toast. |
-| FR-Notif-4 | User Preferences | `notification_preferences(user_id, event_type, channel)` matrix, `channel ∈ {push, email, in_app}`, all on by default. |
+| FR-Notif-4 | User Preferences | `notification_preferences(user_id, event_type, channel)` matrix, `channel ∈ {PUSH, EMAIL, IN_APP}`, all on by default. |
 | FR-Notif-5 | Email Delivery | Real-time per event. `multipart/alternative` (HTML + text), branded Qute template. Unsubscribe per-type + "unsubscribe from all" footer link. |
 | FR-Notif-6 | Email Digests | **Phase 2 — not in MVP.** |
 
@@ -196,7 +196,7 @@ ProFinder is a free marketplace platform that connects customers with profession
 | FR-Reports-2 | Report Creation | Submitter provides: reason, detailed description, optional evidence (messages, photos, links) |
 | FR-Reports-3 | Report Reasons | Predefined reasons: no-show, poor quality, non-payment, harassment, scam, inappropriate content, other |
 | FR-Reports-4 | Evidence Attachment | Users can attach message links, photos, text descriptions as evidence |
-| FR-Reports-5 | Report Status | Reports tracked through: submitted → under_review → resolved |
+| FR-Reports-5 | Report Status | Reports tracked through: `SUBMITTED` → `UNDER_REVIEW` → `RESOLVED` |
 | FR-Reports-6 | Moderator Dashboard | Moderator can view all pending reports with associated order history and messages |
 | FR-Reports-7 | Moderator Actions | Moderator can: dismiss; issue a **warning** (notice only, no restriction, no auto-escalation — prior count shown); **suspend** for a chosen 1–365 days (presets 3/7/14/30, auto-return on expiry); **ban** (permanent, appealable within 30 days — the only appealable decision — reviewed by a different moderator); **remove content** (immediate, user notified after). Suspending/banning a customer auto-closes their ACTIVE orders. |
 | FR-Reports-8 | Moderator Notes | Moderator can add notes/reasoning for each decision |
@@ -987,6 +987,7 @@ Before production launch, system must pass:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-10-27 | **D-1.3:** report status in the requirement and notification channels use `UPPER_SNAKE_CASE` values. |
 | 1.6 | 2026-09-10 | Standardised to the shared doc format (title, metadata, separators, changelog). Renumbered the duplicated `## 9` / `## 10` (Launch Acceptance Criteria → §11, Key Decisions Made → §12). Fixed the test/lint stack in NFR-Maint-2 / NFR-Maint-7 (Jest/Pytest/ESLint/Prettier → JUnit 5 + JaCoCo + Checkstyle + Spotless, matching § Tech Stack and [15 - SDLC & Workflow.md](15%20-%20SDLC%20%26%20Workflow.md)). Repointed the dead file-5 links (a "Questions" doc that no longer exists — slot 5 is now State Machines) to [4 - Business logic.md](4%20-%20Business%20logic.md). Removed the stale "Next Steps" section. |
 | 1.5 | 2026-09-05 | Confirmed load balancer is used from day 1 — fixed NFR-Scale-1/2, which previously said load balancing was "not needed", contradicting [3 - System Design.md](3%20-%20System%20Design.md)'s Nginx Gateway. |
 | 1.4 | 2026-09-04 | Fixed the § 8.1 project-type contradiction: was "Modular Monolith", corrected to microservices, matching [3 - System Design.md](3%20-%20System%20Design.md) and [7 - Application Classes.md](7%20-%20Application%20Classes.md). |

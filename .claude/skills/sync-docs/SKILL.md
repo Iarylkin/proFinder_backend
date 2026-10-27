@@ -70,8 +70,7 @@ skip because nothing obvious matched.
 ## Step 3 - Filter out already-known gaps
 
 Check the discrepancy against the gap table in `.claude/CLAUDE.md` (deployment
-unit, async/events, `Client`/`Specialist` vs `Customer`/`Professional`, schema
-management). If it is exactly one of these documented transitional gaps, mark
+unit, async/events, schema management). If it is exactly one of these documented transitional gaps, mark
 the file reviewed with no action - it is already explained there.
 
 ## Step 4 - For every remaining discrepancy, ask for the rationale

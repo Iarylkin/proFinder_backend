@@ -1,7 +1,7 @@
 # ProFinder — Elasticsearch Mapping
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.3
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** The two Elasticsearch indexes — `professionals` and `orders` — their field mappings, analyzers, how each document is assembled from PostgreSQL, and how the queries behind [FR-Search](2%20-%20Requirements.md) map onto them. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Elasticsearch mapping".
 
@@ -127,7 +127,7 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 | `popularity` | **computed at index time** — `rating_avg · log10(review_count + 1)` | the `popularity` sort ([FR-Search-9](2%20-%20Requirements.md)) |
 | `avatar_thumb_url` | derived from `users.avatar_file_id` → the 128×128 thumb key | result-card display only, `index: false` |
 | `created_at` | `professional_profiles.created_at` | the `newest` sort |
-| `last_active_at` | `users.updated_at` (proxy) or a dedicated last-login timestamp | final tie-break in "Recommended" ("most recently active") |
+| `last_active_at` | `professional_profiles.last_active_at` (falls back to `created_at` when `NULL`) | final tie-break in "Recommended" ("most recently active") |
 | `version` | `professional_profiles.version` | external-version guard, `index: false` |
 
 ### 3.3 Result card
@@ -167,7 +167,7 @@ on message { professional_id, version, reason }:
       category_ids: cats.id[], category_names: cats.name[], cities: cities[],
       hourly_rate, years_experience, available,
       rating_avg, review_count, sort_rating, popularity,
-      avatar_thumb_url, created_at, last_active_at: row.updated_at,
+      avatar_thumb_url, created_at, last_active_at: coalesce(row.last_active_at, row.created_at),
       version, indexed_at: now()
     }
     -- a 409 (version conflict) is expected and ignored: a newer write already won
@@ -255,7 +255,7 @@ on message { order_id, version, reason }:
         return
 
     PUT orders/_doc/:order_id?version=:version&version_type=external
-    { order_id, customer_id, category_id, category_name, city: row.location,
+    { order_id, customer_id, category_id, category_name, city: row.city,
       title, description, budget_min, budget_max, preferred_date,
       published_at, expires_at, version, indexed_at: now() }
 ```
@@ -297,5 +297,7 @@ sort: published_at desc
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-27 | **D-1.4:** `last_active_at` is read from `professional_profiles.last_active_at` (falls back to `created_at`). |
+| 1.2 | 2026-10-27 | **D-1.3:** the order document takes `city` from `orders.city`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata, separators). |
 | 1.0 | 2026-09-07 | Initial. `professionals` + `orders` mappings, shared analyzers (`text_en`, `name_analyzer`, `city_normalizer`), per-field origin/use tables, document-assembly pseudocode for both `search.*_reindex` consumers, query shapes for every `sort` mode and the professional order-browse, index lifecycle/alias/reindex ops. |

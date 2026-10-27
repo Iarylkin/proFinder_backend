@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.10
+- **Version:** 1.12
 - **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -20,7 +20,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 - **Money:** all amounts are plain `numeric`, USD, no `currency` field ([A5 decision](Documentation%20Roadmap.md)).
 - **Dates:** ISO 8601 timestamps, no per-user timezone conversion ([A5 decision](Documentation%20Roadmap.md)).
 - **Identifiers:** every id is a **UUID v7** (time-ordered). Generated application-side (Hibernate `@UuidGenerator(style = TIME)` or an equivalent v7 generator), never DB-default, so the id exists before flush and travels in the outbox row. v7 over v4 because it sorts by creation time — offset pagination and `ORDER BY created_at` line up with primary-key order, and B-tree index inserts stay near-sequential (far less page fragmentation than random v4). The embedded millisecond timestamp is not considered sensitive (creation time is already exposed as `created_at`).
-- **Enums are returned raw, never localized.** The API always emits the machine token — `status: "ACTIVE"`, `reason: "no_show"`, `decision: "content_removed"` — and never a display string. Turning a token into human text is the **client's** job, via its own i18n bundle keyed `enum.<enum_name>.<value>` (e.g. `enum.report_reason.no_show`). MVP ships English only ([NFR-UX-4](2%20-%20Requirements.md)); adding locales later changes nothing in the API contract. This keeps responses locale-independent (so cacheable) and keeps `Accept-Language` out of the service layer. Free-text the server composes for storage — notification `title`/`body` rows — is rendered at write time from server-side templates and is a separate concern from enum values on the wire.
+- **Enums are returned raw, never localized.** The API always emits the machine token — `status: "ACTIVE"`, `reason: "NO_SHOW"`, `decision: "CONTENT_REMOVED"` — and never a display string. Turning a token into human text is the **client's** job, via its own i18n bundle keyed `enum.<enum_name>.<value>` (e.g. `enum.report_reason.NO_SHOW`). MVP ships English only ([NFR-UX-4](2%20-%20Requirements.md)); adding locales later changes nothing in the API contract. This keeps responses locale-independent (so cacheable) and keeps `Accept-Language` out of the service layer. Free-text the server composes for storage — notification `title`/`body` rows — is rendered at write time from server-side templates and is a separate concern from enum values on the wire.
 - **Load balancer (decided 2026-09-05):** every service sits behind the Nginx LB from [3 - System Design.md § Nginx Gateway](3%20-%20System%20Design.md) — fixed the "not needed" contradiction in [2 - Requirements.md](2%20-%20Requirements.md) NFR-Scale-1/2. Practically, this means:
   - Every REST endpoint below must stay **stateless** — no server-side session, no sticky-session requirement. This already holds: auth is a locally-verified JWT, rate limits/denylist live in Redis, everything else in PostgreSQL — any instance can serve any request.
   - Each service exposes `GET /q/health/live` and `GET /q/health/ready` (Quarkus `smallrye-health`, no auth) for the LB's health checks — an instance that can't reach PostgreSQL/Redis/MinIO reports `DOWN` so the LB stops routing to it.
@@ -42,10 +42,10 @@ Every endpoint below requires `Authorization: Bearer <JWT>` unless marked **publ
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /orders` | Customer | `OrderCreateRequestDto {category_id, title, description, budget_min?, budget_max?, location, preferred_date?}` | `201 OrderResponseDto` (status `DRAFT`) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED` |
+| `POST /orders` | Customer | `OrderCreateRequestDto {category_id, title, description, budget_min?, budget_max?, city, preferred_date?}` | `201 OrderResponseDto` (status `DRAFT`) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED` |
 | `PATCH /orders/{id}` | Customer, owner | `OrderUpdateRequestDto` (partial, any field from create) + `version` | `200 OrderResponseDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `ORDER_CLOSED` (editing a `CLOSED` order) |
 | `POST /orders/{id}/publish` | Customer, owner | — | `200 OrderResponseDto` (status `ACTIVE`) | `ORDER_NOT_DRAFT`, `NOT_FOUND`, `FORBIDDEN`, `EMAIL_NOT_VERIFIED` |
-| `POST /orders/{id}/close` | Customer, owner | — | `200 OrderResponseDto` (status `CLOSED`) | `ORDER_ALREADY_CLOSED`, `NOT_FOUND`, `FORBIDDEN` |
+| `POST /orders/{id}/close` | Customer, owner | — | `200 OrderResponseDto` (status `CLOSED`) | `ORDER_CLOSED`, `NOT_FOUND`, `FORBIDDEN` |
 | `POST /orders/{id}/extend` | Customer, owner | `{additional_days: int}` | `200 OrderResponseDto` (new `expires_at`) | `VALIDATION_ERROR`, `ORDER_CLOSED`, `NOT_FOUND`, `FORBIDDEN` |
 | `DELETE /orders/{id}` | Customer, owner | — | `204` | `ORDER_NOT_DRAFT`, `NOT_FOUND`, `FORBIDDEN` |
 | `GET /orders/{id}` | any authenticated | — | `200 OrderResponseDto` | `NOT_FOUND` |
@@ -67,7 +67,7 @@ Every endpoint below requires `Authorization: Bearer <JWT>` unless marked **publ
 | `POST /reviews` | any authenticated | `ReviewCreateRequestDto {reviewee_id, rating, text?, photo_file_ids?[]}` | `200/201 ReviewDto` (upsert, `reviewer_role` derived from caller's own role) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED`, `NOT_FOUND` (reviewee) |
 | `PATCH /reviews/{id}` | author | `{rating?, text?}` | `200 ReviewDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
 | `DELETE /reviews/{id}` | author or Moderator | — | `204` | `FORBIDDEN`, `NOT_FOUND` |
-| `GET /users/{id}/reviews` | **public** | `?direction=customer_written\|professional_written&page=&size=` | `200 { items: ReviewDto[], page, size, total }` | `NOT_FOUND` |
+| `GET /users/{id}/reviews` | **public** | `?direction=CUSTOMER\|PROFESSIONAL&page=&size=` | `200 { items: ReviewDto[], page, size, total }` | `NOT_FOUND` |
 | `POST /reviews/{id}/replies` | the reviewed professional, or the original customer replying back | `ReviewReplyCreateRequestDto {text}` | `201 ReviewReplyDto` | `VALIDATION_ERROR`, `FORBIDDEN` (review is `PROFESSIONAL`-direction — no replies allowed), `NOT_FOUND` |
 
 #### Profiles & Categories
@@ -95,7 +95,7 @@ Every endpoint below requires `Authorization: Bearer <JWT>` unless marked **publ
 | `GET /reports` | Moderator | `?status=&page=&size=` | `200 { items: ReportDto[], page, size, total }` | `FORBIDDEN` |
 | `POST /reports/{id}/decision` | Moderator | `ReportDecisionRequestDto {decision, suspension_days?, notes?}` | `200 ReportDto` | `VALIDATION_ERROR`, `MODERATION_TARGET_NOT_VERIFIED`, `NOT_FOUND`, `FORBIDDEN` |
 | `POST /ban-appeals` | the banned user | `{text?}` | `201 BanAppealDto` | `APPEAL_WINDOW_EXPIRED`, `APPEAL_ALREADY_EXISTS`, `FORBIDDEN` |
-| `POST /ban-appeals/{id}/decision` | Moderator (≠ banning moderator) | `{outcome: upheld\|rejected, notes?}` | `200 BanAppealDto` | `SAME_MODERATOR_REVIEW`, `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN` |
+| `POST /ban-appeals/{id}/decision` | Moderator (≠ banning moderator) | `{outcome: UPHELD\|REJECTED, notes?}` | `200 BanAppealDto` | `SAME_MODERATOR_REVIEW`, `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN` |
 | `POST /users/{id}/block` | any authenticated | — | `204` | `VALIDATION_ERROR` (self-block), `NOT_FOUND` |
 | `DELETE /users/{id}/block` | any authenticated | — | `204` | `NOT_FOUND` |
 
@@ -146,7 +146,7 @@ Source: [7 - Application Classes.md § 2. Auth Service](7%20-%20Application%20Cl
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /auth/register` | **public** | `RegisterRequestDto {email, password}` | `201 {user_id, email, status: PENDING_VERIFICATION}` | `VALIDATION_ERROR`, `EMAIL_ALREADY_REGISTERED` |
+| `POST /auth/register` | **public** | `RegisterRequestDto {email, password, display_name}` | `201 {user_id, email, status: PENDING_VERIFICATION}` | `VALIDATION_ERROR`, `EMAIL_ALREADY_REGISTERED` |
 | `POST /auth/verify-email` | **public** | `VerifyEmailRequestDto {token}` | `200 {status: ACTIVE}` | `VERIFICATION_TOKEN_INVALID` |
 | `POST /auth/resend-verification` | authenticated (`PENDING_VERIFICATION` account) | — (uses JWT `sub`) | `202` (email queued) | `RESEND_TOO_SOON` |
 | `POST /auth/forgot-password` | **public** | `ForgotPasswordRequestDto {email}` | `202` — **always**, whether or not the email exists, to avoid leaking which emails are registered | `VALIDATION_ERROR` |
@@ -158,9 +158,9 @@ Source: [7 - Application Classes.md § 2. Auth Service](7%20-%20Application%20Cl
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
 | `POST /auth/login` | **public** | `LoginRequestDto {email, password}` | `200 LoginResponseDto {access_token, refresh_token, user: {id, role, status}}` — succeeds even if `SUSPENDED`/`BANNED` (they can still log in to see their status/file an appeal per [4 - Business logic.md § Report Workflow](4%20-%20Business%20logic.md#report-workflow)); logging in while `DELETED` triggers reactivation (`account.reactivated`) | `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `VALIDATION_ERROR` |
-| `GET /auth/google/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponseDto`, or `200 {role_selection_required: true, temp_token}` on first login with no role yet | `VALIDATION_ERROR`, `GOOGLE_ACCOUNT_ALREADY_LINKED` |
+| `GET /auth/google/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponseDto`, or `200 {role_selection_required: true, temp_token}` on first login with no role yet; the account is created with `role = NULL` and `display_name` from the Google profile | `VALIDATION_ERROR`, `GOOGLE_ACCOUNT_ALREADY_LINKED` |
 | `POST /auth/google/unlink` | authenticated | — | `204` | `PASSWORD_REQUIRED_TO_UNLINK` |
-| `POST /auth/role` | authenticated, no role set yet | `RoleSelectionRequestDto {role: CUSTOMER\|PROFESSIONAL}` | `200` | `VALIDATION_ERROR`, `ROLE_IMMUTABLE` (role already set) |
+| `POST /auth/role` | `temp_token` from the Google callback (limited token: valid only for this call), role not set yet | `RoleSelectionRequestDto {role: CUSTOMER\|PROFESSIONAL}` | `200 LoginResponseDto` (full tokens with the chosen role) | `VALIDATION_ERROR`, `ROLE_IMMUTABLE` (role already set), `UNAUTHORIZED` (missing or expired `temp_token`) |
 
 #### Sessions & Tokens
 ---
@@ -335,7 +335,7 @@ Apply to every service, not tied to one domain.
 | `FORBIDDEN` | 403 | "You don't have permission to do this" | valid token, wrong role/ownership for the action |
 | `NOT_FOUND` | 404 | "Not found" | resource id doesn't exist (or is soft-deleted and treated as gone) |
 | `CONFLICT` | 409 | "This item was modified, please refresh" | optimistic-locking failure (`version` mismatch) — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases) |
-| `RATE_LIMITED` | 429 | "Too many requests, try again later" | any per-IP/per-user/per-endpoint limit from [NFR-Sec-7](2%20-%20Requirements.md); response carries `Retry-After` |
+| `RATE_LIMITED` | 429 | "Too many requests, try again later" | any per-IP/per-user/per-endpoint request limit from [NFR-Sec-7](2%20-%20Requirements.md) **except** the login lockout (that is `ACCOUNT_LOCKED`); response carries `Retry-After` |
 | `INTERNAL_ERROR` | 500 | "Something went wrong, please try again" | unhandled server error |
 
 
@@ -345,7 +345,7 @@ Apply to every service, not tied to one domain.
 | Code | HTTP | Message | Trigger |
 |---|---|---|---|
 | `INVALID_CREDENTIALS` | 401 | "Incorrect email or password" | login with wrong password, or unknown email |
-| `ACCOUNT_LOCKED` | 429 | "Too many failed attempts, try again in 15 minutes" | 5 failed logins in a sliding 15-min window ([FR-Auth-1](2%20-%20Requirements.md)); carries `Retry-After` |
+| `ACCOUNT_LOCKED` | 429 | "Too many failed attempts, try again in 15 minutes" | login lockout only: 5 failed logins in a sliding 15-min window ([FR-Auth-1](2%20-%20Requirements.md)); carries `Retry-After` |
 | `EMAIL_NOT_VERIFIED` | 403 | "Please verify your email to do this" | `PENDING_VERIFICATION` account attempts publish/respond/message/review/appear-in-search ([4 - Business logic.md § Email Registration](4%20-%20Business%20logic.md#email-registration)) |
 | `EMAIL_ALREADY_REGISTERED` | 409 | "An account with this email already exists" | registration with a duplicate (case-insensitive) email |
 | `VERIFICATION_TOKEN_INVALID` | 400 | "This verification link is invalid or expired" | expired (>24h) or already-used verification token |
@@ -366,9 +366,8 @@ Apply to every service, not tied to one domain.
 | Code | HTTP | Message | Trigger |
 |---|---|---|---|
 | `ORDER_NOT_DRAFT` | 409 | "This order can no longer be edited this way" | attempting to hard-delete or re-publish a non-`DRAFT` order ([4 - Business logic.md § DRAFT](4%20-%20Business%20logic.md)) |
-| `ORDER_CLOSED` | 409 | "This order is closed" | response (or edit) submitted to a `CLOSED` order ([FR-Responses-1](2%20-%20Requirements.md)) |
+| `ORDER_CLOSED` | 409 | "This order is closed" | response (or edit) submitted to a `CLOSED` order ([FR-Responses-1](2%20-%20Requirements.md)), or `close` / `extend` called on an order that is already `CLOSED` |
 | `ORDER_EXPIRED` | 409 | "This order has expired" | response submitted to an order past `expires_at` (customer must extend first) |
-| `ORDER_ALREADY_CLOSED` | 409 | "This order is already closed" | `closeOrder()` called twice |
 | `PROFILE_INCOMPLETE` | 403 | "Complete your profile to do this" | `INCOMPLETE` professional tries to respond/appear in search ([FR-Profile-P5](2%20-%20Requirements.md)) |
 
 
@@ -456,6 +455,8 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.12 | 2026-10-27 | **D-1.3:** `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`; `ACCOUNT_LOCKED` (login lockout) and `RATE_LIMITED` (other limits) described as distinct; `OrderCreateRequestDto.location` → `city`; reviews `direction` is `CUSTOMER\|PROFESSIONAL`; appeal `outcome` and examples use `UPPER_SNAKE_CASE`. |
+| 1.11 | 2026-10-27 | **D-1.2:** `RegisterRequestDto` now carries `display_name`. `POST /auth/role` takes the limited `temp_token` from the Google callback (not a full JWT) and returns full tokens. The Google callback creates the account with no role. |
 | 1.10 | 2026-10-27 | `FILE_TOO_LARGE` is now `413` and `INVALID_FILE_TYPE` is `415` (they were `400`), so clients can tell a size error from a type error by the status code. |
 | 1.9 | 2026-10-26 | Added `GET /customers/{id}`: a public customer view for any authenticated user, without contact data, and no customer list. |
 | 1.8 | 2026-09-10 | Standardised to the shared doc format (metadata, separators, changelog). Added the **`DELETE /me`** account-deletion endpoint (used by files 10, 11, 13 but previously undocumented). `ACCOUNT_DELETION_BLOCKED` status **403 → 409** to match [10 - Sequence Diagrams.md § E2](10%20-%20Sequence%20Diagrams.md) and [13 - Validation Rules.md](13%20-%20Validation%20Rules.md). Wired `GOOGLE_ACCOUNT_ALREADY_LINKED` to the Google-callback endpoint. Removed the stale "Next" section (Event Catalog is done — [9 - Event Catalog.md](9%20-%20Event%20Catalog.md)). |

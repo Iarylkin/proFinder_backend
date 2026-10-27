@@ -1,7 +1,7 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.3
-- **Date:** 2026-09-10
+- **Version:** 1.5
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
 
@@ -142,7 +142,7 @@ Producer is `core-api` unless noted. "Notifies" = the human recipient of the res
 | 18 | `moderation.warning_issued` | resolve with decision `warning` | Notification Svc | warned user |
 | 19 | `moderation.suspended` | resolve with decision `suspended` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | suspended user |
 | 20 | `moderation.banned` | resolve with decision `banned` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | banned user |
-| 21 | `moderation.content_removed` | resolve with decision `content_removed` | Notification Svc; **cascades** `search.professional_reindex` if a portfolio photo | affected user |
+| 21 | `moderation.content_removed` | resolve with decision `CONTENT_REMOVED` | Notification Svc; **cascades** `search.professional_reindex` if a portfolio photo | affected user |
 | 22 | `account.deletion_requested` | `AccountService.requestDeletion()` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | the user |
 | 23 | `account.reactivated` | login during the 30-day grace window | Notification Svc; **cascades** `search.professional_reindex` (un-hide if was ACTIVE) | the user |
 | 24 | `account.deletion_finalized` | `@Scheduled` — grace window elapsed | Notification Svc; search indexer (purge doc) | the user (final "account permanently deleted" email) |
@@ -173,7 +173,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 // order.edited   aggregate_type: order
 {
   "order_id": "uuid", "customer_id": "uuid",
-  "changed_fields": ["budget_min" | "budget_max" | "description" | "title" | "location" | "preferred_date" | "category_id"],
+  "changed_fields": ["budget_min" | "budget_max" | "description" | "title" | "city" | "preferred_date" | "category_id"],
   "responder_ids": ["uuid"],
   "edited_at": "iso-8601"
 }
@@ -187,7 +187,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 // order.closed   aggregate_type: order
 {
   "order_id": "uuid", "customer_id": "uuid",
-  "closed_reason": "manual" | "account_action",
+  "closed_reason": "MANUAL" | "ACCOUNT_ACTION",
   "responder_ids": ["uuid"],
   "closed_at": "iso-8601"
 }
@@ -202,7 +202,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
   "response_id": "uuid", "order_id": "uuid",
   "customer_id": "uuid",
   "professional_id": "uuid", "professional_name": "string",
-  "quote_amount": "number",
+  "quote_price": "number",
   "created_at": "iso-8601"          // response.edited adds "edited_at": "iso-8601"
 }
 ```
@@ -264,14 +264,14 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
   "report_id": "uuid",
   "reporter_id": "uuid",
   "reported_user_id": "uuid",
-  "reason": "no_show" | "poor_quality" | "non_payment" | "harassment" | "scam" | "inappropriate_content" | "other",
+  "reason": "NO_SHOW" | "POOR_QUALITY" | "NON_PAYMENT" | "HARASSMENT" | "SCAM" | "INAPPROPRIATE_CONTENT" | "OTHER",
   "created_at": "iso-8601"
 }
 
 // report.resolved   aggregate_type: report
 {
   "report_id": "uuid", "reporter_id": "uuid", "reported_user_id": "uuid",
-  "decision": "dismissed" | "warning" | "suspended" | "banned" | "content_removed",
+  "decision": "DISMISSED" | "WARNING" | "SUSPENDED" | "BANNED" | "CONTENT_REMOVED",
   "moderator_id": "uuid",
   "resolved_at": "iso-8601"
 }
@@ -361,7 +361,7 @@ Several business actions emit a **notification event** *and* a **reindex event**
 | Post/edit review of a professional | `review.posted` / — | `search.professional_reindex` (rating_recalc) |
 | Professional edits profile / categories / cities / rate / experience / availability | — | `search.professional_reindex` |
 | Suspend / ban / delete a professional | `moderation.*` / `account.*` | `search.professional_reindex` (hide) |
-| Suspend / ban / delete a **customer** | `moderation.*` / `account.*` | one `order.closed` **per** their ACTIVE order (`closed_reason: account_action`) → each cascades its own `search.order_reindex` |
+| Suspend / ban / delete a **customer** | `moderation.*` / `account.*` | one `order.closed` **per** their ACTIVE order (`closed_reason: ACCOUNT_ACTION`) → each cascades its own `search.order_reindex` |
 | Reactivate account (grace-period login) | `account.reactivated` | `search.professional_reindex` (un-hide, if profile was ACTIVE) |
 | Grace window elapses | `account.deletion_finalized` | `search.professional_reindex` (hard-purge the doc) |
 | Remove a portfolio photo | `moderation.content_removed` | `search.professional_reindex` |
@@ -407,6 +407,8 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-10-27 | **D-1.4:** `closed_reason` values are `MANUAL` / `ACCOUNT_ACTION`. |
+| 1.4 | 2026-10-27 | **D-1.3:** `quote_amount` → `quote_price`; `location` → `city` in `changed_fields`; enum values in payloads are `UPPER_SNAKE_CASE`. |
 | 1.3 | 2026-09-10 | Standardised to the shared doc format. Renumbered "Resolved decisions" §9 → §8 and "Changelog" §10 → §9 (there was no §8); fixed the `#7-inconsistencies-found--proposed-resolution` anchor links to the real slug. |
 | 1.2 | 2026-09-07 | Reconcile edits landed in [file 3](3%20-%20System%20Design.md) v1.2 and [file 4](4%20-%20Business%20logic.md) v3.5 — §7 inconsistencies I1–I5 all fixed at source; §7 / Resolved-decisions updated from "proposed" to "applied". No catalog content change. |
 | 1.1 | 2026-09-07 | Applied decisions D1–D6 (user) + D7–D10 (default): dropped `order.draft_created`; `response.edited` in-app only; no moderator alert on `report.created`; `message.deleted` confirmed in MVP; **Auth Service added as a producer** with `auth.*` events + `auth.notifications` queue + its own outbox; `account.deletion_finalized` added. Event count 27 → 29. "Open decisions" replaced by "Resolved decisions"; added I5. |

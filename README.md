@@ -16,9 +16,9 @@
 
 ## 🚀 Service Overview
 
-**ProFinder** is a comprehensive service marketplace platform designed to bridge the gap between clients seeking professional services and skilled specialists. 
+**ProFinder** is a comprehensive service marketplace platform designed to bridge the gap between customers seeking professional services and skilled professionals. 
 
-The platform enables clients to post job listings for various tasks and connect with qualified professionals. Specialists can showcase their expertise, browse available opportunities, and apply for projects that match their skills.
+The platform enables customers to post job listings for various tasks and connect with qualified professionals. Professionals can showcase their expertise, browse available opportunities, and apply for projects that match their skills.
 
 This backend service powers the core functionality including user management, job postings, search capabilities, real-time communication, and transaction processing.
 
@@ -64,9 +64,9 @@ design. See [`.github/wiki-sync.md`](.github/wiki-sync.md) for how the sync work
 ## 🏗 Architecture & Features
 
 ### Platform Features
-- **User Management** - Separate profiles for Clients and Professionals
-- **Job Listings System** - Clients create service requests
--  **Specialist Search** - Ability to find professionals through search functionality
+- **User Management** - Separate profiles for Customers and Professionals
+- **Job Listings System** - Customers create service requests
+-  **Professional Search** - Ability to find professionals through search functionality
 - **Application System** - Professionals apply to relevant projects
 - **Review & Rating System** - Feedback and reputation management
 - **Real-time Chat** - WebSocket-based messaging between users

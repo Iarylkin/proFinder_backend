@@ -1,7 +1,7 @@
 # ProFinder — Category Taxonomy
 
-- **Version:** 1.1
-- **Date:** 2026-09-10
+- **Version:** 1.2
+- **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** The concrete list of service categories to seed the `categories` table with at launch. The model (flat list, admin-managed CRUD) is defined in [6 - Database Schema.md](6%20-%20Database%20Schema.md) and [7 - Application Classes.md](7%20-%20Application%20Classes.md); this file supplies the **data**. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Category taxonomy — seed set".
 
@@ -98,41 +98,41 @@ For the Flyway migration (`V00X__seed_categories.sql`) — order doesn't matter,
 
 ```sql
 INSERT INTO categories (id, name, created_at, updated_at) VALUES
-  (gen_random_uuid(), 'Plumbing',                    now(), now()),
-  (gen_random_uuid(), 'Electrical',                  now(), now()),
-  (gen_random_uuid(), 'HVAC & Heating',              now(), now()),
-  (gen_random_uuid(), 'Appliance Repair',            now(), now()),
-  (gen_random_uuid(), 'Handyman',                    now(), now()),
-  (gen_random_uuid(), 'Carpentry',                   now(), now()),
-  (gen_random_uuid(), 'Locksmith',                   now(), now()),
-  (gen_random_uuid(), 'Painting & Decorating',       now(), now()),
-  (gen_random_uuid(), 'Flooring',                    now(), now()),
-  (gen_random_uuid(), 'Tiling',                      now(), now()),
-  (gen_random_uuid(), 'Roofing',                     now(), now()),
-  (gen_random_uuid(), 'Drywall & Plastering',        now(), now()),
-  (gen_random_uuid(), 'Kitchen & Bath Remodeling',   now(), now()),
-  (gen_random_uuid(), 'Windows & Doors',             now(), now()),
-  (gen_random_uuid(), 'Insulation',                  now(), now()),
-  (gen_random_uuid(), 'Masonry & Concrete',          now(), now()),
-  (gen_random_uuid(), 'Landscaping & Gardening',     now(), now()),
-  (gen_random_uuid(), 'Lawn Care',                   now(), now()),
-  (gen_random_uuid(), 'Tree Services',               now(), now()),
-  (gen_random_uuid(), 'Fencing & Decking',           now(), now()),
-  (gen_random_uuid(), 'Pool & Spa Services',         now(), now()),
-  (gen_random_uuid(), 'Snow Removal',                now(), now()),
-  (gen_random_uuid(), 'Pressure Washing',            now(), now()),
-  (gen_random_uuid(), 'House Cleaning',              now(), now()),
-  (gen_random_uuid(), 'Carpet & Upholstery Cleaning',now(), now()),
-  (gen_random_uuid(), 'Window Cleaning',             now(), now()),
-  (gen_random_uuid(), 'Pest Control',                now(), now()),
-  (gen_random_uuid(), 'Junk Removal & Hauling',      now(), now()),
-  (gen_random_uuid(), 'Moving & Packing',            now(), now()),
-  (gen_random_uuid(), 'Furniture Assembly',          now(), now()),
-  (gen_random_uuid(), 'TV & Home Theater Mounting',  now(), now()),
-  (gen_random_uuid(), 'Smart Home Installation',     now(), now());
+  ('01a17aa8-1c01-70a0-abeb-676af6eb0f59', 'Plumbing',                    now(), now()),
+  ('01a17aa8-1c02-7ebc-b160-3e5c0bb6d7e6', 'Electrical',                  now(), now()),
+  ('01a17aa8-1c03-72aa-9cd8-f25498342957', 'HVAC & Heating',              now(), now()),
+  ('01a17aa8-1c04-7cda-96f8-3f4538f19d3c', 'Appliance Repair',            now(), now()),
+  ('01a17aa8-1c05-7315-9159-ceaeff739936', 'Handyman',                    now(), now()),
+  ('01a17aa8-1c06-7494-b30c-3ea681788a76', 'Carpentry',                   now(), now()),
+  ('01a17aa8-1c07-79ec-bf43-672a9dfdb665', 'Locksmith',                   now(), now()),
+  ('01a17aa8-1c08-7839-862b-c10aa72149d7', 'Painting & Decorating',       now(), now()),
+  ('01a17aa8-1c09-7cce-a0ef-48aa7f92d76f', 'Flooring',                    now(), now()),
+  ('01a17aa8-1c0a-72a3-af80-779e009291ff', 'Tiling',                      now(), now()),
+  ('01a17aa8-1c0b-714d-b079-f5e099732d2f', 'Roofing',                     now(), now()),
+  ('01a17aa8-1c0c-764e-92d8-eb98edd59198', 'Drywall & Plastering',        now(), now()),
+  ('01a17aa8-1c0d-7abd-90e2-d80dc2d476a8', 'Kitchen & Bath Remodeling',   now(), now()),
+  ('01a17aa8-1c0e-7521-aadd-afd71e28a759', 'Windows & Doors',             now(), now()),
+  ('01a17aa8-1c0f-7af8-bad7-0d060048f592', 'Insulation',                  now(), now()),
+  ('01a17aa8-1c10-70c8-b37d-60208729cf3b', 'Masonry & Concrete',          now(), now()),
+  ('01a17aa8-1c11-7a3f-bc21-f11853cbfd9a', 'Landscaping & Gardening',     now(), now()),
+  ('01a17aa8-1c12-7ac4-a476-4b366a8fae7c', 'Lawn Care',                   now(), now()),
+  ('01a17aa8-1c13-73e6-a33d-f9bb16e90d7f', 'Tree Services',               now(), now()),
+  ('01a17aa8-1c14-78d3-b814-b77a63de5267', 'Fencing & Decking',           now(), now()),
+  ('01a17aa8-1c15-7a4a-b3ed-de1131921285', 'Pool & Spa Services',         now(), now()),
+  ('01a17aa8-1c16-7284-a50d-55ba9e68ee02', 'Snow Removal',                now(), now()),
+  ('01a17aa8-1c17-7b87-9376-18b68524fd29', 'Pressure Washing',            now(), now()),
+  ('01a17aa8-1c18-7025-b7ac-45608028a285', 'House Cleaning',              now(), now()),
+  ('01a17aa8-1c19-7bf8-bf1c-1595d699c107', 'Carpet & Upholstery Cleaning',now(), now()),
+  ('01a17aa8-1c1a-7af6-aa97-4751e42b8fee', 'Window Cleaning',             now(), now()),
+  ('01a17aa8-1c1b-7640-b887-a0247efd77b2', 'Pest Control',                now(), now()),
+  ('01a17aa8-1c1c-7a8a-b436-ef02a4e71518', 'Junk Removal & Hauling',      now(), now()),
+  ('01a17aa8-1c1d-711d-9178-0534447bc165', 'Moving & Packing',            now(), now()),
+  ('01a17aa8-1c1e-728b-bb48-204181b77446', 'Furniture Assembly',          now(), now()),
+  ('01a17aa8-1c1f-743c-a0a7-17ad7ad5361e', 'TV & Home Theater Mounting',  now(), now()),
+  ('01a17aa8-1c20-71bc-97eb-7baf5588f137', 'Smart Home Installation',     now(), now());
 ```
 
-If UUIDs need to be stable/known for test fixtures, replace `gen_random_uuid()` with fixed literals — but since categories are referenced by `id` FK and never by a hard-coded UUID in code, generated is fine.
+The ids are fixed **UUID v7** literals (time-ordered, generated once), not `gen_random_uuid()`: every id in the system is v7 and generated outside the database ([8 - API Specification.md § Conventions](8%20-%20API%20Specification.md)), and fixed literals give every environment and every test fixture the same category ids. Add new categories the same way, with a freshly generated v7.
 
 
 ## 4. Post-launch changes
@@ -149,5 +149,6 @@ If UUIDs need to be stable/known for test fixtures, replace `gen_random_uuid()` 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2 | 2026-10-27 | **D-1.4:** the seed `INSERT` uses fixed UUID v7 literals instead of `gen_random_uuid()`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Fixed the category count — the tables and the `INSERT` both hold **32**; the heading said 30 and the count-check said 31. Dropped "(Seed Set)" from the title and the stray `(proposed — note for the implementer)` marker. |
 | 1.0 | 2026-09-07 | Initial. 32 seed categories with naming conventions, a Flyway `INSERT`, and post-launch add/rename/delete notes (incl. the rename→reindex consequence). |
