@@ -1,5 +1,6 @@
 package fit.biejk.service;
 
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -179,28 +180,6 @@ public class ProfessionalService {
     }
 
     /**
-     * Updates the list of service offerings associated with the professional.
-     *
-     * @param professionalId ID of the professional to update
-     * @param serviceOfferings new list of service offerings to associate
-     * @return updated professional
-     */
-    @Transactional
-    public Professional updateServiceOfferings(final Long professionalId,
-                                             final List<ServiceOffering> serviceOfferings) {
-        log.info("Update services: professionalId={}", professionalId);
-        Professional professional = getById(professionalId);
-        professional.setServiceOfferings(serviceOfferings);
-
-        professionalRepository.persist(professional);
-
-        professionalSearchService.save(professionalSearchMapper.toDto(professional));
-
-        log.debug("Updated services with ID={}", professionalId);
-        return professional;
-    }
-
-    /**
      * Creates and saves a review for the specified professional.
      *
      * @param professionalId professional ID
@@ -221,6 +200,29 @@ public class ProfessionalService {
         return reviewService.create(review);
     }
 
+    /**
+     * Partially updates the profile of a professional, including the description and the offered services.
+     *
+     * @param id      ID of the professional
+     * @param request fields to change
+     * @return the updated professional
+     */
+    @Transactional
+    public Professional updateProfile(final Long id, final ProfileUpdateRequest request) {
+        log.info("Update professional profile: ID={}", id);
+        Professional professional = getById(id);
+        userService.updateProfile(id, request);
+        if (request.getDescription() != null) {
+            professional.setDescription(request.getDescription());
+        }
+        if (request.getServiceOfferings() != null) {
+            professional.setServiceOfferings(request.getServiceOfferings());
+        }
+        professionalRepository.flush();
 
+        professionalSearchService.save(professionalSearchMapper.toDto(professional));
 
+        log.debug("Professional profile updated, ID={}", id);
+        return professional;
+    }
 }

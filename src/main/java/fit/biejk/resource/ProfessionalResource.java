@@ -165,38 +165,6 @@ public class ProfessionalResource {
     }
 
     /**
-     * Retrieves the profile of the currently authenticated professional.
-     *
-     * @return HTTP response containing the professional's profile
-     */
-    @GET
-    @Path("/me")
-    @RolesAllowed("PROFESSIONAL")
-    public Response getProfile() {
-        Long professionalId = authService.getCurrentUserId();
-        log.info("Get profile for professional ID={}", professionalId);
-        Professional professional = professionalService.getById(professionalId);
-        return Response.ok(professionalMapper.toDto(professional)).build();
-    }
-
-    /**
-     * Updates the profile of the currently authenticated professional.
-     *
-     * @param dto updated profile data
-     * @return HTTP response with updated profile
-     */
-    @PUT
-    @Path("/me")
-    @RolesAllowed("PROFESSIONAL")
-    public Response updateProfile(@Valid final ProfessionalDto dto) {
-        Long id = authService.getCurrentUserId();
-        log.info("Update profile for professional ID={} with dto={}", id, dto);
-        Professional professional = professionalService.update(id, professionalMapper.toEntity(dto));
-        log.debug("Professional profile updated, ID={}", professional.getId());
-        return Response.ok(professionalMapper.toDto(professional)).build();
-    }
-
-    /**
      * Deletes the profile of the currently authenticated professional.
      *
      * @return HTTP response
@@ -229,22 +197,6 @@ public class ProfessionalResource {
                 pagination.getPage(),
                 pagination.getSize());
         return Response.ok(reviewMapper.toDtoList(res)).build();
-    }
-
-    /**
-     * Updates the list of service offerings for the currently authenticated professional.
-     *
-     * @param serviceOfferings list of updated service offerings
-     * @return HTTP response with updated professional data
-     */
-    @PUT
-    @Path("/me/services")
-    @RolesAllowed("PROFESSIONAL")
-    public Response updateServiceOffering(final List<ServiceOffering> serviceOfferings) {
-        Long id = authService.getCurrentUserId();
-        log.info("Add serviceOffering for professional ID={}", id);
-        Professional professional = professionalService.updateServiceOfferings(id, serviceOfferings);
-        return Response.ok(professionalMapper.toDto(professional)).build();
     }
 
     /**

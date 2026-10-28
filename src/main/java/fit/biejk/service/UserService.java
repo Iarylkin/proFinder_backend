@@ -1,5 +1,6 @@
 package fit.biejk.service;
 
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.User;
 import fit.biejk.repository.UserRepository;
@@ -242,6 +243,33 @@ public class UserService {
         mailService.send(oldEmail, "Email change notification",
                 "Your email has been changed to: " + newEmail
                     + "\nIf this wasn’t you, please contact support.");
+        return user;
+    }
+
+    /**
+     * Partially updates the common profile fields of a user: only the fields present in the request change.
+     *
+     * @param userId  ID of the user
+     * @param request fields to change
+     * @return the updated user
+     * @throws NotFoundException if the user does not exist
+     */
+    public User updateProfile(final Long userId, final ProfileUpdateRequest request) {
+        log.info("Update profile: userId={}", userId);
+        User user = getById(userId);
+        if (request.getFirstName() != null) {
+            user.setFirstName(request.getFirstName());
+        }
+        if (request.getLastName() != null) {
+            user.setLastName(request.getLastName());
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getLocation() != null) {
+            user.setLocation(locationService.getById(request.getLocation().getId()));
+        }
+        log.debug("Profile updated for userId={}", userId);
         return user;
     }
 }

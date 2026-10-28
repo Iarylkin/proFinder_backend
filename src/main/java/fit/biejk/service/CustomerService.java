@@ -1,9 +1,11 @@
 package fit.biejk.service;
 
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Customer;
 import fit.biejk.repository.CustomerRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,5 +106,23 @@ public class CustomerService {
         log.info("Delete customer: ID={}", id);
         userService.delete(id);
         log.debug("Customer deleted with ID={}", id);
+    }
+
+    /**
+     * Partially updates the profile of a customer.
+     *
+     * @param id      ID of the customer
+     * @param request fields to change
+     * @return the updated customer
+     * @throws BadRequestException if the request contains fields that only professionals have
+     */
+    @Transactional
+    public Customer updateProfile(final Long id, final ProfileUpdateRequest request) {
+        if (request.getDescription() != null || request.getServiceOfferings() != null) {
+            throw new BadRequestException("Description and services are available for professionals only");
+        }
+        Customer customer = getById(id);
+        userService.updateProfile(id, request);
+        return customer;
     }
 }
