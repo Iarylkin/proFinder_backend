@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.User;
 import fit.biejk.repository.UserRepository;
@@ -247,27 +246,28 @@ public class UserService {
     }
 
     /**
-     * Partially updates the common profile fields of a user: only the fields present in the request change.
+     * Partially updates the common profile fields of a user: only the non-null fields of
+     * {@code changes} are applied.
      *
      * @param userId  ID of the user
-     * @param request fields to change
+     * @param changes a user holding only the requested changes
      * @return the updated user
      * @throws NotFoundException if the user does not exist
      */
-    public User updateProfile(final Long userId, final ProfileUpdateRequest request) {
+    public User updateProfile(final Long userId, final User changes) {
         log.info("Update profile: userId={}", userId);
         User user = getById(userId);
-        if (request.getFirstName() != null) {
-            user.setFirstName(request.getFirstName());
+        if (changes.getFirstName() != null) {
+            user.setFirstName(changes.getFirstName());
         }
-        if (request.getLastName() != null) {
-            user.setLastName(request.getLastName());
+        if (changes.getLastName() != null) {
+            user.setLastName(changes.getLastName());
         }
-        if (request.getPhoneNumber() != null) {
-            user.setPhoneNumber(request.getPhoneNumber());
+        if (changes.getPhoneNumber() != null) {
+            user.setPhoneNumber(changes.getPhoneNumber());
         }
-        if (request.getLocation() != null) {
-            user.setLocation(locationService.getById(request.getLocation().getId()));
+        if (changes.getLocation() != null) {
+            user.setLocation(locationService.getById(changes.getLocation().getId()));
         }
         log.debug("Profile updated for userId={}", userId);
         return user;

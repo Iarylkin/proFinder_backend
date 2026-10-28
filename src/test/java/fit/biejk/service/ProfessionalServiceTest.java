@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Professional;
 import fit.biejk.entity.Category;
 import fit.biejk.repository.ProfessionalRepository;
@@ -50,15 +49,15 @@ class ProfessionalServiceTest {
 
     @Test
     void updateProfileChangesOnlyTheSentFields() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setDescription("New description");
+        Professional changes = new Professional();
+        changes.setDescription("New description");
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, request);
+        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertSame(professional, result);
         assertEquals("New description", result.getDescription());
         assertEquals(List.of(), result.getCategories());
-        verify(userService).updateProfile(PROFESSIONAL_ID, request);
+        verify(userService).updateProfile(PROFESSIONAL_ID, changes);
         verify(searchService).save(any());
     }
 
@@ -66,10 +65,10 @@ class ProfessionalServiceTest {
     void updateProfileReplacesTheOfferedServices() {
         Category plumbing = new Category();
         plumbing.setId(1L);
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setCategories(List.of(plumbing));
+        Professional changes = new Professional();
+        changes.setCategories(List.of(plumbing));
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, request);
+        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertEquals(List.of(plumbing), result.getCategories());
         assertEquals("Old description", result.getDescription());

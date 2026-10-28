@@ -1,9 +1,11 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.ProfessionalDto;
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.dto.ProfessionalPublicDto;
 import fit.biejk.entity.Professional;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -61,4 +63,22 @@ public interface ProfessionalMapper {
      * @return list of Professional entities
      */
     List<Professional> toEntityList(List<ProfessionalDto> dtoList);
+
+    /**
+     * Converts a profile update request to a Professional that holds only the requested changes.
+     * Fields that were not sent stay {@code null}; the service copies only the non-null ones.
+     *
+     * @param request the profile update request
+     * @return a Professional carrying the requested changes
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "avatarKey", ignore = true)
+    @Mapping(target = "createAt", ignore = true)
+    @Mapping(target = "averageRating", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "reviews", ignore = true)
+    Professional toEntity(ProfileUpdateRequest request);
 }

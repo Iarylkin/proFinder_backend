@@ -1,11 +1,9 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Customer;
 import fit.biejk.repository.CustomerRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,20 +107,16 @@ public class CustomerService {
     }
 
     /**
-     * Partially updates the profile of a customer.
+     * Partially updates the profile of a customer: only the non-null fields of {@code changes} are applied.
      *
      * @param id      ID of the customer
-     * @param request fields to change
+     * @param changes a customer holding only the requested changes
      * @return the updated customer
-     * @throws BadRequestException if the request contains fields that only professionals have
      */
     @Transactional
-    public Customer updateProfile(final Long id, final ProfileUpdateRequest request) {
-        if (request.getDescription() != null || request.getCategories() != null) {
-            throw new BadRequestException("Description and categories are available for professionals only");
-        }
+    public Customer updateProfile(final Long id, final Customer changes) {
         Customer customer = getById(id);
-        userService.updateProfile(id, request);
+        userService.updateProfile(id, changes);
         return customer;
     }
 }

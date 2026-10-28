@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.User;
 import fit.biejk.repository.UserRepository;
@@ -47,10 +46,10 @@ class UserServiceTest {
 
     @Test
     void updateProfileChangesOnlyTheSentFields() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setPhoneNumber("222222222");
+        User changes = new User();
+        changes.setPhoneNumber("222222222");
 
-        User result = service.updateProfile(USER_ID, request);
+        User result = service.updateProfile(USER_ID, changes);
 
         assertSame(user, result);
         assertEquals("222222222", result.getPhoneNumber());
@@ -67,16 +66,16 @@ class UserServiceTest {
         stored.setId(NEW_LOCATION_ID);
         stored.setName("Brno");
         when(locationService.getById(NEW_LOCATION_ID)).thenReturn(stored);
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setLocation(requested);
+        User changes = new User();
+        changes.setLocation(requested);
 
-        User result = service.updateProfile(USER_ID, request);
+        User result = service.updateProfile(USER_ID, changes);
 
         assertSame(stored, result.getLocation());
     }
 
     @Test
     void updateProfileOfAMissingUserIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.updateProfile(999L, new ProfileUpdateRequest()));
+        assertThrows(NotFoundException.class, () -> service.updateProfile(999L, new User()));
     }
 }

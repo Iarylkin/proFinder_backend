@@ -17,6 +17,7 @@ import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -157,6 +158,17 @@ public class AuthService {
     public Long getCurrentUserId() {
         log.debug("Current principal name={}", securityIdentity.getPrincipal().getName());
         return Long.parseLong(securityIdentity.getPrincipal().getName());
+    }
+
+    /**
+     * Returns the role of the current user.
+     *
+     * @return the role, or empty if the account has not chosen one yet
+     */
+    public Optional<UserRole> getCurrentUserRole() {
+        return Arrays.stream(UserRole.values())
+                .filter(role -> securityIdentity.hasRole(role.name()))
+                .findFirst();
     }
 
     /**

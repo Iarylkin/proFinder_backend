@@ -1,15 +1,16 @@
 package fit.biejk.resource;
 
 import fit.biejk.dto.ProfileUpdateRequest;
-import fit.biejk.entity.Customer;
-import fit.biejk.entity.Professional;
-import fit.biejk.entity.User;
+import fit.biejk.entity.UserRole;
 import fit.biejk.mapper.CustomerMapper;
 import fit.biejk.mapper.ProfessionalMapper;
 import fit.biejk.service.AuthService;
-import fit.biejk.service.ProfileService;
+import fit.biejk.service.CustomerService;
+import fit.biejk.service.ProfessionalService;
 import io.quarkus.security.Authenticated;
 import jakarta.validation.Valid;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
@@ -29,14 +30,19 @@ import lombok.extern.slf4j.Slf4j;
 public class ProfileResource {
 
     /**
-     * Service for reading and updating profiles.
-     */
-    private final ProfileService profileService;
-
-    /**
-     * Service for resolving the current user.
+     * Service for resolving the current user and their role.
      */
     private final AuthService authService;
+
+    /**
+     * Service for customer profiles.
+     */
+    private final CustomerService customerService;
+
+    /**
+     * Service for professional profiles.
+     */
+    private final ProfessionalService professionalService;
 
     /**
      * Mapper for customer profiles.
@@ -52,13 +58,17 @@ public class ProfileResource {
      * Returns the profile of the authenticated user.
      *
      * @return a customer or professional DTO, depending on the role
+     * @throws ForbiddenException if the account has no role yet
      */
     @GET
     @Authenticated
     public Response getProfile() {
         Long userId = authService.getCurrentUserId();
         log.info("Get profile: userId={}", userId);
-        return Response.ok(toDto(profileService.get(userId))).build();
+        return switch (roleOfCurrentUser()) {
+            case CUSTOMER -> Response.ok(customerMapper.toDto(customerService.getById(userId))).build();
+            case PROFESSIONAL -> Response.ok(professionalMapper.toDto(professionalService.getById(userId))).build();
+        };
     }
 
     /**
@@ -66,19 +76,31 @@ public class ProfileResource {
      *
      * @param request fields to change
      * @return the updated profile
+     * @throws ForbiddenException  if the account has no role yet
+     * @throws BadRequestException if a customer sends fields that only professionals have
      */
     @PATCH
     @Authenticated
     public Response updateProfile(@Valid final ProfileUpdateRequest request) {
         Long userId = authService.getCurrentUserId();
         log.info("Update profile: userId={}, request={}", userId, request);
-        return Response.ok(toDto(profileService.update(userId, request))).build();
+        return switch (roleOfCurrentUser()) {
+            case CUSTOMER -> {
+                if (request.getDescription() != null || request.getCategories() != null) {
+                    throw new BadRequestException("Description and categories are available for professionals only");
+                }
+                var customer = customerService.updateProfile(userId, customerMapper.toEntity(request));
+                yield Response.ok(customerMapper.toDto(customer)).build();
+            }
+            case PROFESSIONAL -> {
+                var professional = professionalService.updateProfile(userId, professionalMapper.toEntity(request));
+                yield Response.ok(professionalMapper.toDto(professional)).build();
+            }
+        };
     }
 
-    private Object toDto(final User profile) {
-        if (profile instanceof Professional professional) {
-            return professionalMapper.toDto(professional);
-        }
-        return customerMapper.toDto((Customer) profile);
+    private UserRole roleOfCurrentUser() {
+        return authService.getCurrentUserRole()
+                .orElseThrow(() -> new ForbiddenException("This account has no role yet"));
     }
 }

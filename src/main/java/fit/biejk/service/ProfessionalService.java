@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -10,6 +9,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 
 import java.util.List;
 
@@ -201,24 +201,27 @@ public class ProfessionalService {
     }
 
     /**
-     * Partially updates the profile of a professional, including the description and the offered services.
+     * Partially updates the profile of a professional, including the description and the categories:
+     * only the non-null fields of {@code changes} are applied.
      *
      * @param id      ID of the professional
-     * @param request fields to change
+     * @param changes a professional holding only the requested changes
      * @return the updated professional
      */
     @Transactional
-    public Professional updateProfile(final Long id, final ProfileUpdateRequest request) {
+    public Professional updateProfile(final Long id, final Professional changes) {
         log.info("Update professional profile: ID={}", id);
         Professional professional = getById(id);
-        userService.updateProfile(id, request);
-        if (request.getDescription() != null) {
-            professional.setDescription(request.getDescription());
+        userService.updateProfile(id, changes);
+        if (changes.getDescription() != null) {
+            professional.setDescription(changes.getDescription());
         }
-        if (request.getCategories() != null) {
-            professional.setCategories(request.getCategories());
+        if (changes.getCategories() != null) {
+            professional.setCategories(changes.getCategories());
         }
         professionalRepository.flush();
+        // the resource maps the result after the transaction ends, so load the lazy categories now
+        Hibernate.initialize(professional.getCategories());
 
         professionalSearchService.save(professionalSearchMapper.toDto(professional));
 
