@@ -67,16 +67,17 @@ public class OrderResponseResource {
      * </p>
      *
      * @param responseId the unique ID of the response to be accepted
-     * @param confirm the DTO containing the status, final price and deadline details
+     * @param request the status, final price and deadline
      * @return order
      */
     @PATCH
     @Path("/{responseId}")
     @RolesAllowed("CUSTOMER")
     public Response update(@PathParam("responseId") final Long responseId,
-                            @Valid final OrderResponseUpdateRequest confirm) {
+                            @Valid final OrderResponseUpdateRequest request) {
 
-        Order result = orderResponseService.approve(responseId, confirm);
+        Order result = orderResponseService.updateStatus(
+                responseId, request.getStatus(), request.getFinalPrice(), request.getFinalDeadline());
         return Response.ok(orderMapper.toDto(result)).build();
     }
 }

@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.OrderResponseUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.exception.StatusConflictException;
 import fit.biejk.repository.OrderResponseRepository;
@@ -15,6 +14,7 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -70,8 +70,8 @@ public class OrderResponseService {
     }
 
     /**
-     * Confirms a specific response, updates the associated order with final terms,
-     * and marks the order as completed.
+     * Changes the status of a response. Only {@code APPROVED} is supported: the response is approved,
+     * the associated order gets the final terms and is marked as completed.
      * <p>
      * This method validates that the current user is the owner of the order. It approves
      * the selected response, automatically rejects all other responses for the same order,
@@ -79,13 +79,17 @@ public class OrderResponseService {
      * </p>
      *
      * @param responseId the unique ID of the response to be approved
-     * @param dto the confirmation data containing the final agreed price and deadline
+     * @param status the new status of the response, must be {@code APPROVED}
+     * @param finalPrice the final agreed price of the order
+     * @param finalDeadline the final agreed deadline of the order
      * @return the updated and persisted order
      * @throws NotFoundException if the response does not exist
      * @throws ForbiddenException if the current user is not the customer who created the order
+     * @throws StatusConflictException if the status is not {@code APPROVED}
      */
     @Transactional
-    public Order approve(final Long responseId, final OrderResponseUpdateRequest dto) {
+    public Order updateStatus(final Long responseId, final OrderResponseStatus status,
+                              final int finalPrice, final LocalDateTime finalDeadline) {
         OrderResponse orderResponse = orderResponseRepository.findByIdOptional(responseId)
                 .orElseThrow(() -> new NotFoundException("Response not found"));
 
@@ -94,12 +98,12 @@ public class OrderResponseService {
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
-        if (dto.getStatus() != OrderResponseStatus.APPROVED) {
+        if (status != OrderResponseStatus.APPROVED) {
             throw new StatusConflictException("Only the APPROVED status can be set on a response");
         }
 
-        order.setPrice(dto.getFinalPrice());
-        order.setDeadline(dto.getFinalDeadline());
+        order.setPrice(finalPrice);
+        order.setDeadline(finalDeadline);
         order.setStatus(OrderStatus.COMPLETED);
 
         orderResponse.setStatus(OrderResponseStatus.APPROVED);

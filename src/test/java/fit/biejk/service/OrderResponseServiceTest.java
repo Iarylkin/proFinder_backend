@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.OrderResponseUpdateRequest;
 import fit.biejk.entity.Customer;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderResponse;
@@ -69,13 +68,13 @@ class OrderResponseServiceTest {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
     }
 
-    private OrderResponseUpdateRequest request(final OrderResponseStatus status) {
-        return new OrderResponseUpdateRequest(status, LocalDateTime.now().plusDays(1), FINAL_PRICE);
+    private Order updateStatus(final long responseId, final OrderResponseStatus status) {
+        return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1));
     }
 
     @Test
     void approvingAResponseCompletesTheOrderAndRejectsTheOthers() {
-        Order result = service.approve(RESPONSE_ID, request(OrderResponseStatus.APPROVED));
+        Order result = updateStatus(RESPONSE_ID, OrderResponseStatus.APPROVED);
 
         assertSame(order, result);
         assertEquals(OrderStatus.COMPLETED, order.getStatus());
@@ -86,9 +85,8 @@ class OrderResponseServiceTest {
 
     @Test
     void anyStatusExceptApprovedIsAConflict() {
-        OrderResponseUpdateRequest request = request(OrderResponseStatus.REJECTED);
-
-        assertThrows(StatusConflictException.class, () -> service.approve(RESPONSE_ID, request));
+        assertThrows(StatusConflictException.class,
+                () -> updateStatus(RESPONSE_ID, OrderResponseStatus.REJECTED));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
         assertEquals(OrderResponseStatus.CREATED, orderResponse.getStatus());
@@ -98,17 +96,16 @@ class OrderResponseServiceTest {
     @Test
     void onlyTheOrderOwnerCanApprove() {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
-        OrderResponseUpdateRequest request = request(OrderResponseStatus.APPROVED);
 
-        assertThrows(ForbiddenException.class, () -> service.approve(RESPONSE_ID, request));
+        assertThrows(ForbiddenException.class,
+                () -> updateStatus(RESPONSE_ID, OrderResponseStatus.APPROVED));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
     }
 
     @Test
     void approvingAMissingResponseIsNotFound() {
-        OrderResponseUpdateRequest request = request(OrderResponseStatus.APPROVED);
-
-        assertThrows(NotFoundException.class, () -> service.approve(999L, request));
+        assertThrows(NotFoundException.class,
+                () -> updateStatus(999L, OrderResponseStatus.APPROVED));
     }
 }
