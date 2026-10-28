@@ -1,6 +1,7 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
+import fit.biejk.entity.User;
 import fit.biejk.entity.Category;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -25,7 +26,7 @@ class ProfessionalServiceTest {
     private ProfessionalSearchService searchService;
     private UserService userService;
     private ProfessionalService service;
-    private Professional professional;
+    private ProfessionalProfile professional;
 
     @BeforeEach
     void setUp() {
@@ -41,7 +42,7 @@ class ProfessionalServiceTest {
                 mock(AuthService.class),
                 mock(CustomerService.class));
 
-        professional = new Professional();
+        professional = new ProfessionalProfile();
         professional.setId(PROFESSIONAL_ID);
         professional.setDescription("Old description");
         professional.setCategories(List.of());
@@ -50,15 +51,16 @@ class ProfessionalServiceTest {
 
     @Test
     void updateProfileChangesOnlyTheSentFields() {
-        Professional changes = new Professional();
+        ProfessionalProfile changes = new ProfessionalProfile();
+        changes.setUser(new User());
         changes.setDescription("New description");
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
+        ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertSame(professional, result);
         assertEquals("New description", result.getDescription());
         assertEquals(List.of(), result.getCategories());
-        verify(userService).updateProfile(PROFESSIONAL_ID, changes);
+        verify(userService).updateProfile(PROFESSIONAL_ID, changes.getUser());
         verify(searchService).save(any());
     }
 
@@ -66,10 +68,11 @@ class ProfessionalServiceTest {
     void updateProfileReplacesTheOfferedServices() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
-        Professional changes = new Professional();
+        ProfessionalProfile changes = new ProfessionalProfile();
+        changes.setUser(new User());
         changes.setCategories(List.of(plumbing));
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
+        ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertEquals(List.of(plumbing), result.getCategories());
         assertEquals("Old description", result.getDescription());

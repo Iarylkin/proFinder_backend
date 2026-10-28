@@ -40,6 +40,22 @@ public class UserService {
     private final MailService mailService;
 
     /**
+     * Creates a new user.
+     *
+     * @param user the user to create
+     * @return the created user
+     * @throws IllegalArgumentException if the email is already registered
+     */
+    @Transactional
+    public User create(final User user) {
+        log.info("Create user: {}", user.getEmail());
+        checkUniqueEmail(user.getEmail());
+        userRepository.persist(user);
+        log.debug("User created with ID={}", user.getId());
+        return user;
+    }
+
+    /**
      * Checks if the given email is unique.
      *
      * @param email email to check

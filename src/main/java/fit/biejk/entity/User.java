@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Base entity representing a system user.
  * <p>
- * This class is extended by more specific user types, such as {@link Customer} and {@link Professional}.
+ * The data of a role lives in a separate profile ({@link CustomerProfile} or {@link ProfessionalProfile}).
  * It stores common attributes such as contact details, role, and avatar reference.
  * </p>
  */
@@ -21,7 +21,6 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
 public class User extends BaseEntity {
 
     /**
@@ -104,4 +103,11 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user2", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
     private List<Chat> receivedChats;
+
+    /**
+     * Profile of the user: a customer or a professional profile, by role. Removed together with the user.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @JsonbTransient
+    private Profile profile;
 }

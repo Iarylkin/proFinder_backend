@@ -4,8 +4,8 @@ import fit.biejk.dto.CustomerDto;
 import fit.biejk.dto.ProfessionalDto;
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Category;
-import fit.biejk.entity.Customer;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.CustomerProfile;
+import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.entity.UserRole;
 import fit.biejk.mapper.CustomerMapperImpl;
 import fit.biejk.mapper.ProfessionalMapperImpl;
@@ -60,7 +60,7 @@ class ProfileResourceTest {
     @Test
     void aCustomerGetsACustomerProfile() {
         loggedInAs(UserRole.CUSTOMER);
-        when(customerService.getById(USER_ID)).thenReturn(new Customer());
+        when(customerService.getById(USER_ID)).thenReturn(new CustomerProfile());
 
         Response response = resource.getProfile();
 
@@ -70,7 +70,7 @@ class ProfileResourceTest {
     @Test
     void aProfessionalGetsAProfessionalProfile() {
         loggedInAs(UserRole.PROFESSIONAL);
-        when(professionalService.getById(USER_ID)).thenReturn(new Professional());
+        when(professionalService.getById(USER_ID)).thenReturn(new ProfessionalProfile());
 
         Response response = resource.getProfile();
 
@@ -90,7 +90,7 @@ class ProfileResourceTest {
     @Test
     void aCustomerUpdateGoesToTheCustomerService() {
         loggedInAs(UserRole.CUSTOMER);
-        when(customerService.updateProfile(any(), any())).thenReturn(new Customer());
+        when(customerService.updateProfile(any(), any())).thenReturn(new CustomerProfile());
         ProfileUpdateRequest request = new ProfileUpdateRequest();
         request.setPhoneNumber("222222222");
 
@@ -116,7 +116,7 @@ class ProfileResourceTest {
     @Test
     void aProfessionalUpdateGoesToTheProfessionalService() {
         loggedInAs(UserRole.PROFESSIONAL);
-        when(professionalService.updateProfile(any(), any())).thenReturn(new Professional());
+        when(professionalService.updateProfile(any(), any())).thenReturn(new ProfessionalProfile());
         ProfileUpdateRequest request = new ProfileUpdateRequest();
         request.setDescription("I fix pipes");
 

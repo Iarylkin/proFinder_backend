@@ -1,17 +1,17 @@
 package fit.biejk.repository;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.UUID;
 
 /**
- * Repository class for performing CRUD operations on {@link Customer} entities.
+ * Repository class for performing CRUD operations on {@link CustomerProfile} entities.
  * <p>
  * Uses PanacheRepositoryBase for simplified data access in Quarkus.
  * </p>
  */
 @ApplicationScoped
-public class CustomerRepository implements PanacheRepositoryBase<Customer, UUID> {
+public class CustomerRepository implements PanacheRepositoryBase<CustomerProfile, UUID> {
 }

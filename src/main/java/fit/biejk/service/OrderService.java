@@ -230,7 +230,7 @@ public class OrderService {
         }
         orderResponse.setOrder(order);
 
-        Professional professional = professionalService.getById(professionalId);
+        ProfessionalProfile professional = professionalService.getById(professionalId);
         orderResponse.setProfessional(professional);
 
         orderResponseService.create(orderResponse);

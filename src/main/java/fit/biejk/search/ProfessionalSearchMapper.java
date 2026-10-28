@@ -1,7 +1,7 @@
 package fit.biejk.search;
 
 import fit.biejk.entity.Category;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.service.ProfessionalService;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mapper for converting between {@link Professional} entities and {@link ProfessionalSearchDto} objects.
+ * Mapper for converting between {@link ProfessionalProfile} entities and {@link ProfessionalSearchDto} objects.
  * <p>
  * Used for transforming data between the database and the Elasticsearch index.
  * </p>
@@ -28,12 +28,12 @@ public class ProfessionalSearchMapper {
     private final ProfessionalService professionalService;
 
     /**
-     * Converts a {@link Professional} entity to a {@link ProfessionalSearchDto}.
+     * Converts a {@link ProfessionalProfile} entity to a {@link ProfessionalSearchDto}.
      *
      * @param professional the professional entity
      * @return the corresponding DTO for search indexing
      */
-    public ProfessionalSearchDto toDto(final Professional professional) {
+    public ProfessionalSearchDto toDto(final ProfessionalProfile professional) {
         List<String> categoryNames = professional.getCategories() == null
                 ? List.of()
                 : professional.getCategories().stream()
@@ -42,34 +42,34 @@ public class ProfessionalSearchMapper {
 
         return new ProfessionalSearchDto(
                 professional.getId(),
-                professional.getFirstName(),
-                professional.getLastName(),
+                professional.getUser().getFirstName(),
+                professional.getUser().getLastName(),
                 professional.getDescription(),
                 professional.getAverageRating(),
                 categoryNames,
-                professional.getLocation().getName()
+                professional.getUser().getLocation().getName()
         );
     }
 
     /**
-     * Converts a {@link ProfessionalSearchDto} back to a {@link Professional} entity
+     * Converts a {@link ProfessionalSearchDto} back to a {@link ProfessionalProfile} entity
      * using the database service.
      *
      * @param professionalDto the search DTO
      * @return the corresponding entity from the database
      */
-    public Professional toEntity(final ProfessionalSearchDto professionalDto) {
+    public ProfessionalProfile toEntity(final ProfessionalSearchDto professionalDto) {
         return professionalService.getById(professionalDto.getId());
     }
 
     /**
-     * Converts a list of {@link ProfessionalSearchDto} to a list of {@link Professional} entities.
+     * Converts a list of {@link ProfessionalSearchDto} to a list of {@link ProfessionalProfile} entities.
      *
      * @param professionalDtoList list of search DTOs
      * @return list of entities
      */
-    public List<Professional> toEntityList(final List<ProfessionalSearchDto> professionalDtoList) {
-        List<Professional> professionals = new ArrayList<>();
+    public List<ProfessionalProfile> toEntityList(final List<ProfessionalSearchDto> professionalDtoList) {
+        List<ProfessionalProfile> professionals = new ArrayList<>();
         for (ProfessionalSearchDto dto : professionalDtoList) {
             professionals.add(toEntity(dto));
         }

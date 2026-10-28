@@ -28,7 +28,7 @@ public class Order extends BaseEntity {
      */
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private CustomerProfile customer;
 
     /**
      * Specialization required for fulfilling the order.

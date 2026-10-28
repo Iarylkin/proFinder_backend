@@ -48,17 +48,17 @@ INSERT INTO users (id, version, email, password, first_name, last_name, phone_nu
 ('00000000-0000-4000-8000-000000000109', 0, 'spec10@example.com','$2a$10$abcdefghijklmnopqrstuv', 'Marek',  'Blaha',      '888999000', '00000000-0000-4000-a000-000000000002', 'PROFESSIONAL', now());
 
 -- Professional data
-INSERT INTO professional (id, average_rating, description) VALUES
-('00000000-0000-4000-8000-000000000100', 4.7, 'Experienced hair stylist with over 10 years in the business.'),
-('00000000-0000-4000-8000-000000000101', 4.2, 'Certified tax consultant helping small businesses.'),
-('00000000-0000-4000-8000-000000000102', 4.5, 'Expert in legal consulting and personal finance.'),
-('00000000-0000-4000-8000-000000000103', 4.3, 'Tech enthusiast offering laptop and phone repair.'),
-('00000000-0000-4000-8000-000000000104', 4.6, 'Haircuts and grooming for men and women.'),
-('00000000-0000-4000-8000-000000000105', 4.1, 'Professional resume and job application advisor.'),
-('00000000-0000-4000-8000-000000000106', 4.4, 'Skincare professional with years of experience.'),
-('00000000-0000-4000-8000-000000000107', 4.0, 'Document translation and business help services.'),
-('00000000-0000-4000-8000-000000000108', 4.8, 'Photo editing and logo design expert.'),
-('00000000-0000-4000-8000-000000000109', 4.9, 'Website development and IT consulting.');
+INSERT INTO professional_profiles (user_id, version, average_rating, description) VALUES
+('00000000-0000-4000-8000-000000000100', 0, 4.7, 'Experienced hair stylist with over 10 years in the business.'),
+('00000000-0000-4000-8000-000000000101', 0, 4.2, 'Certified tax consultant helping small businesses.'),
+('00000000-0000-4000-8000-000000000102', 0, 4.5, 'Expert in legal consulting and personal finance.'),
+('00000000-0000-4000-8000-000000000103', 0, 4.3, 'Tech enthusiast offering laptop and phone repair.'),
+('00000000-0000-4000-8000-000000000104', 0, 4.6, 'Haircuts and grooming for men and women.'),
+('00000000-0000-4000-8000-000000000105', 0, 4.1, 'Professional resume and job application advisor.'),
+('00000000-0000-4000-8000-000000000106', 0, 4.4, 'Skincare professional with years of experience.'),
+('00000000-0000-4000-8000-000000000107', 0, 4.0, 'Document translation and business help services.'),
+('00000000-0000-4000-8000-000000000108', 0, 4.8, 'Photo editing and logo design expert.'),
+('00000000-0000-4000-8000-000000000109', 0, 4.9, 'Website development and IT consulting.');
 
 -- Professional ⟷ Categories
 INSERT INTO professional_categories (professional_id, category_id) VALUES
@@ -79,9 +79,9 @@ INSERT INTO users (id, version, email, password, first_name, last_name, phone_nu
 ('00000000-0000-4000-8000-000000000111', 0, 'customer2@example.com', '$2a$10$examplehashcustomer2', 'David', 'Svoboda','222222222', '00000000-0000-4000-a000-000000000002', 'CUSTOMER', now());
 
 -- Customer data
-INSERT INTO customer (id) VALUES
-('00000000-0000-4000-8000-000000000110'),
-('00000000-0000-4000-8000-000000000111');
+INSERT INTO customer_profiles (user_id, version) VALUES
+('00000000-0000-4000-8000-000000000110', 0),
+('00000000-0000-4000-8000-000000000111', 0);
 
 -- Orders IDs 120–125
 INSERT INTO orders (id, version, customer_id, status, description, price, review_id, createat, deadline, location_id) VALUES

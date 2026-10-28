@@ -79,7 +79,7 @@ public class ProfessionalResource {
     @PermitAll
     public Response getById(@PathParam("professionalId") final UUID professionalId) {
         log.info("Get professional by ID={}", professionalId);
-        Professional result = professionalService.getById(professionalId);
+        ProfessionalProfile result = professionalService.getById(professionalId);
         return Response.ok(professionalMapper.toPublicDto(result)).build();
     }
 
@@ -96,8 +96,8 @@ public class ProfessionalResource {
     @DenyAll
     public Response update(@PathParam("professionalId") final UUID professionalId, @Valid final ProfessionalDto dto) {
         log.info("Update professional request: ID={}, dto={}", professionalId, dto);
-        Professional entity = professionalMapper.toEntity(dto);
-        Professional result = professionalService.update(professionalId, entity);
+        ProfessionalProfile entity = professionalMapper.toEntity(dto);
+        ProfessionalProfile result = professionalService.update(professionalId, entity);
         log.debug("Professional updated with ID={}", result.getId());
         return Response.ok(professionalMapper.toDto(result)).build();
     }

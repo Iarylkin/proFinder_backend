@@ -26,7 +26,7 @@ public class OrderResponse extends BaseEntity {
      */
     @ManyToOne
     @JoinColumn(name = "professional_id", nullable = false)
-    private Professional professional;
+    private ProfessionalProfile professional;
 
     /**
      * Order associated with this response.

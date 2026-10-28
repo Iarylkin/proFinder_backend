@@ -1,7 +1,8 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.CustomerPublicDto;
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
+import fit.biejk.entity.User;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -18,10 +19,12 @@ class CustomerPublicMappingTest {
 
     @Test
     void publicDtoHasNoContactData() {
-        Customer customer = new Customer();
-        customer.setFirstName("Ann");
-        customer.setEmail(EMAIL);
-        customer.setPhoneNumber(PHONE);
+        User user = new User();
+        user.setFirstName("Ann");
+        user.setEmail(EMAIL);
+        user.setPhoneNumber(PHONE);
+        CustomerProfile customer = new CustomerProfile();
+        customer.setUser(user);
 
         CustomerPublicDto dto = mapper.toPublicDto(customer);
 

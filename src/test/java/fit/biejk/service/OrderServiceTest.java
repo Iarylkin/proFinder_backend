@@ -1,6 +1,6 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderStatus;
@@ -52,7 +52,7 @@ class OrderServiceTest {
                 mock(ProfessionalService.class),
                 authService);
 
-        Customer customer = new Customer();
+        CustomerProfile customer = new CustomerProfile();
         customer.setId(CUSTOMER_ID);
         Location location = new Location();
         location.setId(LOCATION_ID);

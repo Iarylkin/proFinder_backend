@@ -2,7 +2,7 @@ package fit.biejk.resource;
 
 import fit.biejk.dto.PageRequest;
 import fit.biejk.dto.ProfessionalFilterCriteria;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.mapper.ProfessionalMapper;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
@@ -70,7 +70,7 @@ public class ProfessionalSearchResource {
         }
 
         log.info("Get all professionals");
-        List<Professional> result = professionalService.getAll(
+        List<ProfessionalProfile> result = professionalService.getAll(
                 pagination.getPage(),
                 pagination.getSize()
         );

@@ -79,9 +79,9 @@ public class OrderResource {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
         UUID customerId = authService.getCurrentUserId();
-        Customer customer = customerService.getById(customerId);
+        CustomerProfile customer = customerService.getById(customerId);
         order.setCustomer(customer);
-        order.setLocation(customer.getLocation());
+        order.setLocation(customer.getUser().getLocation());
         Order result = orderService.create(order);
         log.debug("Order created with ID={}", result.getId());
 
