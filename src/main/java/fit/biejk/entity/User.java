@@ -1,6 +1,5 @@
 package fit.biejk.entity;
 
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -23,7 +22,7 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Inheritance(strategy = InheritanceType.JOINED)
-public class User extends PanacheEntityBase {
+public class User extends BaseEntity {
 
     /**
      * Maximum length for firstName and lastName fields.
@@ -34,13 +33,6 @@ public class User extends PanacheEntityBase {
      * Maximum length for phoneNumber field.
      */
     public static final int PHONE_MAX_LENGTH = 20;
-
-    /**
-     * Unique identifier for the user.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     /**
      * User's email address. Must be unique.

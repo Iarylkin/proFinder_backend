@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service responsible for authentication logic.
@@ -153,11 +154,11 @@ public class AuthService {
     /**
      * Returns the ID of the currently authenticated user.
      *
-     * @return user ID as Long
+     * @return user ID
      */
-    public Long getCurrentUserId() {
+    public UUID getCurrentUserId() {
         log.debug("Current principal name={}", securityIdentity.getPrincipal().getName());
-        return Long.parseLong(securityIdentity.getPrincipal().getName());
+        return UUID.fromString(securityIdentity.getPrincipal().getName());
     }
 
     /**
@@ -177,8 +178,8 @@ public class AuthService {
      * @param userId user ID to check
      * @return true if matches, false otherwise
      */
-    public boolean isCurrentUser(final Long userId) {
-        Long currentUserId = getCurrentUserId();
+    public boolean isCurrentUser(final UUID userId) {
+        UUID currentUserId = getCurrentUserId();
         log.debug("Comparing user IDs: current={}, requested={}", currentUserId, userId);
         return currentUserId.equals(userId);
     }

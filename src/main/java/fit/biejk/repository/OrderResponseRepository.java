@@ -6,6 +6,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Repository class for performing CRUD operations on {@link OrderResponse} entities.
@@ -39,7 +40,7 @@ public class OrderResponseRepository implements PanacheRepository<OrderResponse>
      * @param size         number of responses per page
      * @return a list of {@link OrderResponse} entities submitted by the given professional
      */
-    public List<OrderResponse> findByProfessionalId(final Long professionalId, final int page, final int size) {
+    public List<OrderResponse> findByProfessionalId(final UUID professionalId, final int page, final int size) {
         return find("professional.id", professionalId)
                 .page(page - 1, size)
                 .list();

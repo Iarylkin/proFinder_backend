@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 class ProfileResourceTest {
 
-    private static final long USER_ID = 7L;
+    private static final UUID USER_ID = UUID.randomUUID();
 
     private AuthService authService;
     private CustomerService customerService;

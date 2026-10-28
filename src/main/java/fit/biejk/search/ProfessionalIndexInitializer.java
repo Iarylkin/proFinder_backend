@@ -64,7 +64,7 @@ public class ProfessionalIndexInitializer {
             elasticsearchClient.indices().create(c -> c
                     .index(indexName)
                     .mappings(m -> m
-                            .properties("id", p -> p.long_(x -> x))
+                            .properties("id", p -> p.keyword(x -> x))
                             .properties("firstName", p -> p.text(t -> t))
                             .properties("lastName", p -> p.text(t -> t))
                             .properties("description", p -> p.text(t -> t))

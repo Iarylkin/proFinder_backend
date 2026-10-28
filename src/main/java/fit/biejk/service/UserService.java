@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Service class for managing {@link User} entities.
@@ -89,7 +90,7 @@ public class UserService {
      * @return the found User entity
      * @throws NotFoundException if no user is found with the given ID
      */
-    public User getById(final Long id) {
+    public User getById(final UUID id) {
         log.info("Get user by id={}", id);
         User user = userRepository.findById(id);
         if (user == null) {
@@ -106,7 +107,7 @@ public class UserService {
      * @param id the ID of the user
      * @return true if the user exists, false otherwise
      */
-    public boolean existById(final Long id) {
+    public boolean existById(final UUID id) {
         User user = userRepository.findById(id);
         if (user == null) {
             log.warn("User {} not found", id);
@@ -125,7 +126,7 @@ public class UserService {
      * @throws NotFoundException if user is not found
      */
     @Transactional
-    public User update(final Long userId, final User newUser) {
+    public User update(final UUID userId, final User newUser) {
         log.info("Update user: userId={}, newEmail={}", userId, newUser.getEmail());
         User existingUser = userRepository.findById(userId);
         if (existingUser == null) {
@@ -151,7 +152,7 @@ public class UserService {
      * @return updated user
      */
     @Transactional
-    public User updatePassword(final Long userId, final String newPassword) {
+    public User updatePassword(final UUID userId, final String newPassword) {
         User user = getById(userId);
         user.setPassword(CryptoUtils.hash(newPassword));
         return user;
@@ -165,7 +166,7 @@ public class UserService {
      * @return updated user
      */
     @Transactional
-    public User updateEmail(final Long userId, final String newEmail) {
+    public User updateEmail(final UUID userId, final String newEmail) {
         log.info("Update user: userId={}, newEmail={}", userId, newEmail);
         User existingUser = getById(userId);
         existingUser.setEmail(newEmail);
@@ -182,7 +183,7 @@ public class UserService {
      * @throws NotFoundException if user is not found
      */
     @Transactional
-    public void delete(final Long userId) {
+    public void delete(final UUID userId) {
         log.info("Delete user: userId={}", userId);
         User existingUser = userRepository.findById(userId);
         if (existingUser == null) {
@@ -203,7 +204,7 @@ public class UserService {
      * @return updated user
      */
     @Transactional
-    public User changePassword(final Long userId,
+    public User changePassword(final UUID userId,
                                final String currentPassword,
                                final String newPassword,
                                final String confirmPassword) {
@@ -226,7 +227,7 @@ public class UserService {
      * @return updated user
      */
     @Transactional
-    public User changeEmail(final Long userId,
+    public User changeEmail(final UUID userId,
                             final String newEmail,
                             final String currentPassword) {
         User user = getById(userId);
@@ -254,7 +255,7 @@ public class UserService {
      * @return the updated user
      * @throws NotFoundException if the user does not exist
      */
-    public User updateProfile(final Long userId, final User changes) {
+    public User updateProfile(final UUID userId, final User changes) {
         log.info("Update profile: userId={}", userId);
         User user = getById(userId);
         if (changes.getFirstName() != null) {

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 class OrderServiceTest {
 
     private static final long ORDER_ID = 10L;
-    private static final long CUSTOMER_ID = 1L;
+    private static final UUID CUSTOMER_ID = UUID.randomUUID();
     private static final UUID LOCATION_ID = UUID.randomUUID();
     private static final int PRICE = 100;
     private static final int NEW_PRICE = 250;

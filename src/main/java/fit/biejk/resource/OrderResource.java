@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST resource for managing orders and responses.
@@ -77,7 +78,7 @@ public class OrderResource {
     public Response create(@Valid final OrderDto dto) {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
-        Long customerId = authService.getCurrentUserId();
+        UUID customerId = authService.getCurrentUserId();
         Customer customer = customerService.getById(customerId);
         order.setCustomer(customer);
         order.setLocation(customer.getLocation());
@@ -122,7 +123,7 @@ public class OrderResource {
             @Valid final OrderResponseDto orderResponseDto) {
         log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
         OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
-        Long professionalId = authService.getCurrentUserId();
+        UUID professionalId = authService.getCurrentUserId();
 
         OrderResponse result = orderService.respond(orderId, professionalId, orderResponse);
 

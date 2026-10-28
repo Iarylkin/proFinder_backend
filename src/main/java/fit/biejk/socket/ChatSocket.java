@@ -89,7 +89,7 @@ public class ChatSocket {
     }
 
     private void handleOpenSession(final String token, final Long chatId, final Session session) {
-        Long userId = extractUserId(token);
+        UUID userId = extractUserId(token);
 
         if (userId == null || !userService.existById(userId)) {
             closeSession(session, "Unauthorized");
@@ -123,7 +123,7 @@ public class ChatSocket {
     @OnMessage
     public void onMessage(final ChatInputMessage inputMessage, final Session session,
                           @PathParam("chatId") final Long chatId) {
-        Long senderId = (Long) session.getUserProperties().get("userId");
+        UUID senderId = (UUID) session.getUserProperties().get("userId");
         if (senderId == null) {
             log.warn("No userId associated with session: {}", session.getId());
             return;
@@ -132,7 +132,7 @@ public class ChatSocket {
         executor.execute(() -> handleIncomingMessage(inputMessage, senderId, chatId));
     }
 
-    private void handleIncomingMessage(final ChatInputMessage inputMessage, final Long senderId, final Long chatId) {
+    private void handleIncomingMessage(final ChatInputMessage inputMessage, final UUID senderId, final Long chatId) {
         if (!userService.existById(senderId)) {
             return;
         }
@@ -224,10 +224,10 @@ public class ChatSocket {
      * @return extracted user ID
      * @throws IllegalArgumentException if token is invalid
      */
-    private Long extractUserId(final String token) {
+    private UUID extractUserId(final String token) {
         try {
             JsonWebToken jwt = jwtParser.parse(token);
-            return Long.parseLong(jwt.getSubject());
+            return UUID.fromString(jwt.getSubject());
         } catch (ParseException e) {
             throw new IllegalArgumentException("Invalid JWT", e);
         }

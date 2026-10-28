@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -31,7 +32,7 @@ class OrderResponseServiceTest {
 
     private static final long ORDER_ID = 10L;
     private static final long RESPONSE_ID = 20L;
-    private static final long CUSTOMER_ID = 1L;
+    private static final UUID CUSTOMER_ID = UUID.randomUUID();
     private static final int FINAL_PRICE = 300;
 
     private OrderResponseRepository responseRepository;

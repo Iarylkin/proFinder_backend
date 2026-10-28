@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service class for managing {@link OrderResponse} entities.
@@ -206,7 +207,7 @@ public class OrderResponseService {
      * @return list of responses submitted by the professional
      * @throws IllegalArgumentException if the caller is not the same as the professional
      */
-    public List<OrderResponse> getByProfessionalId(final Long professionalId, final int page, final int size) {
+    public List<OrderResponse> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Searching for response by professional ID={}", professionalId);
         if (!authService.isCurrentUser(professionalId)) {
             throw new IllegalArgumentException("Professional ID " + professionalId + " not authorized");

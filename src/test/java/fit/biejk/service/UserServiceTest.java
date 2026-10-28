@@ -17,7 +17,8 @@ import static org.mockito.Mockito.when;
 
 class UserServiceTest {
 
-    private static final long USER_ID = 1L;
+    private static final UUID USER_ID = UUID.randomUUID();
+    private static final UUID MISSING_USER_ID = UUID.randomUUID();
     private static final UUID OLD_LOCATION_ID = UUID.randomUUID();
     private static final UUID NEW_LOCATION_ID = UUID.randomUUID();
 
@@ -80,6 +81,6 @@ class UserServiceTest {
     void updateProfileOfAMissingUserIsNotFound() {
         User changes = new User();
 
-        assertThrows(NotFoundException.class, () -> service.updateProfile(999L, changes));
+        assertThrows(NotFoundException.class, () -> service.updateProfile(MISSING_USER_ID, changes));
     }
 }

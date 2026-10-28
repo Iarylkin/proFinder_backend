@@ -14,6 +14,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST resource that handles operations related to chat creation and message history retrieval.
@@ -51,7 +52,7 @@ public class ChatResource {
     public Response create(
             @Valid final CreateChatRequest request
     ) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         Chat result = chatService.create(userId, request.getRecipientId());
 
 
@@ -71,7 +72,7 @@ public class ChatResource {
     public Response getMessagesByChatId(
             @PathParam("chatId") final Long chatId,
             @BeanParam final PageRequest pagination) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         List<ChatMessage> result = chatService.getMessagesById(
                 chatId,
                 userId,
@@ -91,7 +92,7 @@ public class ChatResource {
     @Path("/me")
     @Authenticated
     public Response getMyChats(@BeanParam final PageRequest pagination) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         List<Chat> result = chatService.getByUserId(
                 userId,
                 pagination.getPage(),

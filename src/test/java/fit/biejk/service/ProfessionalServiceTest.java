@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 class ProfessionalServiceTest {
 
-    private static final long PROFESSIONAL_ID = 2L;
+    private static final UUID PROFESSIONAL_ID = UUID.randomUUID();
 
     private ProfessionalSearchService searchService;
     private UserService userService;

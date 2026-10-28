@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service class for managing {@link Customer} entities.
@@ -68,7 +69,7 @@ public class CustomerService {
      * @return found customer
      * @throws NotFoundException if the customer is not found
      */
-    public Customer getById(final Long id) {
+    public Customer getById(final UUID id) {
         log.info("Get customer by ID={}", id);
         Customer result = customerRepository.findById(id);
         if (result == null) {
@@ -86,7 +87,7 @@ public class CustomerService {
      * @return the original customer before update
      */
     @Transactional
-    public Customer update(final Long id, final Customer customer) {
+    public Customer update(final UUID id, final Customer customer) {
         log.info("Update customer: ID={}, email={}", id, customer.getEmail());
         Customer old = getById(id);
         userService.update(id, customer);
@@ -100,7 +101,7 @@ public class CustomerService {
      * @param id ID of the customer to delete
      */
     @Transactional
-    public void delete(final Long id) {
+    public void delete(final UUID id) {
         log.info("Delete customer: ID={}", id);
         userService.delete(id);
         log.debug("Customer deleted with ID={}", id);
@@ -114,7 +115,7 @@ public class CustomerService {
      * @return the updated customer
      */
     @Transactional
-    public Customer updateProfile(final Long id, final Customer changes) {
+    public Customer updateProfile(final UUID id, final Customer changes) {
         Customer customer = getById(id);
         userService.updateProfile(id, changes);
         return customer;

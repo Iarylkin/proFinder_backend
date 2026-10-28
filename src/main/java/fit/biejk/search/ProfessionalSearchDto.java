@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Data Transfer Object representing a professional in the search index.
@@ -20,7 +21,7 @@ public class ProfessionalSearchDto {
     /**
      * Unique identifier of the professional.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * First name of the professional.

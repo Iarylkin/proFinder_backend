@@ -5,6 +5,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Repository class for managing {@link Chat} entities.
@@ -25,9 +26,9 @@ public class ChatRepository implements PanacheRepository<Chat> {
      * @param userId2 ID of the second user
      * @return The {@link Chat} entity if found, otherwise {@code null}
      */
-    public Chat findByUsersId(final Long userId1, final Long userId2) {
-        Long first = Math.min(userId1, userId2);
-        Long second = Math.max(userId1, userId2);
+    public Chat findByUsersId(final UUID userId1, final UUID userId2) {
+        UUID first = userId1.compareTo(userId2) <= 0 ? userId1 : userId2;
+        UUID second = first.equals(userId1) ? userId2 : userId1;
         return find("user1.id = ?1 AND user2.id = ?2", first, second).firstResult();
     }
 
@@ -39,7 +40,7 @@ public class ChatRepository implements PanacheRepository<Chat> {
      * @param size   number of chats per page
      * @return list of {@link Chat} entities
      */
-    public List<Chat> findByUserId(final Long userId, final int page, final int size) {
+    public List<Chat> findByUserId(final UUID userId, final int page, final int size) {
         return find("user1.id = ?1 OR user2.id = ?1", userId)
                 .page(page - 1, size)
                 .list();

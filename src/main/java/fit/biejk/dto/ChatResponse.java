@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * DTO for displaying chat information in the chat list.
  */
@@ -16,7 +18,7 @@ public class ChatResponse {
     private Long chatId;
 
     /** ID of the other user in the chat. */
-    private Long partnerId;
+    private UUID partnerId;
 
     /** First name of the chat partner. */
     private String partnerFirstName;

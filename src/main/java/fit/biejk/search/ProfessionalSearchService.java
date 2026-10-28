@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for indexing, deleting, and searching professionals in Elasticsearch.
@@ -55,7 +56,7 @@ public class ProfessionalSearchService {
      * @param id the ID of the professional to delete
      */
     @Transactional
-    public void delete(final Long id) {
+    public void delete(final UUID id) {
         try {
             log.info("Deleting Professional with id {} for search", id);
             elasticsearchClient.delete(d -> d

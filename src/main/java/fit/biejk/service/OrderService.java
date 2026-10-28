@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service class for managing {@link Order} entities.
@@ -215,7 +216,7 @@ public class OrderService {
      * @return created response
      */
     @Transactional
-    public OrderResponse respond(final Long orderId, final Long professionalId, final OrderResponse orderResponse) {
+    public OrderResponse respond(final Long orderId, final UUID professionalId, final OrderResponse orderResponse) {
         log.info("Create response: orderId={}, professionalId={}", orderId, orderResponse.getProfessional().getId());
         Order order = getById(orderId);
         if (!order.getStatus().acceptsResponses()) {
@@ -276,7 +277,7 @@ public class OrderService {
      * @return list of orders belonging to the customer
      * @throws IllegalArgumentException if the current user is not the same as the customer
      */
-    public List<Order> getByCustomerId(final Long userId, final int page, final int size) {
+    public List<Order> getByCustomerId(final UUID userId, final int page, final int size) {
         log.info("Get orders by customerId={}", userId);
         if (!authService.isCurrentUser(userId)) {
             log.warn("User is not logged in");
@@ -297,7 +298,7 @@ public class OrderService {
      * @return list of orders currently assigned to the professional
      * @throws IllegalArgumentException if the current user is not the same as the professional
      */
-    public List<Order> getByProfessionalId(final Long professionalId, final int page, final int size) {
+    public List<Order> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Get orders by professionalId={}", professionalId);
         if (!authService.isCurrentUser(professionalId)) {
             log.warn("User is not logged in");
