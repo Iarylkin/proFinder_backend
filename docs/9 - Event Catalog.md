@@ -1,7 +1,7 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.5
-- **Date:** 2026-10-27
+- **Version:** 1.6
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
 
@@ -128,8 +128,8 @@ Producer is `core-api` unless noted. "Notifies" = the human recipient of the res
 | 4 | `order.expired` | `@Scheduled` — `expires_at` reached | Notification Svc; **cascades** `search.order_reindex` (drop from index; order stays ACTIVE) | customer |
 | 5 | `order.extended` | `OrderService.extendExpiration()` | **cascades** `search.order_reindex` (re-add to index) | — |
 | 6 | `order.closed` | `OrderService.close()` (manual) **or** `autoCloseForAccountAction()` (ban/suspend/delete) | Notification Svc; **cascades** `search.order_reindex` | responders |
-| 7 | `response.created` | `ResponseService.submitOrEdit()` — first submit only | Notification Svc | customer |
-| 8 | `response.edited` | `ResponseService.submitOrEdit()` — subsequent edit | Notification Svc | customer — **in-app only** ([D1](#8-resolved-decisions)) |
+| 7 | `response.created` | `OrderResponseService.submitOrEdit()` — first submit only | Notification Svc | customer |
+| 8 | `response.edited` | `OrderResponseService.submitOrEdit()` — subsequent edit | Notification Svc | customer — **in-app only** ([D1](#8-resolved-decisions)) |
 | 9 | `review.posted` | `ReviewService.submitOrEdit()` — first submit, either direction | Notification Svc; **cascades** `search.professional_reindex` if reviewee is a professional (rating changed) | reviewee |
 | 10 | `review.edited` | `ReviewService.submitOrEdit()` — subsequent edit | **cascades** `search.professional_reindex` if rating changed | — (no re-notify) |
 | 11 | `review.professional_responded` | `ReviewReplyService.reply()` by the professional | Notification Svc | customer (review author) |
@@ -235,7 +235,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 ```json
 // message.sent   aggregate_type: message
 {
-  "message_id": "uuid", "conversation_id": "uuid",
+  "message_id": "uuid", "chat_id": "uuid",
   "sender_id": "uuid", "sender_name": "string",
   "recipient_id": "uuid",
   "preview": "string (first ~120 chars, no attachments)",
@@ -244,7 +244,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 }
 
 // message.deleted   aggregate_type: message
-{ "message_id": "uuid", "conversation_id": "uuid", "deleted_by": "uuid", "deleted_at": "iso-8601" }
+{ "message_id": "uuid", "chat_id": "uuid", "deleted_by": "uuid", "deleted_at": "iso-8601" }
 ```
 
 ### Blocking
@@ -407,6 +407,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-10-28 | **Naming:** `conversation_id` → `chat_id` in the message payloads; `ResponseService` → `OrderResponseService`. |
 | 1.5 | 2026-10-27 | **D-1.4:** `closed_reason` values are `MANUAL` / `ACCOUNT_ACTION`. |
 | 1.4 | 2026-10-27 | **D-1.3:** `quote_amount` → `quote_price`; `location` → `city` in `changed_fields`; enum values in payloads are `UPPER_SNAKE_CASE`. |
 | 1.3 | 2026-09-10 | Standardised to the shared doc format. Renumbered "Resolved decisions" §9 → §8 and "Changelog" §10 → §9 (there was no §8); fixed the `#7-inconsistencies-found--proposed-resolution` anchor links to the real slug. |

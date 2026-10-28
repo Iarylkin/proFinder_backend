@@ -1,7 +1,7 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.3
-- **Date:** 2026-10-27
+- **Version:** 1.4
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
 
@@ -26,15 +26,15 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | Class | Layer | Responsibility |
 |---|---|---|
 | `Order` | Entity | maps to `orders` (see [file 6](6%20-%20Database%20Schema.md#2-orders--categories)) |
-| `Response` | Entity | maps to `responses` |
+| `OrderResponse` | Entity | maps to `responses` |
 | `OrderRepository` | Repository | `findActiveByCategoryAndCity()`, `findByCustomer()`, `findExpiring(before)` |
-| `ResponseRepository` | Repository | `findByOrder(sort)`, `findByOrderAndProfessional()` (upsert lookup) |
+| `OrderResponseRepository` | Repository | `findByOrder(sort)`, `findByOrderAndProfessional()` (upsert lookup) |
 | `OrderService` | Service | `createDraft()`, `updateDraft()` / `updateActive()`, `publish()`, `close()`, `extendExpiration()`, `autoCloseForAccountAction(userId)` — called from `ReportService`/account deletion |
-| `ResponseService` | Service | `submitOrEdit()` (one per professional per order, `409 ORDER_CLOSED`/`409 ORDER_EXPIRED` checks), `listForOrder(sortBy)` filtering out banned/suspended/deleted professionals |
-| `OrderController` | Controller | `POST /orders`, `PATCH /orders/{id}`, `POST /orders/{id}/publish`, `POST /orders/{id}/close`, `POST /orders/{id}/extend`, `DELETE /orders/{id}` (draft only), `GET /orders/{id}`, `GET /orders` |
-| `ResponseController` | Controller | `POST /orders/{id}/responses`, `GET /orders/{id}/responses` |
-| `OrderCreateRequestDto`, `OrderUpdateRequestDto`, `OrderResponseDto`, `OrderListItemDto` | DTO | order request/response shapes |
-| `ResponseCreateRequestDto`, `ResponseDto` | DTO | response request/response shapes |
+| `OrderResponseService` | Service | `submitOrEdit()` (one per professional per order, `409 ORDER_CLOSED`/`409 ORDER_EXPIRED` checks), `listForOrder(sortBy)` filtering out banned/suspended/deleted professionals |
+| `OrderController` | Controller | `POST /orders`, `PATCH /orders/{id}` (edit, publish, close, extend), `DELETE /orders/{id}` (draft only), `GET /orders/{id}`, `GET /orders` |
+| `OrderResponseController` | Controller | `POST /orders/{id}/responses`, `GET /orders/{id}/responses` |
+| `OrderCreateRequestDto`, `OrderUpdateRequestDto`, `OrderDto`, `OrderListItemDto` | DTO | order request/response shapes |
+| `OrderResponseCreateRequestDto`, `OrderResponseDto` | DTO | response request/response shapes |
 
 ### 1.2 Reviews
 ---
@@ -63,9 +63,9 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ProfileService` | Service | `completeProfile()`, `updateCategories()` / `updateCities()` — enforces "replace, never clear to zero" ([5 - State Machines.md](5%20-%20State%20Machines.md)), recomputes `INCOMPLETE`→`ACTIVE` |
 | `CategoryService` | Service | admin/moderator CRUD on the flat category list |
 | `PortfolioService` | Service | `upload()`, `updateCaption()`, `delete()` (own or moderator) |
-| `ProfileController` | Controller | `GET/PATCH /me/profile`, `GET /professionals/{id}` |
+| `ProfileController` | Controller | `GET/PATCH /users/me/profile`, `GET /professionals/{id}` |
 | `CategoryController` | Controller | `POST/PATCH/DELETE /categories`, `GET /categories` |
-| `PortfolioController` | Controller | `POST /me/portfolio`, `DELETE /me/portfolio/{id}` |
+| `PortfolioController` | Controller | `POST /users/me/portfolio`, `DELETE /users/me/portfolio/{id}` |
 | `ProfessionalProfileDto`, `CustomerProfileDto`, `ProfileUpdateRequestDto`, `CategoryDto`, `PortfolioPhotoDto`, `PortfolioUploadRequestDto` | DTO | profile/category/portfolio shapes |
 
 ### 1.4 Reports & Moderation
@@ -128,7 +128,7 @@ No controller — internal only.
 | Class | Layer | Responsibility |
 |---|---|---|
 | `AccountService` | Service | `requestDeletion()` (guard: no active ban/suspension, no open report against the user — else `ACCOUNT_DELETION_BLOCKED`; PII scrub; auto-close ACTIVE orders via `OrderService.autoCloseForAccountAction()`; emit `account.deletion_requested` + reindex), `finalizeDeletion()` (`@Scheduled` — grace window elapsed, emit `account.deletion_finalized`, ES doc hard-purged) |
-| `AccountController` | Controller | `DELETE /me` |
+| `AccountController` | Controller | `DELETE /users/me` |
 
 Reactivation is **not** here — it happens in the Auth Service's `LoginService` when a `DELETED` account
 logs in inside the 30-day grace window (emits `account.reactivated`). See
@@ -181,21 +181,21 @@ Source: [3 - System Design.md § 3. Auth Service](3%20-%20System%20Design.md), [
 
 Source: [3 - System Design.md § 4. Messaging Service](3%20-%20System%20Design.md), [4 - Business logic.md § Messaging & Communication](4%20-%20Business%20logic.md#messaging--communication).
 
-### 3.1 Conversations & Messages
+### 3.1 Chats & Messages
 ---
 
 | Class | Layer | Responsibility |
 |---|---|---|
-| `Conversation` | Entity | maps to `conversations` (see [file 6](6%20-%20Database%20Schema.md#4-messaging)) |
+| `Chat` | Entity | maps to `chats` (see [file 6](6%20-%20Database%20Schema.md#4-messaging)) |
 | `Message` | Entity | maps to `messages` |
-| `ConversationRepository`, `MessageRepository` | Repository | `findByPair(customerId, professionalId)`, `findByConversation(paginated)` |
-| `ConversationService` | Service | `getOrCreate(customerId, professionalId)` — keyed by pair, not order ([A1 decision](Documentation%20Roadmap.md)) |
+| `ChatRepository`, `MessageRepository` | Repository | `findByPair(customerId, professionalId)`, `findByChat(paginated)` |
+| `ChatService` | Service | `getOrCreate(customerId, professionalId)` — keyed by pair, not order ([A1 decision](Documentation%20Roadmap.md)) |
 | `MessageService` | Service | `send()`, `markDelivered()`, `markRead()`, `delete()` (soft, UI-hides immediately), `purgeExpiredDeleted()` (`@Scheduled`, after grace period) |
 | `BlockCheckClient` | Service (HTTP client → Core API) | checks the `blocks` table before allowing a new message |
-| `ConversationController` | Controller | `GET /conversations`, `GET /conversations/{id}/messages` |
+| `ChatController` | Controller | `GET /chats/me`, `GET /chats/{id}/messages` |
 | `MessageWebSocketEndpoint` | Controller (WebSocket) | connect/auth handshake, send, delivery-receipt events (Sent→Delivered→Read) |
-| `MessageController` | Controller | `POST /conversations/{id}/messages` (HTTP fallback), `DELETE /messages/{id}` |
-| `ConversationDto`, `MessageDto`, `SendMessageRequestDto`, `MessageReceiptDto` | DTO | request/response shapes |
+| `MessageController` | Controller | `POST /chats/{id}/messages` (HTTP fallback), `DELETE /messages/{id}` |
+| `ChatDto`, `MessageDto`, `SendMessageRequestDto`, `MessageReceiptDto` | DTO | request/response shapes |
 
 
 ## 4. Notification Service (port 8083)
@@ -214,7 +214,7 @@ Source: [3 - System Design.md § 5. Notification Service](3%20-%20System%20Desig
 | `NotificationCenterService` | Service | `list()`, `markRead()`, `markAllRead()`, `purgeOldRead()` (`@Scheduled`, >90 days) |
 | `PreferenceService` | Service | get/update the `(user, event_type, channel)` matrix |
 | `NotificationController` | Controller | `GET /notifications`, `POST /notifications/mark-read`, `POST /notifications/mark-all-read` |
-| `PreferenceController` | Controller | `GET/PATCH /me/notification-preferences` |
+| `PreferenceController` | Controller | `GET/PATCH /users/me/notification-preferences` |
 | `NotificationDto`, `NotificationPreferenceDto` | DTO | response/request shapes |
 
 ### 4.2 Device Tokens & Push
@@ -226,7 +226,7 @@ Source: [3 - System Design.md § 5. Notification Service](3%20-%20System%20Desig
 | `DeviceTokenRepository` | Repository | `findByToken()`, `findStale(60d)` |
 | `PushNotificationService` | Service | sends via FCM, deep-link payload `{type, entity_type, entity_id, url}`, deletes token on `UNREGISTERED`/`INVALID` |
 | `DeviceTokenService` | Service | `register()`/`refresh()` (`onNewToken`), `invalidate()`, `purgeInactive()` (`@Scheduled`, 60 days) |
-| `DeviceTokenController` | Controller | `POST /me/device-tokens`, `DELETE /me/device-tokens/{id}` |
+| `DeviceTokenController` | Controller | `POST /users/me/device-tokens`, `DELETE /users/me/device-tokens/{id}` |
 | `DeviceTokenRegisterDto` | DTO | request shape |
 
 ### 4.3 Email Delivery
@@ -293,6 +293,7 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-28 | **Naming:** *conversation* → *chat* (`ChatService`, `ChatController`, `ChatDto`); the response entity is `OrderResponse` (not `Response`, which clashes with the JAX-RS type); the order DTO is `OrderDto`; own-user paths are under `/users/me`; order publish, close and extend are one `PATCH /orders/{id}`. |
 | 1.3 | 2026-10-27 | **D-1.3:** DTOs are Java records serialized with Jackson; records with secrets mask `toString`. |
 | 1.2 | 2026-10-27 | **D-1.1:** added the data ownership convention (schema per service, no cross-schema repositories). |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Added **§1.8 Account** (`AccountService` / `AccountController` for `DELETE /me` — referenced by files 9 & 10 but previously missing). Removed the stale "not-yet-written Error Catalog" wording and the "inconsistency worth flagging" note about JWT validation (file 3 v1.3 resolved it). Removed the stale "Next" section (API Spec / Error Catalog / Event Catalog are all done). |

@@ -1,7 +1,7 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.2
-- **Date:** 2026-10-27
+- **Version:** 1.3
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
 
@@ -135,7 +135,7 @@ sequenceDiagram
                 Core-->>U: 403 FORBIDDEN
             else authorized
                 Core->>PG: SELECT ... (the actual work)
-                Core-->>U: 200 OrderResponseDto
+                Core-->>U: 200 OrderDto
             end
         end
     end
@@ -290,7 +290,7 @@ sequenceDiagram
     participant FCM
     participant SMTP
 
-    C->>Core: POST /orders/{id}/publish
+    C->>Core: PATCH /orders/{id} {status: ACTIVE}
     Core->>Core: authz (A3) + status must be DRAFT + email verified
     alt not draft
         Core-->>C: 409 ORDER_NOT_DRAFT
@@ -300,7 +300,7 @@ sequenceDiagram
         Core->>PG: INSERT outbox (order.published)
         Core->>PG: INSERT outbox (search.order_reindex, reason=published)
         Core->>PG: COMMIT
-        Core-->>C: 200 OrderResponseDto (status ACTIVE)
+        Core-->>C: 200 OrderDto (status ACTIVE)
     end
 
     Note over Core,MQ: outbox poller
@@ -364,7 +364,7 @@ sequenceDiagram
                 Core->>PG: INSERT outbox (response.edited)
             end
             Core->>PG: COMMIT
-            Core-->>P: 201 / 200 ResponseDto
+            Core-->>P: 201 / 200 OrderResponseDto
         end
     end
 
@@ -405,7 +405,7 @@ sequenceDiagram
     Note over S,WS1: earlier — WS upgrade validated locally + denylist check
     Note over R,WS2: recipient's device SUBSCRIBEd ws:user:{recipient} on its own instance
 
-    S->>WS1: {type: message.send, conversation_id, text}
+    S->>WS1: {type: message.send, chat_id, text}
     WS1->>Core: (HTTP) GET blocks — is sender blocked by / blocking recipient?
     alt blocked
         WS1-->>S: {type: error, code: USER_BLOCKED}
@@ -439,7 +439,7 @@ sequenceDiagram
 
 **Notes**
 - **No LB sticky sessions.** Delivery is `PUBLISH ws:user:{recipient_id}`; Redis fans out to whatever instance(s) hold that subscription. Multi-device = multiple subscribers on the same channel ([8 § Messaging](8%20-%20API%20Specification.md)).
-- On reconnect the client calls `GET /conversations/{id}/messages?after={last_seen_id}` to backfill — Pub/Sub has no replay. Same endpoint is the WebSocket-unavailable fallback.
+- On reconnect the client calls `GET /chats/{id}/messages?after={last_seen_id}` to backfill — Pub/Sub has no replay. Same endpoint is the WebSocket-unavailable fallback.
 - `message.sent` → Notification Service is the path that reaches an **offline** recipient (push / email / in-app). An online, actively-viewing recipient may get the in-app row suppressed or auto-read.
 - `message.deleted` (not drawn): sender calls `DELETE /messages/{id}` → soft-hide + `PUBLISH` a removal to the other party + `message.deleted` event so Notification Service drops any stale unread row. Hard purge after the moderator-review grace period.
 
@@ -660,7 +660,7 @@ sequenceDiagram
     participant ES as Elasticsearch
     participant Notif as Notification Service
 
-    U->>Core: DELETE /me  (request account deletion)
+    U->>Core: DELETE /users/me  (request account deletion)
     Core->>PG: guard — no active ban, no open report against the user
     alt blocked
         Core-->>U: 409 ACCOUNT_DELETION_BLOCKED (resolve open items first)
@@ -706,6 +706,7 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-28 | **Naming:** *conversation* → *chat*; `PATCH /orders/{id}` replaces `/publish`; `DELETE /users/me`; DTO names `OrderDto` and `OrderResponseDto`. |
 | 1.2 | 2026-10-27 | **D-1.4:** `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Account-deletion guard now returns `409 ACCOUNT_DELETION_BLOCKED` (was bare `409 CONFLICT`), matching [8 - API Specification.md](8%20-%20API%20Specification.md). Token-table inserts renamed to `email_verification_tokens` / `password_reset_tokens` to match [6 - Database Schema.md](6%20-%20Database%20Schema.md). |
 | 1.0 | 2026-09-07 | Initial: 14 sequence diagrams across Auth (register/verify, login, per-request authz, refresh+rotation, Google OAuth, password reset), Orders (publish, respond), Communication (WebSocket chat), Reviews/Search/Files, Moderation/Account (report→ban cascade, deletion→grace→finalize). Diagram A3 states the resolution of the file 3 ↔ file 4 JWT-validation inconsistency (local verify + Redis denylist); file 3 was corrected to match in v1.3. |

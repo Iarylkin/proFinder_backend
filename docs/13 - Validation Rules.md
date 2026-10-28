@@ -1,7 +1,7 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.4
-- **Date:** 2026-10-27
+- **Version:** 1.5
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
@@ -37,11 +37,11 @@ Applied everywhere, not repeated per field below.
 | `email` | register, login, forgot-password | ✅ | `@Email`; ≤ 254 chars; normalized lowercase; case-insensitive unique (register). Disposable-domain blocklist (config, empty in MVP). No MX check. | `VALIDATION_ERROR`; `EMAIL_ALREADY_REGISTERED` (register) |
 | `password` | register, reset-password | ✅ | ≥ `password_min_length` (default **8**); complexity: ≥1 upper, ≥1 lower, ≥1 digit, ≥1 special — each toggle config, all on by default; ≤ **128**; no reuse restriction; not equal to the email local-part. Hashed bcrypt cost 12. | `VALIDATION_ERROR` |
 | `display_name` | register, profile update | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". For a Google sign-up the value comes from the Google profile name, cleaned to this format (fallback: the email local-part). | `VALIDATION_ERROR` |
-| `role` | `POST /auth/role` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via this path); settable once, only with the `temp_token` of a Google sign-up that has no role. Email registration does not take a role here. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
+| `role` | register, `POST /auth/role` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via these paths); settable once. Required at email registration; a Google sign-up that has no role yet sets it with `POST /auth/role` and the `temp_token`. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
 | `token` (verify / reset / unsubscribe) | verify-email, reset-password, unsubscribe | ✅ | opaque string, exact match, single-use, unexpired (verify 24 h, reset 15 min). | `VERIFICATION_TOKEN_INVALID` / `RESET_TOKEN_INVALID` |
 | `refresh_token` | refresh, logout | ✅ | opaque; looked up by hash. | `REFRESH_TOKEN_INVALID` / `REFRESH_TOKEN_REUSED` |
 | OAuth `code` / `state` | google/callback | ✅ | validated by the OIDC library; `state` must match the issued value. | `VALIDATION_ERROR` |
-| account deletion | `DELETE /me` | — | no body; rejected if the caller has an active ban/suspension or an open report against them. | `ACCOUNT_DELETION_BLOCKED` (409) |
+| account deletion | `DELETE /users/me` | — | no body; rejected if the caller has an active ban/suspension or an open report against them. | `ACCOUNT_DELETION_BLOCKED` (409) |
 
 
 ## 3. Profiles
@@ -60,7 +60,7 @@ Applied everywhere, not repeated per field below.
 | `cities` | professional | conditional | array of strings; each ≤ **100** chars; **≥ 1 to reach/keep `ACTIVE`**; replace-not-clear; case-insensitive dedupe; no max count. | `VALIDATION_ERROR`; `CITY_REQUIRED` |
 | `working_hours_start` / `_end` | professional | ❌ | `HH:mm`; if both set, `start < end`; single fixed schedule (no per-weekday). | `VALIDATION_ERROR` |
 | `available` | professional | ❌ | boolean; defaults `false` until set. | — |
-| `caption` (portfolio photo) | `POST /me/portfolio` | ❌ | ≤ **2000** chars. | `VALIDATION_ERROR` |
+| `caption` (portfolio photo) | `POST /users/me/portfolio` | ❌ | ≤ **2000** chars. | `VALIDATION_ERROR` |
 
 
 ## 4. Orders
@@ -75,7 +75,7 @@ Applied everywhere, not repeated per field below.
 | `city` | ✅ | city string; ≤ **100** chars. | `VALIDATION_ERROR` |
 | `preferred_date` | ❌ | date; must be today or later (⑥). | `VALIDATION_ERROR` |
 | `version` (on `PATCH`) | ✅ | integer; must equal the current row version (optimistic lock). | `CONFLICT` |
-| `additional_days` (extend) | ✅ | integer **1–90**. | `VALIDATION_ERROR` |
+| `expires_at` (extend, `PATCH /orders/{id}`) | ❌ | later than the current `expires_at` and at most **90 days** later (was `additional_days` 1–90); not allowed on a `CLOSED` order. | `VALIDATION_ERROR`; `ORDER_CLOSED` |
 | default expiry window | — | `order_default_expiry_days` config, default **7**. | — |
 
 State-guarded (service layer, not Bean Validation): edit/delete only in the allowed status → `ORDER_NOT_DRAFT` / `ORDER_CLOSED`; publish only from `DRAFT` → `ORDER_NOT_DRAFT`; publish/respond require `status = ACTIVE` on the account → `EMAIL_NOT_VERIFIED`.
@@ -112,7 +112,7 @@ State-guarded (service layer, not Bean Validation): edit/delete only in the allo
 | `text` | conditional | ≤ **200** chars; required **iff** no attachment. | `VALIDATION_ERROR` |
 | `attachment` (file) | conditional | image ≤ **10 MB**, any other type ≤ **25 MB**; **not** an executable (`.exe .bat .cmd .sh .msi .scr .com .jar` + their MIME types); served `Content-Disposition: attachment`. | `FILE_TOO_LARGE` / `INVALID_FILE_TYPE` |
 | — | — | at least one of `text` / `attachment` present; sender not in a `blocks` relationship with the recipient. | `VALIDATION_ERROR`; `USER_BLOCKED` |
-| `conversation_id` / `professional_id` (start) | ✅ | UUID; the professional must exist; a conversation is `getOrCreate`d by the `(customer, professional)` pair. | `NOT_FOUND` |
+| `chat_id` / `professional_id` (start) | ✅ | UUID; the professional must exist; a chat is `getOrCreate`d by the `(customer, professional)` pair. | `NOT_FOUND` |
 
 
 ## 8. Reports, appeals, blocking, moderation
@@ -195,6 +195,7 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-10-28 | **Naming and paths:** `conversation_id` → `chat_id`, `/users/me/...`; `expires_at` replaces `additional_days` for extending an order; `role` is part of email registration. |
 | 1.4 | 2026-10-27 | **D-1.3:** order field `location` → `city`; report reason, decision, appeal outcome and notification channel values are `UPPER_SNAKE_CASE`. |
 | 1.3 | 2026-10-27 | **D-1.2:** `role` is set only via `temp_token` for Google sign-ups; `display_name` source for Google sign-ups. |
 | 1.2 | 2026-09-10 | Standardised to the shared doc format. Cleared the last two stray `(proposed)` markers the v1.1 note claimed were already removed (unknown-JSON-fields row → "gap ⑤"; device-token length → "implementation default"). |

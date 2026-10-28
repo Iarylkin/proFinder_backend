@@ -1,7 +1,7 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.6
-- **Date:** 2026-10-27
+- **Version:** 1.7
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
 
@@ -29,7 +29,7 @@ erDiagram
     users ||--o{ responses : submits
     users ||--o{ reviews : "writes / receives"
     users ||--o{ review_replies : writes
-    users ||--o{ conversations : "customer / professional side"
+    users ||--o{ chats : "customer / professional side"
     users ||--o{ messages : sends
     users ||--o{ notifications : receives
     users ||--o{ reports : "files / is reported"
@@ -47,7 +47,7 @@ erDiagram
 
     reviews ||--o{ review_replies : has
 
-    conversations ||--o{ messages : contains
+    chats ||--o{ messages : contains
 
     reports ||--o{ report_evidence : has
     reports ||--o| ban_appeals : "may trigger"
@@ -320,18 +320,18 @@ erDiagram
 ## 4. Messaging
 ---
 
-Source: [4 - Business logic.md § Messaging & Communication](4%20-%20Business%20logic.md#messaging--communication), including the [Conversation Model](4%20-%20Business%20logic.md) subsection.
+Source: [4 - Business logic.md § Messaging & Communication](4%20-%20Business%20logic.md#messaging--communication), including the [Chat Model](4%20-%20Business%20logic.md) subsection.
 
 ```mermaid
 erDiagram
-    users ||--o{ conversations : "customer side"
-    users ||--o{ conversations : "professional side"
-    conversations ||--o{ messages : contains
+    users ||--o{ chats : "customer side"
+    users ||--o{ chats : "professional side"
+    chats ||--o{ messages : contains
     users ||--o{ messages : sends
     files ||--o| messages : "attached to"
 ```
 
-#### `conversations`
+#### `chats`
 ---
 
 | Column | Type | Constraints / Notes |
@@ -348,7 +348,7 @@ erDiagram
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | id | uuid | PK |
-| conversation_id | uuid | FK → `conversations.id` |
+| chat_id | uuid | FK → `chats.id` |
 | sender_id | uuid | FK → `users.id` |
 | text | string | nullable, ≤200 chars |
 | attachment_file_id | uuid | FK → `files.id`, nullable |
@@ -357,7 +357,7 @@ erDiagram
 | created_at | timestamp | |
 
 **Constraints:**
-- `conversations`: `UNIQUE (customer_id, professional_id)` — keyed by pair, not by order, per the [Conversation Model](4%20-%20Business%20logic.md) decision (A1). Same conversation is reused across every order between the pair.
+- `chats`: `UNIQUE (customer_id, professional_id)` — keyed by pair, not by order, per the [Chat Model](4%20-%20Business%20logic.md) decision (A1). Same chat is reused across every order between the pair.
 - `messages.deleted_at`: UI hides it immediately on set; a background job hard-deletes the row after the short moderator-review grace period ([4 - Business logic.md § History & Retention](4%20-%20Business%20logic.md#history--retention)).
 
 
@@ -595,8 +595,8 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 | `responses` | `(order_id, created_at)` | paginated response list |
 | `reviews` | `UNIQUE (reviewer_id, reviewee_id) WHERE deleted_at IS NULL` | enforce one live review per pair |
 | `reviews` | `(reviewee_id, deleted_at, is_outlier)` | rating recalculation query |
-| `conversations` | `UNIQUE (customer_id, professional_id)` | conversation keyed by pair |
-| `messages` | `(conversation_id, created_at)` | message history pagination |
+| `chats` | `UNIQUE (customer_id, professional_id)` | chat keyed by pair |
+| `messages` | `(chat_id, created_at)` | message history pagination |
 | `notifications` | `(user_id, is_read, created_at)` | unread badge + notification center |
 | `device_tokens` | `UNIQUE (token)` | FCM token lookup/invalidation |
 | `refresh_tokens` | `(user_id)`, `(family_id)` | session lookup, reuse detection |
@@ -617,7 +617,7 @@ One PostgreSQL instance, one schema per service ([3 - System Design.md § Postgr
 |---|---|
 | `auth` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
 | `core` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `responses`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
-| `messaging` | `conversations`, `messages`, `outbox`, `processed_events` |
+| `messaging` | `chats`, `messages`, `outbox`, `processed_events` |
 | `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
 | `moderation` | the rules and decision log tables (Phase 2) |
 
@@ -636,9 +636,9 @@ Rows are almost never hard-deleted (soft delete, see Cross-Cutting Notes), so th
 | `refresh_tokens.user_id`, `email_verification_tokens.user_id`, `password_reset_tokens.user_id` | `users.id` (`auth`) | `CASCADE` | tokens are worthless without the account (PII scrub of a `DELETED` user) |
 | `professional_categories.professional_id`, `professional_cities.professional_id` | `professional_profiles.user_id` (`core`) | `CASCADE` | pure join rows |
 | `professional_categories.category_id` | `categories.id` | `RESTRICT` | category delete is blocked while referenced ([13 - Validation Rules.md](13%20-%20Validation%20Rules.md)) |
-| `orders.category_id`, `responses.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.conversation_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
+| `orders.category_id`, `responses.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.chat_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
 
-Everything else that references `users` (`orders.customer_id`, `responses.professional_id`, `reviews.*`, `conversations.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
+Everything else that references `users` (`orders.customer_id`, `responses.professional_id`, `reviews.*`, `chats.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
 
 **`citext`:** `users.email`, `categories.name` and `professional_cities.city` use the PostgreSQL `citext` type. The baseline Flyway migration of each schema that uses it runs `CREATE EXTENSION IF NOT EXISTS citext`.
 
@@ -656,6 +656,7 @@ Everything else that references `users` (`orders.customer_id`, `responses.profes
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-10-28 | **Naming:** table `conversations` → `chats`, `conversation_id` → `chat_id`. |
 | 1.6 | 2026-10-27 | **D-1.4:** `citext` for `users.email`, `categories.name`, `professional_cities.city`; `CHECK`s for `budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`; partial unique index on live reviews (respects `deleted_at`); new `professional_profiles.last_active_at`; new § Foreign Keys & ON DELETE (FKs only inside a schema, `RESTRICT` by default, `CASCADE` for tokens and join rows); `closed_reason` values `UPPER_SNAKE_CASE`. |
 | 1.5 | 2026-10-27 | **D-1.3:** `orders.location` → `city`; every enum value is `UPPER_SNAKE_CASE` (notification channel, report reason / status / decision, evidence type, appeal status). |
 | 1.4 | 2026-10-27 | **D-1.1 / D-1.2:** added § Schema Ownership (one schema per service, no cross-schema reads or FKs). `users.role` is nullable until a Google sign-up picks a role; `display_name` stays `NOT NULL` and is taken from the Google profile for Google sign-ups. |

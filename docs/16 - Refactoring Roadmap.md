@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.11
+- **Version:** 1.13
 - **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -125,7 +125,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-5.1** (before code) | Denylist owner (Auth or Core), decision 6. Recommendation: Core publishes `moderation.banned`, Auth consumes it and sets the denylist |
 | **D-5.2** (before code) | How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
 | **D-5.3** | Deployment: VPS + Compose or Kubernetes (decision 10); make `docs/3` and `15` agree. Scaling: change NFR-Scale-1/2 in `docs/2` to one instance at launch |
-| **D-5.4** | `docs/15`: update workflow names, paths, the `fit.biejk` package, Mailpit, commit format; API deprecation policy (aliases until `2.0.0`); wiki sync (currently one-way, action pinned to `@main`) |
+| **D-5.4** | `docs/15`: update workflow names, paths, the `fit.biejk` package, Mailpit, commit format; wiki sync (currently one-way, action pinned to `@main`) |
 | **D-5.5** | Availability and latency targets: one set of values in `docs/2` (uptime, search under 2 s vs under 500 ms, cache TTL) |
 | **rc.1** | Multi-module Maven, `contracts` (events, DTOs, errors). Monorepo layout `services/<name>` |
 | **rc.2** | Notification: own schema, `MailService`, recipient projection |
@@ -134,7 +134,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **rc.5** | Moderation Service: `POST /moderation/check-text` and `/check-url` (under 200 ms), internal access only |
 | **rc.6** | Nginx: routing, per-IP rate limiting, TLS (Let's Encrypt), `Connection: upgrade` for WS, health checks; one compose file; CI/CD, GHCR and one image per service; update required checks in branch protection |
 | **rc.7** | Prometheus and Grafana dashboards per service, JSON logs with trace id, PII masking, 30-day log retention, alerts, cross-service E2E, timeouts and retries |
-| **2.0.0** | Remove deprecated aliases, final smoke test, release |
+| **2.0.0** | Final smoke test, release |
 
 ## M6 — Auth features (2.1.0 – 2.3.0)
 ---
@@ -142,7 +142,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version / task | What we do |
 |---|---|
 | **D-6.1** (before code) | `docs/4`, `11`, `13`: the `account_status` claim in the JWT can be stale for up to 15 minutes, so decide how the token is refreshed; denylist by `iat`, not by `user_id`; bcrypt truncates at 72 bytes; do not trim passwords and tokens; the ASCII-only name regex rejects names like "José" |
-| **D-6.2** | Contact with support for banned and suspended users: a channel and an endpoint, or an explicit "out of MVP" (decision 11); response shape of `GET /me/profile` for `MODERATOR` |
+| **D-6.2** | Contact with support for banned and suspended users: a channel and an endpoint, or an explicit "out of MVP" (decision 11); response shape of `GET /users/me/profile` for `MODERATOR` |
 | **2.1.0** | Registration with email verification (24 h link, resend 1/60 s and at most 5/h), email normalization, disposable-domain blocklist, password policy, account statuses, one status gate on every request |
 | **2.2.0** | Access 15 min + refresh 7 days with rotation and reuse detection, 30-day cap, denylist, lockout 5/15, logout and logout-all, role chosen once, password reset by a 15-minute link, email and password change with session revocation |
 | **2.3.0** | Google OAuth 1:1, unlink (only when a password is set), set password, `ROLE_SELECTION_REQUIRED` and `temp_token` |
@@ -175,9 +175,9 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version / task | What we do |
 |---|---|
-| **D-9.1** (before code) | Chat attachments: `docs/2` (MVP) vs `docs/4` (later), decision 4; chat retention (while the order is active vs until deletion); who may open a conversation (professional or only the customer) |
+| **D-9.1** (before code) | Chat attachments: `docs/2` (MVP) vs `docs/4` (later), decision 4; chat retention (while the order is active vs until deletion); who may open a chat (professional or only the customer) |
 | **D-9.2** | `docs/13` §9, `docs/4`: HEIC/HEIF and animated GIF on re-encoding, "quality 82" for PNG and WebP, `Cache-Control: immutable` on private evidence, evidence types (`text/photo/message_link` vs files) |
-| **2.11.0** | Chat: conversation only between customer and professional, text up to 200 characters, WS protocol per `docs/8`, `GET /conversations`, backfill `?after=`, HTTP fallback, SENT/DELIVERED/READ statuses, deletion (kept 2 days for moderators), purge job, blocks and a notice to the blocked user |
+| **2.11.0** | Chat: only between a customer and a professional, text up to 200 characters, WS protocol per `docs/8`, `GET /chats/me`, backfill `?after=`, HTTP fallback, SENT/DELIVERED/READ statuses, deletion (kept 2 days for moderators), purge job, blocks and a notice to the blocked user |
 | **2.12.0** | Files and portfolio: `files`, `FileController` with `purpose`, 302 to MinIO, magic bytes, limits, EXIF stripping, resize (avatar 512×512 + 128×128), `Content-Disposition: attachment`, immediate MinIO deletion; review photos, report evidence; chat attachments per decision |
 
 ## M10 — Rate limiting (2.13.0)
@@ -195,7 +195,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-11.1** (before code) | `docs/4`, `5`, `11`, `13`: content identifier for `content_removed`; endpoint for `submitted → under_review` and concurrent decisions by two moderators; a report against a `PENDING_VERIFICATION` user (closing deadline); abuse of "an open report blocks deletion"; effect of a block on responses; contradiction between "moderator contacts a party" and the missing channel |
 | **D-11.2** (before code) | Appeals: may a `SENIOR` review a ban they issued; manual unban (`docs/11`) vs the only `BANNED → ACTIVE` transition; moderator deleting orders (decision 5); support tickets and moderation reports (decision 11); audit log for reading private messages |
-| **2.14.0** | Role `MODERATOR` + `moderator_level`, moderator account creation, reports (7 reasons, at most 1 per day per pair, `report_evidence`), shared queue, decisions (dismiss, warning with counter, suspend 1–365, ban, content_removed), cascades, automatic return from suspension, `PENDING_VERIFICATION` protected from bans, access to case data and any conversation, deletion of messages and photos, audit log. *Decision 2* |
+| **2.14.0** | Role `MODERATOR` + `moderator_level`, moderator account creation, reports (7 reasons, at most 1 per day per pair, `report_evidence`), shared queue, decisions (dismiss, warning with counter, suspend 1–365, ban, content_removed), cascades, automatic return from suspension, `PENDING_VERIFICATION` protected from bans, access to case data and any chat, deletion of messages and photos, audit log. *Decision 2* |
 | **2.15.0** | Appeals (within 30 days, one per ban, a different moderator), appeal list and detail, manual unban, lifecycle events, category management for `SENIOR`, deletion of problematic orders. *Decisions 2 and 5* |
 
 ## M12 — Search (2.16.0 – 2.17.0)
@@ -279,6 +279,8 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.13 | 2026-10-28 | Chat wording in the rows follows the *chat* naming (`GET /chats/me`). |
+| 1.12 | 2026-10-28 | Removed the remaining mentions of deprecated API aliases (D-5.4 and the 2.0.0 row); the Elasticsearch `*_write` aliases in 2.16.0 are unrelated and stay. |
 | 1.11 | 2026-10-28 | Removed the Compatibility principle: nothing is deployed, so the API changes without deprecated aliases. |
 | 1.10 | 2026-10-28 | Renumbered the 1.x versions: the two naming steps are one version (1.1.0), the new paths are 1.2.0, and every later 1.x version moves down by one (the old 1.4.0 – 1.21.0 are now 1.3.0 – 1.20.0; M1 = 1.1.0 – 1.7.0, M2 = 1.8.0 – 1.13.0, M3 = 1.14.0 – 1.16.0, M4 = 1.17.0 – 1.20.0). The 2.x series is unchanged. Older changelog rows keep the numbers they used at the time. |
 | 1.9 | 2026-10-28 | Noted the profile unification (one DTO family, polymorphic mapper, role handled in the service) in the account-and-profiles version; until then `ProfileResource` branches by role. |

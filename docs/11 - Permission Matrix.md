@@ -1,7 +1,7 @@
 # ProFinder — Permission Matrix
 
-- **Version:** 1.2
-- **Date:** 2026-10-26
+- **Version:** 1.3
+- **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** One table of who can do what — roles × actions, plus the account-status and ownership conditions layered on top. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 ("permission matrix (role × action)").
 
@@ -52,9 +52,9 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 | Action | Endpoint | CUSTOMER | PROFESSIONAL | MODERATOR |
 |---|---|---|---|---|
 | Create / edit / delete a **DRAFT** order | `POST/PATCH/DELETE /orders[/{id}]` | ✅ own | ⛔ | ⛔ |
-| Publish an order | `POST /orders/{id}/publish` | ✅ own ✎ | ⛔ | ⛔ |
+| Publish an order | `PATCH /orders/{id}` (`status: ACTIVE`) | ✅ own ✎ | ⛔ | ⛔ |
 | Edit an **ACTIVE** order | `PATCH /orders/{id}` | ✅ own | ⛔ | ⛔ |
-| Close / extend an order | `POST /orders/{id}/close`·`/extend` | ✅ own | ⛔ | ⛔ |
+| Close / extend an order | `PATCH /orders/{id}` (`status: CLOSED` · `expires_at`) | ✅ own | ⛔ | ⛔ |
 | Delete a **problematic** order (any status) | `DELETE /orders/{id}` (moderator path) | ⛔ | ⛔ | ✅ (FR-Moderator-6) |
 | View a single order | `GET /orders/{id}` | ✅ | ✅ | ✅ |
 | List / browse own orders | `GET /orders?status=` | ✅ own | — | — |
@@ -79,10 +79,10 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 
 | Action | Endpoint | CUSTOMER | PROFESSIONAL | MODERATOR |
 |---|---|---|---|---|
-| View / edit own profile | `GET/PATCH /me/profile` | ✅ own | ✅ own | ✅ own (minimal) |
+| View / edit own profile | `GET/PATCH /users/me/profile` | ✅ own | ✅ own | ✅ own (minimal) |
 | View a professional's public profile | `GET /professionals/{id}` | ✅ public | ✅ public | ✅ public |
 | View a customer's public profile | `GET /customers/{id}` | ✅ | ✅ | ✅ |
-| Upload / delete own portfolio photo | `POST/DELETE /me/portfolio[/{id}]` | ⛔ | ✅ own | delete: ✅ (any) |
+| Upload / delete own portfolio photo | `POST/DELETE /users/me/portfolio[/{id}]` | ⛔ | ✅ own | delete: ✅ (any) |
 | List categories | `GET /categories` | ✅ public | ✅ public | ✅ public |
 | Create / edit / delete a category | `POST/PATCH/DELETE /categories[/{id}]` | ⛔ | ⛔ | ★ `SENIOR` only ([8](8%20-%20API%20Specification.md), FR-Admin-1) |
 
@@ -91,13 +91,13 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 
 | Action | Endpoint | CUSTOMER | PROFESSIONAL | MODERATOR |
 |---|---|---|---|---|
-| Open a conversation / send a message | `POST /conversations/{id}/messages`, WS `message.send` | ✅ ✎ party | ✅ ✎ party | ⛔ (see note) |
-| Read conversation history | `GET /conversations/{id}/messages` | ✅ party | ✅ party | ✅ **any** (disputes — FR-Messaging-6) |
-| List own conversations | `GET /conversations` | ✅ own | ✅ own | — |
+| Open a chat / send a message | `POST /chats/{id}/messages`, WS `message.send` | ✅ ✎ party | ✅ ✎ party | ⛔ (see note) |
+| Read chat history | `GET /chats/{id}/messages` | ✅ party | ✅ party | ✅ **any** (disputes — FR-Messaging-6) |
+| List own chats | `GET /chats/me` | ✅ own | ✅ own | — |
 | Delete a message | `DELETE /messages/{id}` | ✅ own (sender) | ✅ own (sender) | ✅ (content removal — via report decision) |
 | Message blocked by a `blocks` row | — | `403 USER_BLOCKED` | `403 USER_BLOCKED` | n/a |
 
-*Moderator "send a message to a user" (FR-Moderator-7, warnings) is delivered as a **notification** from a report decision, not by the moderator joining a customer↔professional conversation. A dedicated moderator-messaging surface is not in the MVP conversation model.*
+*Moderator "send a message to a user" (FR-Moderator-7, warnings) is delivered as a **notification** from a report decision, not by the moderator joining a customer↔professional chat. A dedicated moderator-messaging surface is not in the MVP chat model.*
 
 ### Reports, moderation, blocking
 ---
@@ -123,8 +123,8 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 | Upload a file | `POST /files` | ✅ ✎ | ✅ ✎ | ✅ |
 | View a file | `GET /files/{id}` | avatar/portfolio: public · review/report evidence: **own or MODERATOR** | same | ✅ any |
 | Delete a file | `DELETE /files/{id}` | ✅ own | ✅ own | ✅ any |
-| Manage own notifications / preferences / device tokens | `/notifications`, `/me/notification-preferences`, `/me/device-tokens` | ✅ own | ✅ own | ✅ own |
-| Delete own account | `DELETE /me` | ✅ (blocked during active ban or open report) | ✅ (same) | ✅ (same) |
+| Manage own notifications / preferences / device tokens | `/notifications`, `/users/me/notification-preferences`, `/users/me/device-tokens` | ✅ own | ✅ own | ✅ own |
+| Delete own account | `DELETE /users/me` | ✅ (blocked during active ban or open report) | ✅ (same) | ✅ (same) |
 | Register / login / refresh / logout | `/auth/*` | public / self | public / self | public / self |
 | Choose role (once) | `POST /auth/role` | self, if unset (`ROLE_IMMUTABLE` otherwise) | self, if unset | n/a |
 
@@ -150,7 +150,7 @@ Everything a hypothetical Admin would do (category management is the concrete ca
 - **Role** and **account_status** travel in the JWT access-token claims ([4 § Sessions & Tokens](4%20-%20Business%20logic.md)). No per-request call to Auth Service.
 - **`moderator_level`** is **not** a JWT claim — it's read from `users` when a moderator hits a `SENIOR`-gated endpoint (rare, so a DB read is fine; keeps the token small and avoids a token-refresh requirement when a moderator is promoted).
 - **`profile_status`** likewise is read from `professional_profiles` on the response-submit / search-visibility paths (it changes rarely and only upward).
-- **Ownership** (`customer_id` / `professional_id` / `author_id` / conversation participant) is checked against the JWT `sub` in the service layer — see the "Owner" definition in [8 § Endpoints](8%20-%20API%20Specification.md).
+- **Ownership** (`customer_id` / `professional_id` / `author_id` / chat participant) is checked against the JWT `sub` in the service layer — see the "Owner" definition in [8 § Endpoints](8%20-%20API%20Specification.md).
 - **Instant revocation:** ban / suspend / role change / password change / logout-all set `v1:denylist:{user_id}` (Redis, TTL 900 s) → the next request from any still-valid token gets `401 SESSION_REVOKED`.
 
 
@@ -159,6 +159,7 @@ Everything a hypothetical Admin would do (category management is the concrete ca
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-28 | **Paths:** `PATCH /orders/{id}` for publish, close and extend; `GET /chats/me`, `/chats/{id}/messages`; `/users/me/...` for profile, portfolio, preferences, device tokens and account deletion. |
 | 1.2 | 2026-10-26 | Added `GET /customers/{id}` (public customer view, any authenticated user, no contact data). |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata, separators). |
 | 1.0 | 2026-09-07 | Initial. Role definitions, account-status gate, full role × action matrix across all 5 services, `STANDARD`/`SENIOR` split, enforcement notes. |

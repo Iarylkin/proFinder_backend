@@ -1,7 +1,7 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.8
-- **Date:** 2026-10-27
+- **Version:** 3.9
+- **Date:** 2026-10-28
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
 
@@ -93,7 +93,7 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
 - Responses are **sealed** — a professional cannot see other professionals' responses, quotes, or the total response count
 - Customer sees all incoming responses in real-time (default order: newest first; client can re-sort by price / rating)
 - Customer can view professional profiles and ratings
-- Customer can open **direct chat with any responding professional** — or with any other professional entirely, chat is not gated by a response (see [Conversation Model](#conversation-model)) — to discuss details, negotiate terms, and coordinate work
+- Customer can open **direct chat with any responding professional** — or with any other professional entirely, chat is not gated by a response (see [Chat Model](#chat-model)) — to discuss details, negotiate terms, and coordinate work
 - Customer can communicate with **multiple professionals simultaneously** from the same order
 - Customer can edit order details anytime (budget, location, description, etc.)
 - Editing the order does **not** remove existing responses — they are preserved, and responding professionals are notified of the change
@@ -324,14 +324,14 @@ There are no other transitions. No soft delete, no moderator deletion of orders,
 ---
 
 - **Trigger:** A chat message is sent (published by the Messaging Service)
-- **Recipients:** The other party — push / email / in-app per their preferences. Real-time in-conversation delivery goes over the WebSocket separately (Redis Pub/Sub) and is not a notification.
+- **Recipients:** The other party — push / email / in-app per their preferences. Real-time in-chat delivery goes over the WebSocket separately (Redis Pub/Sub) and is not a notification.
 - **Message:** "[Sender Name]: [preview]"
 
 ### message.deleted
 ---
 
 - **Trigger:** A user deletes one of their own messages (in-scope for MVP)
-- **Recipients:** No notification. The other party's open conversation is updated over the WebSocket; any not-yet-read "new message" in-app notification pointing at that message is removed.
+- **Recipients:** No notification. The other party's open chat is updated over the WebSocket; any not-yet-read "new message" in-app notification pointing at that message is removed.
 
 ### user.blocked
 ---
@@ -552,7 +552,7 @@ A permanently banned user can file an appeal against the ban decision. This is t
 | Is there a soft-delete / DELETED status for orders? | ❌ No — customer can only close an order or hard-delete a DRAFT |
 | Maximum responses per order? | No artificial cap — naturally bounded by the number of professionals in the category + city (one each) |
 | Are reviews tied to a specific order? | ❌ No — fully decoupled, see [Reviews](#reviews) |
-| Can chat start without an order response? | ✅ Yes — a customer can message any professional at any time; chat is not gated by a response (see [Conversation Model](#conversation-model)) |
+| Can chat start without an order response? | ✅ Yes — a customer can message any professional at any time; chat is not gated by a response (see [Chat Model](#chat-model)) |
 | Are categories hierarchical? | ❌ No — flat list, no parent/leaf tree (see [Service Categories](#service-categories)) |
 | `preferred professional level` field on orders? | ❌ Dropped — leftover from the removed professional-verification concept, never had a defined meaning |
 | `latitude`/`longitude` on orders? | ❌ Dropped — search is city-only (no radius), so these fields served no purpose |
@@ -794,11 +794,11 @@ Hybrid, event-driven + reconcile:
 ## Messaging & Communication
 ---
 
-### Conversation Model
+### Chat Model
 ---
 
 - A customer can open a chat with **any** professional at any time — from a search result / professional profile, or after that professional has responded to one of the customer's orders. Chat is **not gated** by an order response (resolves the earlier contradiction between FR-Communication-1 and UC-7 — UC-7's "can initiate chat... or contact directly" is the one that holds).
-- A conversation is keyed by the **(customer_id, professional_id) pair**, not by a specific order — mirrors how reviews are decoupled from orders. Later interactions on a different order continue the same conversation rather than starting a new thread.
+- A chat is keyed by the **(customer_id, professional_id) pair**, not by a specific order — mirrors how reviews are decoupled from orders. Later interactions on a different order continue the same chat rather than starting a new thread.
 
 ### Message Content
 ---
@@ -1005,6 +1005,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.9 | 2026-10-28 | **Naming:** *conversation* → *chat* (the section is now *Chat Model*). |
 | 3.8 | 2026-10-27 | **D-1.4:** order `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
 | 3.7 | 2026-10-27 | **D-1.3:** order field `location` → `city`; enum values in payloads and the preferences matrix are `UPPER_SNAKE_CASE`. |
 | 3.6 | 2026-09-10 | Standardised to the shared doc format (title, metadata, separators, changelog). Removed a line duplicated verbatim in *Security & Data Access* ("API versioning: current version only"). Repointed the dead file-5 links (a "Questions" doc that no longer exists) to [2 - Requirements.md](2%20-%20Requirements.md) / this file's own sections. |
