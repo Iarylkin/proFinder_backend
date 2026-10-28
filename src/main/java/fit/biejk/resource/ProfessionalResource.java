@@ -3,14 +3,11 @@ package fit.biejk.resource;
 import fit.biejk.dto.PageRequest;
 import fit.biejk.dto.ReviewDto;
 import fit.biejk.dto.ProfessionalDto;
-import fit.biejk.dto.ProfessionalFilterCriteria;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
 import fit.biejk.mapper.OrderProposalMapper;
 import fit.biejk.mapper.ReviewMapper;
 import fit.biejk.mapper.ProfessionalMapper;
-import fit.biejk.search.ProfessionalSearchMapper;
-import fit.biejk.search.ProfessionalSearchService;
 import fit.biejk.service.*;
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
@@ -51,16 +48,6 @@ public class ProfessionalResource {
     private final OrderMapper orderMapper;
 
     /**
-     * Service for searching and filtering professionals.
-     */
-    private final ProfessionalSearchService professionalSearchService;
-
-    /**
-     * Mapper for converting professional search results to DTOs.
-     */
-    private final ProfessionalSearchMapper professionalSearchMapper;
-
-    /**
      * Mapper for converting between OrderProposal entities and DTOs.
      */
     private final OrderProposalMapper orderProposalMapper;
@@ -79,40 +66,6 @@ public class ProfessionalResource {
 
     /** Service for accessing customer reviews. */
     private final ReviewService reviewService;
-
-    /**
-     * Retrieves a list of all professionals.
-     *
-     * @param criteria   the filtering criteria for searching professionals
-     * @param pagination the pagination parameters (page and size)
-     * @return HTTP response containing a list of all professionals
-     */
-    @GET
-    @PermitAll
-    public Response getProfessionals(
-            @BeanParam final ProfessionalFilterCriteria criteria,
-            @BeanParam final PageRequest pagination
-    ) {
-
-        if (criteria.hasFilters()) {
-            var searchResults = professionalSearchService.search(
-                    criteria.getQuery(),
-                    criteria.getLocation(),
-                    pagination.getPage(),
-                    pagination.getSize()
-            );
-            var result = professionalSearchMapper.toEntityList(searchResults);
-            return Response.ok(professionalMapper.toPublicDtoList(result)).build();
-        }
-
-        log.info("Get all professionals");
-        List<Professional> result = professionalService.getAll(
-                pagination.getPage(),
-                pagination.getSize()
-        );
-        log.debug("Found {} professionals", result.size());
-        return Response.ok(professionalMapper.toPublicDtoList(result)).build();
-    }
 
     /**
      * Retrieves a professional by their ID.
