@@ -19,15 +19,7 @@ import java.util.List;
 @Table(name = "location")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Location {
-
-    /**
-     * Unique identifier for the location.
-     * Generated automatically by the database.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Location extends BaseEntity {
 
     /**
      * Name of the location (e.g., city name).

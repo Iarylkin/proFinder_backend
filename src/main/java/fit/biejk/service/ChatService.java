@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for handling chat operations, such as creating new chats,
@@ -47,10 +48,10 @@ public class ChatService {
      * @throws IllegalArgumentException if both user IDs are the same or chat already exists
      */
     @Transactional
-    public Chat create(final Long userId1, final Long userId2) {
+    public Chat create(final UUID userId1, final UUID userId2) {
         log.info("Creating new chat");
-        Long first = Math.min(userId1, userId2);
-        Long second = Math.max(userId1, userId2);
+        UUID first = userId1.compareTo(userId2) <= 0 ? userId1 : userId2;
+        UUID second = first.equals(userId1) ? userId2 : userId1;
         if (first.equals(second)) {
             log.warn("First and Second chat id {} are the same", first);
             throw new IllegalArgumentException("first and second are the same");
@@ -78,7 +79,7 @@ public class ChatService {
      * @return the found {@link Chat} entity
      * @throws NotFoundException if no chat is found with the given ID
      */
-    public Chat getById(final Long chatId) {
+    public Chat getById(final UUID chatId) {
         Chat result = chatRepository.findById(chatId);
         if (result == null) {
             throw new NotFoundException("Chat with id " + chatId + " not found");
@@ -97,7 +98,7 @@ public class ChatService {
      * @throws NotFoundException  if the chat does not exist
      * @throws ForbiddenException if the user is not a participant of the chat
      */
-    public List<ChatMessage> getMessagesById(final Long chatId, final Long userId,
+    public List<ChatMessage> getMessagesById(final UUID chatId, final UUID userId,
                                              final int page, final int size) {
         log.info("Getting history for chat {}", chatId);
 
@@ -117,7 +118,7 @@ public class ChatService {
      * @param userId ID of the user
      * @return true if the chat exists and the user is one of its participants
      */
-    public boolean isParticipant(final Long chatId, final Long userId) {
+    public boolean isParticipant(final UUID chatId, final UUID userId) {
         Chat chat = chatRepository.findById(chatId);
         return chat != null && chat.hasParticipant(userId);
     }
@@ -128,7 +129,7 @@ public class ChatService {
      * @param chatId ID of the chat
      * @return true if chat exists, false otherwise
      */
-    public boolean existById(final Long chatId) {
+    public boolean existById(final UUID chatId) {
         Chat chat = chatRepository.findById(chatId);
         if (chat == null) {
             log.warn("Chat with id {} not found", chatId);
@@ -145,7 +146,7 @@ public class ChatService {
      * @param userId2 ID of the second user
      * @return true if a chat exists, false otherwise
      */
-    public boolean existByUsersId(final Long userId1, final Long userId2) {
+    public boolean existByUsersId(final UUID userId1, final UUID userId2) {
         Chat chat  = chatRepository.findByUsersId(userId1, userId2);
         if (chat == null) {
             log.info("Chat with user id {} and {} not found", userId1, userId2);
@@ -163,7 +164,7 @@ public class ChatService {
      * @param size   number of chats per page
      * @return list of {@link Chat} entities
      */
-    public List<Chat> getByUserId(final Long userId, final int page, final int size) {
+    public List<Chat> getByUserId(final UUID userId, final int page, final int size) {
         return chatRepository.findByUserId(userId, page, size);
     }
     /**
@@ -173,7 +174,7 @@ public class ChatService {
      * @param userId2 ID of the second user
      * @return the {@link Chat} entity between the two users, or {@code null} if not found
      */
-    public Chat getByUsersId(final Long userId1, final Long userId2) {
+    public Chat getByUsersId(final UUID userId1, final UUID userId2) {
         return chatRepository.findByUsersId(userId1, userId2);
     }
 

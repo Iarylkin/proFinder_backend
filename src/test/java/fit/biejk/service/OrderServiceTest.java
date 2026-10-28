@@ -13,6 +13,8 @@ import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,8 +26,10 @@ import static org.mockito.Mockito.when;
 
 class OrderServiceTest {
 
-    private static final long ORDER_ID = 10L;
-    private static final long CUSTOMER_ID = 1L;
+    private static final UUID ORDER_ID = UUID.randomUUID();
+    private static final UUID MISSING_ORDER_ID = UUID.randomUUID();
+    private static final UUID CUSTOMER_ID = UUID.randomUUID();
+    private static final UUID LOCATION_ID = UUID.randomUUID();
     private static final int PRICE = 100;
     private static final int NEW_PRICE = 250;
 
@@ -51,7 +55,7 @@ class OrderServiceTest {
         Customer customer = new Customer();
         customer.setId(CUSTOMER_ID);
         Location location = new Location();
-        location.setId(5L);
+        location.setId(LOCATION_ID);
 
         order = new Order();
         order.setId(ORDER_ID);
@@ -78,7 +82,7 @@ class OrderServiceTest {
         assertEquals("New title", result.getTitle());
         assertEquals(NEW_PRICE, result.getPrice());
         assertEquals("Old description", result.getDescription());
-        assertEquals(5L, result.getLocation().getId());
+        assertEquals(LOCATION_ID, result.getLocation().getId());
         assertEquals(OrderStatus.CREATED, result.getStatus());
         verify(orderRepository).persist(order);
         verify(orderSearchService).save(any());
@@ -136,7 +140,7 @@ class OrderServiceTest {
     void updateOfAMissingOrderIsNotFound() {
         Order changes = new Order();
 
-        assertThrows(NotFoundException.class, () -> service.update(999L, changes));
+        assertThrows(NotFoundException.class, () -> service.update(MISSING_ORDER_ID, changes));
     }
 
     @Test

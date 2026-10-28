@@ -16,14 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "categories")
-public class Category {
-
-    /**
-     * Unique identifier for the category.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Category extends BaseEntity {
 
     /**
      * Name of the category (e.g. "Haircut", "Legal advice").

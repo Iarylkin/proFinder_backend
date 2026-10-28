@@ -14,6 +14,8 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.UUID;
+
 /**
  * REST resource for managing order responses submitted by professionals.
  * <p>
@@ -51,7 +53,7 @@ public class OrderResponseResource {
     @GET
     @Path("/{responseId}")
     @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
-    public Response getById(@PathParam("responseId") final Long responseId) {
+    public Response getById(@PathParam("responseId") final UUID responseId) {
         log.info("Get response: responseId={}", responseId);
         OrderResponse result = orderResponseService.getByIdForCurrentUser(responseId);
         return Response.ok(orderResponseMapper.toDto(result)).build();
@@ -73,7 +75,7 @@ public class OrderResponseResource {
     @PATCH
     @Path("/{responseId}")
     @RolesAllowed("CUSTOMER")
-    public Response update(@PathParam("responseId") final Long responseId,
+    public Response update(@PathParam("responseId") final UUID responseId,
                             @Valid final OrderResponseUpdateRequest request) {
 
         Order result = orderResponseService.updateStatus(

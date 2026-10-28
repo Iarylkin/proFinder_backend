@@ -21,14 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "orders")
-public class Order {
-
-    /**
-     * Unique identifier for the order.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Order extends BaseEntity {
 
     /**
      * Customer who placed the order.

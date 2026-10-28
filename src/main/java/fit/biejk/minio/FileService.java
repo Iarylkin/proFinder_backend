@@ -16,6 +16,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import java.util.UUID;
+
 /**
  * Service for handling user file operations with MinIO,
  * including avatar uploads and downloads.
@@ -61,7 +63,7 @@ public class FileService {
      * @throws InternalServerErrorException if reading or storing the file fails
      */
     @Transactional
-    public void uploadAvatar(final Long userId, final InputStream fileInputStream) {
+    public void uploadAvatar(final UUID userId, final InputStream fileInputStream) {
         log.info("Uploading avatar for userId={}", userId);
 
         User user = userService.getById(userId);
@@ -93,7 +95,6 @@ public class FileService {
         }
 
         user.setAvatarKey(avatarKey);
-        user.persist();
 
         log.debug("Avatar uploaded and key set for userId={}", userId);
     }
@@ -114,7 +115,7 @@ public class FileService {
      * @return presigned URL for accessing the avatar
      * @throws Exception if URL generation fails
      */
-    public AvatarData getAvatar(final Long userId) throws Exception {
+    public AvatarData getAvatar(final UUID userId) throws Exception {
         log.info("Getting avatar for userId={}", userId);
 
         User user = userService.getById(userId);

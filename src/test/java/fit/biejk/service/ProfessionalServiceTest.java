@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 class ProfessionalServiceTest {
 
-    private static final long PROFESSIONAL_ID = 2L;
+    private static final UUID PROFESSIONAL_ID = UUID.randomUUID();
 
     private ProfessionalSearchService searchService;
     private UserService userService;
@@ -64,7 +65,7 @@ class ProfessionalServiceTest {
     @Test
     void updateProfileReplacesTheOfferedServices() {
         Category plumbing = new Category();
-        plumbing.setId(1L);
+        plumbing.setId(UUID.randomUUID());
         Professional changes = new Professional();
         changes.setCategories(List.of(plumbing));
 

@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Data Transfer Object representing a response related to an order.
  */
@@ -18,17 +20,17 @@ public class OrderResponseDto {
     /**
      * Unique identifier of the response.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Identifier of the associated order.
      */
-    private Long orderId;
+    private UUID orderId;
 
     /**
      * Identifier of the professional making the response.
      */
-    private Long professionalId;
+    private UUID professionalId;
 
     /**
      * Description of the response. Must not be blank.

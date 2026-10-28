@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST resource for managing orders and responses.
@@ -77,7 +78,7 @@ public class OrderResource {
     public Response create(@Valid final OrderDto dto) {
         log.info("Create order request: {}", dto);
         Order order = orderMapper.toEntity(dto);
-        Long customerId = authService.getCurrentUserId();
+        UUID customerId = authService.getCurrentUserId();
         Customer customer = customerService.getById(customerId);
         order.setCustomer(customer);
         order.setLocation(customer.getLocation());
@@ -100,7 +101,7 @@ public class OrderResource {
     @PATCH
     @Path("/{orderId}")
     @RolesAllowed("CUSTOMER")
-    public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderUpdateRequest request) {
+    public Response update(@PathParam("orderId") final UUID orderId, @Valid final OrderUpdateRequest request) {
         log.info("Update order request: orderId={}, request={}", orderId, request);
         Order result = orderService.update(orderId, orderMapper.toEntity(request));
         log.debug("Order updated with ID={}", result.getId());
@@ -118,11 +119,11 @@ public class OrderResource {
     @Path("/{orderId}/responses")
     @RolesAllowed("PROFESSIONAL")
     public Response respond(
-            @PathParam("orderId") final Long orderId,
+            @PathParam("orderId") final UUID orderId,
             @Valid final OrderResponseDto orderResponseDto) {
         log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
         OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
-        Long professionalId = authService.getCurrentUserId();
+        UUID professionalId = authService.getCurrentUserId();
 
         OrderResponse result = orderService.respond(orderId, professionalId, orderResponse);
 
@@ -141,7 +142,7 @@ public class OrderResource {
     @Path("/{orderId}/responses")
     @RolesAllowed("CUSTOMER")
     public Response getResponses(
-            @PathParam("orderId") final Long orderId,
+            @PathParam("orderId") final UUID orderId,
             @BeanParam final PageRequest pagination
     ) {
         log.info("Get all responses for orderId={}", orderId);
@@ -162,7 +163,7 @@ public class OrderResource {
     @GET
     @Path("/{orderId}")
     @PermitAll
-    public Response getById(@PathParam("orderId") final Long orderId) {
+    public Response getById(@PathParam("orderId") final UUID orderId) {
         log.info("Get order by ID: {}", orderId);
         Order result = orderService.getById(orderId);
         return Response.ok(orderMapper.toDto(result)).build();
@@ -213,7 +214,7 @@ public class OrderResource {
     @DELETE
     @Path("/{orderId}")
     @RolesAllowed("CUSTOMER")
-    public Response delete(@PathParam("orderId") final Long orderId) {
+    public Response delete(@PathParam("orderId") final UUID orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);
         return Response.ok().build();

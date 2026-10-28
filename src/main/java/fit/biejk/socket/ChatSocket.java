@@ -69,27 +69,32 @@ public class ChatSocket {
     /**
      * Map storing active chat sessions, keyed by chat ID.
      */
-    private static final Map<Long, Set<Session>> CHAT_SESSIONS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Set<Session>> CHAT_SESSIONS = new ConcurrentHashMap<>();
 
     /**
      * Handles new WebSocket connections.
      *
      * @param session the WebSocket session
-     * @param chatId  ID of the chat the user is joining
+     * @param chatIdParam ID of the chat the user is joining, as it stands in the path
      */
     @OnOpen
-    public void onOpen(final Session session, @PathParam("chatId") final Long chatId) {
+    public void onOpen(final Session session, @PathParam("chatId") final String chatIdParam) {
         String token = getTokenFromQuery(session);
         if (token == null) {
             closeSession(session, "Unauthorized");
+            return;
+        }
+        UUID chatId = parseChatId(chatIdParam);
+        if (chatId == null) {
+            closeSession(session, "Chat does not exist");
             return;
         }
 
         executor.execute(() -> handleOpenSession(token, chatId, session));
     }
 
-    private void handleOpenSession(final String token, final Long chatId, final Session session) {
-        Long userId = extractUserId(token);
+    private void handleOpenSession(final String token, final UUID chatId, final Session session) {
+        UUID userId = extractUserId(token);
 
         if (userId == null || !userService.existById(userId)) {
             closeSession(session, "Unauthorized");
@@ -118,13 +123,14 @@ public class ChatSocket {
      *
      * @param inputMessage the received message
      * @param session      the session of the sender
-     * @param chatId       ID of the chat
+     * @param chatIdParam  ID of the chat, as it stands in the path
      */
     @OnMessage
     public void onMessage(final ChatInputMessage inputMessage, final Session session,
-                          @PathParam("chatId") final Long chatId) {
-        Long senderId = (Long) session.getUserProperties().get("userId");
-        if (senderId == null) {
+                          @PathParam("chatId") final String chatIdParam) {
+        UUID chatId = parseChatId(chatIdParam);
+        UUID senderId = (UUID) session.getUserProperties().get("userId");
+        if (chatId == null || senderId == null) {
             log.warn("No userId associated with session: {}", session.getId());
             return;
         }
@@ -132,7 +138,7 @@ public class ChatSocket {
         executor.execute(() -> handleIncomingMessage(inputMessage, senderId, chatId));
     }
 
-    private void handleIncomingMessage(final ChatInputMessage inputMessage, final Long senderId, final Long chatId) {
+    private void handleIncomingMessage(final ChatInputMessage inputMessage, final UUID senderId, final UUID chatId) {
         if (!userService.existById(senderId)) {
             return;
         }
@@ -147,7 +153,7 @@ public class ChatSocket {
         }
     }
 
-    private void broadcastMessage(final Long chatId, final ChatOutputMessage outputMessage) {
+    private void broadcastMessage(final UUID chatId, final ChatOutputMessage outputMessage) {
         Set<Session> sessions = CHAT_SESSIONS.getOrDefault(chatId, Set.of());
         for (Session s : sessions) {
             if (s.isOpen()) {
@@ -160,15 +166,16 @@ public class ChatSocket {
      * Handles WebSocket disconnections.
      *
      * @param session the WebSocket session
-     * @param chatId  ID of the chat
+     * @param chatIdParam ID of the chat, as it stands in the path
      */
     @OnClose
-    public void onClose(final Session session, @PathParam("chatId") final Long chatId) {
-        Set<Session> sessions = CHAT_SESSIONS.get(chatId);
+    public void onClose(final Session session, @PathParam("chatId") final String chatIdParam) {
+        UUID chatId = parseChatId(chatIdParam);
+        Set<Session> sessions = chatId == null ? null : CHAT_SESSIONS.get(chatId);
         if (sessions != null) {
             sessions.remove(session);
         }
-        log.info("User disconnected from chat {}: {}", chatId, session.getId());
+        log.info("User disconnected from chat {}: {}", chatIdParam, session.getId());
     }
 
     /**
@@ -176,11 +183,29 @@ public class ChatSocket {
      *
      * @param session the WebSocket session
      * @param error   the error occurred
-     * @param chatId  ID of the chat
+     * @param chatIdParam ID of the chat, as it stands in the path
      */
     @OnError
-    public void onError(final Session session, final Throwable error, @PathParam("chatId") final Long chatId) {
-        log.warn("Error in chat {}: {}", chatId, error.getMessage());
+    public void onError(final Session session, final Throwable error,
+                        @PathParam("chatId") final String chatIdParam) {
+        log.warn("Error in chat {}: {}", chatIdParam, error.getMessage());
+    }
+
+    /**
+     * Parses the chat ID from the path.
+     * <p>
+     * WebSocket path parameters cannot be bound to a {@link UUID}, so they arrive as text.
+     * </p>
+     *
+     * @param chatIdParam the path parameter
+     * @return the chat ID, or {@code null} if it is not a valid UUID
+     */
+    private static UUID parseChatId(final String chatIdParam) {
+        try {
+            return UUID.fromString(chatIdParam);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     /**
@@ -224,10 +249,10 @@ public class ChatSocket {
      * @return extracted user ID
      * @throws IllegalArgumentException if token is invalid
      */
-    private Long extractUserId(final String token) {
+    private UUID extractUserId(final String token) {
         try {
             JsonWebToken jwt = jwtParser.parse(token);
-            return Long.parseLong(jwt.getSubject());
+            return UUID.fromString(jwt.getSubject());
         } catch (ParseException e) {
             throw new IllegalArgumentException("Invalid JWT", e);
         }

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for managing the indexing, deletion, and searching of {@link OrderSearchDto}
@@ -49,7 +50,7 @@ public class OrderSearchService {
      *
      * @param id the ID of the order to delete
      */
-    public void delete(final Long id) {
+    public void delete(final UUID id) {
         try {
             log.info("Deleting Order with id {} for search", id);
             elasticsearchClient.delete(d -> d

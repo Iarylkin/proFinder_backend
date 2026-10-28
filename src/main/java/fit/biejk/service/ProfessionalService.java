@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service class for managing {@link Professional} entities.
@@ -95,7 +96,7 @@ public class ProfessionalService {
      * @return found professional
      * @throws NotFoundException if professional is not found
      */
-    public Professional getById(final Long id) {
+    public Professional getById(final UUID id) {
         log.info("Get professional by ID={}", id);
         Professional result = professionalRepository.findById(id);
         if (result == null) {
@@ -114,7 +115,7 @@ public class ProfessionalService {
      * @return updated professional
      */
     @Transactional
-    public Professional update(final Long id, final Professional professional) {
+    public Professional update(final UUID id, final Professional professional) {
         log.info("Update professional: ID={}, email={}", id, professional.getEmail());
         Professional old = getById(id);
         userService.update(id, professional);
@@ -136,7 +137,7 @@ public class ProfessionalService {
      * @param id professional ID
      */
     @Transactional
-    public void delete(final Long id) {
+    public void delete(final UUID id) {
         log.info("Delete professional: ID={}", id);
         userService.delete(id);
 
@@ -155,7 +156,7 @@ public class ProfessionalService {
      * @param professionalId the ID of the professional whose rating should be updated
      */
     @Transactional
-    public void computeAverageRating(final Long professionalId) {
+    public void computeAverageRating(final UUID professionalId) {
         Professional professional = getById(professionalId);
         List<Review> reviews = professional.getReviews();
 
@@ -188,9 +189,9 @@ public class ProfessionalService {
      */
 
     @Transactional
-    public Review review(final Long professionalId, final Review review) {
+    public Review review(final UUID professionalId, final Review review) {
 
-        Long customerId = authService.getCurrentUserId();
+        UUID customerId = authService.getCurrentUserId();
         Customer customer = customerService.getById(customerId);
         Professional professional = getById(professionalId);
 
@@ -209,7 +210,7 @@ public class ProfessionalService {
      * @return the updated professional
      */
     @Transactional
-    public Professional updateProfile(final Long id, final Professional changes) {
+    public Professional updateProfile(final UUID id, final Professional changes) {
         log.info("Update professional profile: ID={}", id);
         Professional professional = getById(id);
         userService.updateProfile(id, changes);

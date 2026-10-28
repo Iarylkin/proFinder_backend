@@ -9,6 +9,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * {@code ChatMapper} converts {@link Chat} entities into {@link ChatResponse} DTOs using MapStruct.
@@ -40,7 +41,7 @@ public interface ChatMapper {
             expression = "java(getPartner(chat, currentUserId).getId())")
     @Mapping(target = "partnerFirstName",
             expression = "java(getPartner(chat, currentUserId).getFirstName())")
-    ChatResponse toDto(Chat chat, @Context Long currentUserId);
+    ChatResponse toDto(Chat chat, @Context UUID currentUserId);
 
     /**
      * Converts a list of {@link Chat} entities to DTOs.
@@ -50,7 +51,7 @@ public interface ChatMapper {
      * @return list of {@link ChatResponse} DTOs
      */
     @IterableMapping(elementTargetType = ChatResponse.class)
-    List<ChatResponse> toDtoList(List<Chat> chats, @Context Long currentUserId);
+    List<ChatResponse> toDtoList(List<Chat> chats, @Context UUID currentUserId);
 
     /**
      * Returns the partner of the current user in the given chat.
@@ -59,7 +60,7 @@ public interface ChatMapper {
      * @param currentUserId id of the current user
      * @return the partner {@link User} entity
      */
-    default User getPartner(final Chat chat, final Long currentUserId) {
+    default User getPartner(final Chat chat, final UUID currentUserId) {
         return chat.getUser1().getId().equals(currentUserId)
                 ? chat.getUser2()
                 : chat.getUser1();

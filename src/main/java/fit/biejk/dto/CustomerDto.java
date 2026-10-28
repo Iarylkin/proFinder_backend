@@ -9,6 +9,8 @@ import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 
+import java.util.UUID;
+
 /**
  * Data Transfer Object representing a customer.
  * <p>
@@ -34,7 +36,7 @@ public class CustomerDto {
     /**
      * Unique identifier of the customer.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Email address of the customer, must be in a valid format.

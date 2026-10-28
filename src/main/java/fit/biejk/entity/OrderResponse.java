@@ -1,14 +1,11 @@
 package fit.biejk.entity;
 
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.EnumType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,14 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "responses")
-public class OrderResponse {
-
-    /**
-     * Unique identifier for the order response.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class OrderResponse extends BaseEntity {
 
     /**
      * Professional who submitted the response.

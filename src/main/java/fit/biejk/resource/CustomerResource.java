@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST resource for managing customers.
@@ -92,7 +93,7 @@ public class CustomerResource {
     @GET
     @Path("/{customerId}")
     @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
-    public Response getById(@PathParam("customerId") final Long customerId) {
+    public Response getById(@PathParam("customerId") final UUID customerId) {
         log.info("getById request: {}", customerId);
         Customer result = customerService.getById(customerId);
         log.debug("Found customer with ID={}", result.getId());
@@ -110,7 +111,7 @@ public class CustomerResource {
     @PUT
     @Path("/{customerId}")
     @DenyAll
-    public Response update(@PathParam("customerId") final Long customerId, @Valid final CustomerDto dto) {
+    public Response update(@PathParam("customerId") final UUID customerId, @Valid final CustomerDto dto) {
         log.info("update request: customerId={}, dto={}", customerId, dto);
         Customer entity = customerMapper.toEntity(dto);
         Customer result = customerService.update(customerId, entity);
@@ -128,7 +129,7 @@ public class CustomerResource {
     @DELETE
     @Path("/{customerId}")
     @DenyAll
-    public Response delete(@PathParam("customerId") final Long customerId) {
+    public Response delete(@PathParam("customerId") final UUID customerId) {
         log.info("delete request: {}", customerId);
         customerService.delete(customerId);
         log.debug("Deleted customer with ID={}", customerId);
@@ -145,7 +146,7 @@ public class CustomerResource {
     @RolesAllowed("CUSTOMER")
     public Response deleteProfile() {
         log.info("deleteProfile request");
-        Long id = authService.getCurrentUserId();
+        UUID id = authService.getCurrentUserId();
         customerService.delete(id);
         log.debug("Deleted profile for customer with ID={}", id);
         return Response.ok().build();
@@ -163,7 +164,7 @@ public class CustomerResource {
     public Response getReviews(
             @BeanParam final PageRequest pagination
     ) {
-        Long customerId = authService.getCurrentUserId();
+        UUID customerId = authService.getCurrentUserId();
         List<Review> res = reviewService.getByCustomerId(
                 customerId,
                 pagination.getPage(),
@@ -186,7 +187,7 @@ public class CustomerResource {
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {
-        Long customerId = authService.getCurrentUserId();
+        UUID customerId = authService.getCurrentUserId();
         log.info("Get customer request: customerId={}", customerId);
         List<Order> result = orderService.getByCustomerId(
                 customerId,

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Data Transfer Object representing an order.
@@ -26,12 +27,12 @@ public class OrderDto {
     /**
      * Unique identifier of the order.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Identifier of the customer who placed the order.
      */
-    private Long customerId;
+    private UUID customerId;
 
     /**
      * List of categories of this order.

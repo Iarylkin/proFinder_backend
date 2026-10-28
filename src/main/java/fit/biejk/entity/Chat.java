@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Entity representing a chat between two users.
@@ -20,14 +21,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Chat {
-
-    /**
-     * Unique identifier for the chat.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Chat extends BaseEntity {
 
     /**
      * First participant in the chat.
@@ -68,7 +62,7 @@ public class Chat {
      * @param userId ID of the user to check
      * @return true if the user is a participant, false otherwise
      */
-    public boolean hasParticipant(final Long userId) {
+    public boolean hasParticipant(final UUID userId) {
         return userId != null
                 && (user1.getId().equals(userId) || user2.getId().equals(userId));
     }

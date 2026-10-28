@@ -19,6 +19,8 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.UUID;
+
 
 /**
  * REST endpoint for handling user file uploads such as avatar images.
@@ -59,7 +61,7 @@ public class UserResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Authenticated
     public Response uploadAvatar(final FileUploadForm form) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         log.info("Received avatar upload request from userId={}", userId);
 
         fileService.uploadAvatar(userId, form.getFile());
@@ -83,7 +85,7 @@ public class UserResource {
     @Path("/{userId}/avatar")
     @Produces("image/*")
     @PermitAll
-    public Response getAvatar(@PathParam("userId") final Long userId) {
+    public Response getAvatar(@PathParam("userId") final UUID userId) {
         try {
             AvatarData data = fileService.getAvatar(userId);
 
@@ -106,7 +108,7 @@ public class UserResource {
     @Path("/me/password")
     @Authenticated
     public Response changePassword(@Valid final ChangePasswordRequest request) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         User updated = userService.changePassword(
                 userId,
                 request.getOldPassword(),
@@ -127,7 +129,7 @@ public class UserResource {
     @Path("/me/email")
     @Authenticated
     public Response changeEmail(@Valid final ChangeEmailRequest request) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         User updated = userService.changeEmail(
                 userId,
                 request.getNewEmail(),

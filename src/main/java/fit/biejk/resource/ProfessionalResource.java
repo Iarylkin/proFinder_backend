@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * REST resource for managing professionals.
@@ -76,7 +77,7 @@ public class ProfessionalResource {
     @GET
     @Path("/{professionalId}")
     @PermitAll
-    public Response getById(@PathParam("professionalId") final Long professionalId) {
+    public Response getById(@PathParam("professionalId") final UUID professionalId) {
         log.info("Get professional by ID={}", professionalId);
         Professional result = professionalService.getById(professionalId);
         return Response.ok(professionalMapper.toPublicDto(result)).build();
@@ -93,7 +94,7 @@ public class ProfessionalResource {
     @PUT
     @Path("/{professionalId}")
     @DenyAll
-    public Response update(@PathParam("professionalId") final Long professionalId, @Valid final ProfessionalDto dto) {
+    public Response update(@PathParam("professionalId") final UUID professionalId, @Valid final ProfessionalDto dto) {
         log.info("Update professional request: ID={}, dto={}", professionalId, dto);
         Professional entity = professionalMapper.toEntity(dto);
         Professional result = professionalService.update(professionalId, entity);
@@ -111,7 +112,7 @@ public class ProfessionalResource {
     @DELETE
     @Path("/{professionalId}")
     @DenyAll
-    public Response delete(@PathParam("professionalId") final Long professionalId) {
+    public Response delete(@PathParam("professionalId") final UUID professionalId) {
         log.info("Delete professional request: ID={}", professionalId);
         professionalService.delete(professionalId);
         return Response.ok().build();
@@ -126,7 +127,7 @@ public class ProfessionalResource {
     @Path("/me")
     @RolesAllowed("PROFESSIONAL")
     public Response deleteProfile() {
-        Long id = authService.getCurrentUserId();
+        UUID id = authService.getCurrentUserId();
         log.info("Delete profile for professional ID={}", id);
         professionalService.delete(id);
         return Response.ok().build();
@@ -143,7 +144,7 @@ public class ProfessionalResource {
     @Path("/{professionalId}/reviews")
     @PermitAll
     public Response getReviews(
-            @PathParam("professionalId") final Long professionalId,
+            @PathParam("professionalId") final UUID professionalId,
             @BeanParam final PageRequest pagination) {
         List<Review> res = reviewService.getByProfessionalId(
                 professionalId,
@@ -162,7 +163,7 @@ public class ProfessionalResource {
     @POST
     @Path("/{professionalId}/reviews")
     @RolesAllowed("CUSTOMER")
-    public Response createReview(@PathParam("professionalId") final Long professionalId,
+    public Response createReview(@PathParam("professionalId") final UUID professionalId,
                                  @Valid final ReviewDto dto
     ) {
         Review review = reviewMapper.toEntity(dto);
@@ -182,7 +183,7 @@ public class ProfessionalResource {
     @Path("/{professionalId}/responses")
     @RolesAllowed("PROFESSIONAL")
     public Response getResponses(
-            @PathParam("professionalId") final Long professionalId,
+            @PathParam("professionalId") final UUID professionalId,
             @BeanParam final PageRequest pagination
     ) {
         List<OrderResponse> result = orderResponseService.getByProfessionalId(
@@ -207,7 +208,7 @@ public class ProfessionalResource {
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {
-        Long professionalId = authService.getCurrentUserId();
+        UUID professionalId = authService.getCurrentUserId();
         log.info("Get assigned by professional id: professionalId={}", professionalId);
         List<Order> result = orderService.getByProfessionalId(
                 professionalId,

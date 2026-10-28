@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import java.util.UUID;
+
 /**
  * Public view of a customer, returned to any authenticated user who knows the customer ID.
  * <p>
@@ -21,7 +23,7 @@ public class CustomerPublicDto {
     /**
      * Unique identifier of the customer.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * First name of the customer.

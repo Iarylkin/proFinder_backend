@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Data Transfer Object for searching and returning Order information in search operations.
@@ -20,7 +21,7 @@ public class OrderSearchDto {
     /**
      * Unique identifier of the order.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Current status of the order, e.g. CREATED, COMPLETED.

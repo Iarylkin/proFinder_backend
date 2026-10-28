@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+import java.util.UUID;
+
 /**
  * DTO representing a message sent from the server to WebSocket clients.
  * <p>
@@ -20,12 +22,12 @@ public class ChatOutputMessage {
     /**
      * Unique identifier of the message.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * ID of the chat to which the message belongs.
      */
-    private Long chatId;
+    private UUID chatId;
 
     /**
      * The content of the message.
@@ -35,7 +37,7 @@ public class ChatOutputMessage {
     /**
      * ID of the user who sent the message.
      */
-    private Long senderId;
+    private UUID senderId;
 
     /**
      * Timestamp indicating when the message was created.

@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Data Transfer Object for creating a new chat.
  * <p>
@@ -23,5 +25,5 @@ public class CreateChatRequest {
      * </p>
      */
     @NotNull
-    private Long recipientId;
+    private UUID recipientId;
 }

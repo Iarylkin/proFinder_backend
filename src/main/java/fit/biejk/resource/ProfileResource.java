@@ -18,6 +18,8 @@ import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.UUID;
+
 /**
  * REST resource for the profile of the authenticated user.
  * <p>
@@ -63,7 +65,7 @@ public class ProfileResource {
     @GET
     @Authenticated
     public Response getProfile() {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         log.info("Get profile: userId={}", userId);
         return switch (roleOfCurrentUser()) {
             case CUSTOMER -> Response.ok(customerMapper.toDto(customerService.getById(userId))).build();
@@ -82,7 +84,7 @@ public class ProfileResource {
     @PATCH
     @Authenticated
     public Response updateProfile(@Valid final ProfileUpdateRequest request) {
-        Long userId = authService.getCurrentUserId();
+        UUID userId = authService.getCurrentUserId();
         log.info("Update profile: userId={}, request={}", userId, request);
         return switch (roleOfCurrentUser()) {
             case CUSTOMER -> {

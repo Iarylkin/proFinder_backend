@@ -1,6 +1,6 @@
 # ProFinder — Category Taxonomy
 
-- **Version:** 1.2
+- **Version:** 1.3
 - **Date:** 2026-10-27
 - **Status:** Stable
 - **Purpose:** The concrete list of service categories to seed the `categories` table with at launch. The model (flat list, admin-managed CRUD) is defined in [6 - Database Schema.md](6%20-%20Database%20Schema.md) and [7 - Application Classes.md](7%20-%20Application%20Classes.md); this file supplies the **data**. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Category taxonomy — seed set".
@@ -132,7 +132,7 @@ INSERT INTO categories (id, name, created_at, updated_at) VALUES
   ('01a17aa8-1c20-71bc-97eb-7baf5588f137', 'Smart Home Installation',     now(), now());
 ```
 
-The ids are fixed **UUID v7** literals (time-ordered, generated once), not `gen_random_uuid()`: every id in the system is v7 and generated outside the database ([8 - API Specification.md § Conventions](8%20-%20API%20Specification.md)), and fixed literals give every environment and every test fixture the same category ids. Add new categories the same way, with a freshly generated v7.
+The ids are fixed UUID literals (generated once), not `gen_random_uuid()`: every id in the system is generated outside the database ([8 - API Specification.md § Conventions](8%20-%20API%20Specification.md)), and fixed literals give every environment and every test fixture the same category ids. Add new categories the same way, with a freshly generated UUID.
 
 
 ## 4. Post-launch changes
@@ -149,6 +149,7 @@ The ids are fixed **UUID v7** literals (time-ordered, generated once), not `gen_
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3 | 2026-10-28 | The seed ids are plain fixed UUID literals: ids are UUID v4 (decision 3), so the "v7" wording is dropped. The values themselves do not change. |
 | 1.2 | 2026-10-27 | **D-1.4:** the seed `INSERT` uses fixed UUID v7 literals instead of `gen_random_uuid()`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Fixed the category count — the tables and the `INSERT` both hold **32**; the heading said 30 and the count-check said 31. Dropped "(Seed Set)" from the title and the stray `(proposed — note for the implementer)` marker. |
 | 1.0 | 2026-09-07 | Initial. 32 seed categories with naming conventions, a Flyway `INSERT`, and post-launch add/rename/delete notes (incl. the rename→reindex consequence). |

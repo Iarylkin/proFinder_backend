@@ -10,6 +10,7 @@ import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Data Transfer Object representing a professional.
@@ -36,7 +37,7 @@ public class ProfessionalDto {
     /**
      * Unique identifier of the professional.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Average rating based on customer reviews.

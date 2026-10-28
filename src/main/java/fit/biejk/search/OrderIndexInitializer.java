@@ -67,7 +67,7 @@ public class OrderIndexInitializer {
             elasticsearchClient.indices().create(c -> c
                     .index(indexName)
                     .mappings(m -> m
-                            .properties("id", p -> p.long_(x -> x))
+                            .properties("id", p -> p.keyword(x -> x))
                             .properties("status", p -> p
                                     .text(t -> t
                                             .fields("keyword", k -> k.keyword(kk -> kk))

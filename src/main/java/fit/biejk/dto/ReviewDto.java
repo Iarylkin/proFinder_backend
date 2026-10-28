@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 /**
  * Data Transfer Object for transferring review data between client and server.
  * <p>
@@ -20,22 +22,22 @@ public class ReviewDto {
     /**
      * Unique identifier of the review.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * ID of the professional receiving the review.
      */
-    private Long professionalId;
+    private UUID professionalId;
 
     /**
      * ID of the customer who submitted the review.
      */
-    private Long customerId;
+    private UUID customerId;
 
     /**
      * ID of the order that the review is related to.
      */
-    private Long orderId;
+    private UUID orderId;
 
     /**
      * Review comment content.

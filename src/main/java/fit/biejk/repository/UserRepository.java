@@ -1,10 +1,11 @@
 package fit.biejk.repository;
 
 import fit.biejk.entity.User;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Repository class for performing CRUD operations on {@link User} entities.
@@ -13,7 +14,7 @@ import java.util.Optional;
  * </p>
  */
 @ApplicationScoped
-public class UserRepository implements PanacheRepository<User> {
+public class UserRepository implements PanacheRepositoryBase<User, UUID> {
 
     /**
      * Finds a user by their email.

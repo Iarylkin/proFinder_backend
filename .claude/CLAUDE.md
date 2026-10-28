@@ -70,6 +70,7 @@ docker-compose up -d                              # Start all services (PostgreS
 Main application code organized by layers:
 
 - **`entity/`** — JPA entities (User, Order, Professional, Customer, OrderResponse, Chat, ChatMessage, Review, Category, Location)
+  - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
   - Inheritance hierarchy: `User` → `Customer` / `Professional`
   - `OrderStatus`, `OrderResponseStatus`, `UserRole` enums
   
@@ -94,7 +95,7 @@ Main application code organized by layers:
   - `ReviewService` — Review creation and rating aggregation
   - `LocationService`, `CategoryService` — Reference data
 
-- **`repository/`** — Panache repositories extending `PanacheRepository<Entity, ID>`
+- **`repository/`** — Panache repositories extending `PanacheRepositoryBase<Entity, UUID>`
   - Each entity has a corresponding repository with custom query methods
 
 - **`mapper/`** — MapStruct mappers for DTO ↔ Entity conversion
@@ -117,7 +118,7 @@ Main application code organized by layers:
   - `FileUploadForm` — Multipart form binding
   - `ImageType` — Magic-byte detection of jpeg, png, gif, webp, heic, heif
 
-- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `StatusConflictException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; there is no common error body or `ExceptionMapper` yet
+- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `StatusConflictException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; `ConcurrentUpdateExceptionMapper` answers `409` when an optimistic lock fails; there is no common error body or `ApiExceptionMapper` yet
 
 - **`utilits/`** — Shared utilities
   - `CryptoUtils` — Password hashing with BCrypt
@@ -174,7 +175,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 
 #### Real-time Chat
 - Chat sessions created via `ChatResource.create()`
-- WebSocket endpoint at `/v1/chats/{chatId}?token=<JWT>`; only the two participants of the chat may connect
+- WebSocket endpoint at `/v1/chats/{chatId}?token=<JWT>`; only the two participants of the chat may connect. `chatId` arrives as text and is parsed in `ChatSocket` (WebSocket path parameters cannot be `UUID`)
 - Messages encoded/decoded as JSON, persisted to DB and forwarded to connected clients
 
 ### Testing & Quality Gates
@@ -194,7 +195,8 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
 8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (profile) or the resource's own `/me` (`/chats/me`)
-9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID and role from the JWT claims
+9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
+10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. `version` is checked only between concurrent transactions on the server: the DTOs do not carry it yet, so a client-sent `version` in `PATCH` (docs/8, docs/13) is planned for 1.6.0
 
 ### Debugging & Development Tips
 
@@ -205,7 +207,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 
 2. **Hot Reload:** Changes in `src/main` auto-compile in dev mode; restart WebSocket connections if needed
 
-3. **JWT Debugging:** Tokens include `sub` (userId) and `groups` (role); decode at jwt.io for inspection
+3. **JWT Debugging:** Tokens include `sub` (userId, a UUID) and `groups` (role); decode at jwt.io for inspection
 
 4. **Elasticsearch Queries:** Verify index mappings and sample documents via Kibana before debugging search logic
 

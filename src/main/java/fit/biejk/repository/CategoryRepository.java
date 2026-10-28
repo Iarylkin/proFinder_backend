@@ -1,8 +1,10 @@
 package fit.biejk.repository;
 
 import fit.biejk.entity.Category;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
+
+import java.util.UUID;
 
 /**
  * Repository for managing {@link Category} entities.
@@ -11,5 +13,5 @@ import jakarta.enterprise.context.ApplicationScoped;
  * </p>
  */
 @ApplicationScoped
-public class CategoryRepository implements PanacheRepository<Category> {
+public class CategoryRepository implements PanacheRepositoryBase<Category, UUID> {
 }

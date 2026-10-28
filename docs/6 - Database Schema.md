@@ -1,6 +1,6 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.7
+- **Version:** 1.8
 - **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
@@ -93,7 +93,7 @@ erDiagram
 | suspension_end_date | timestamp | nullable |
 | ban_reason | text | nullable |
 | deleted_at | timestamp | nullable — soft delete / PII scrub marker |
-| version | int | optimistic locking |
+| version | bigint | optimistic locking |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -112,7 +112,7 @@ erDiagram
 | rating_avg | numeric(3,2) | denormalized, DEFAULT 0 |
 | review_count | int | denormalized, DEFAULT 0 |
 | last_active_at | timestamp | nullable — set when the professional submits a response, edits the profile or toggles `available`; feeds the "most recently active" tie-break in search; `NULL` falls back to `created_at` |
-| version | int | optimistic locking |
+| version | bigint | optimistic locking |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -246,7 +246,7 @@ erDiagram
 | published_at | timestamp | nullable |
 | closed_at | timestamp | nullable |
 | closed_reason | string | nullable — `MANUAL` \| `ACCOUNT_ACTION` |
-| version | int | optimistic locking |
+| version | bigint | optimistic locking |
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
@@ -646,7 +646,7 @@ Everything else that references `users` (`orders.customer_id`, `responses.profes
 ---
 
 - **No orphaned data:** every "delete" in the system (`users`, `messages`, `reviews`, `portfolio_photos`, `orders`' draft-only hard-delete) is either soft (`deleted_at`) or a hard delete of a genuinely standalone row (a `DRAFT` order with no responses yet). No FK ever points at a row that can vanish out from under it — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases).
-- **Optimistic locking:** `version` columns live on `users`, `orders`, and `professional_profiles` — the three entities called out as mutable-and-contested in [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases).
+- **Optimistic locking:** every entity table carries `version bigint` (Hibernate `@Version`, declared once in the shared base class together with the UUID `id`); join tables and the technical `outbox` / `processed_events` do not. Conflicts are expected on `users`, `orders` and `professional_profiles`, the three entities called out as mutable-and-contested in [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases).
 - **Currency:** every money column (`hourly_rate`, `quote_price`, `budget_min`/`budget_max`) is USD — see [A5 decision](Documentation%20Roadmap.md). No `currency` column needed since there's only one.
 - **Timestamps:** plain `timestamp`, no per-user timezone conversion — see [A5 decision](Documentation%20Roadmap.md).
 
@@ -656,6 +656,7 @@ Everything else that references `users` (`orders.customer_id`, `responses.profes
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-10-28 | **`version`:** type `bigint` instead of `int`, and present on every entity table, because the code declares `id` (UUID) and `version` in one base class (`BaseEntity`) that all entities extend. |
 | 1.7 | 2026-10-28 | **Naming:** table `conversations` → `chats`, `conversation_id` → `chat_id`. |
 | 1.6 | 2026-10-27 | **D-1.4:** `citext` for `users.email`, `categories.name`, `professional_cities.city`; `CHECK`s for `budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`; partial unique index on live reviews (respects `deleted_at`); new `professional_profiles.last_active_at`; new § Foreign Keys & ON DELETE (FKs only inside a schema, `RESTRICT` by default, `CASCADE` for tokens and join rows); `closed_reason` values `UPPER_SNAKE_CASE`. |
 | 1.5 | 2026-10-27 | **D-1.3:** `orders.location` → `city`; every enum value is `UPPER_SNAKE_CASE` (notification channel, report reason / status / decision, evidence type, appeal status). |

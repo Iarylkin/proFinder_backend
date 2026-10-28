@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Public view of a professional, returned to anyone browsing professionals.
@@ -23,7 +24,7 @@ public class ProfessionalPublicDto {
     /**
      * Unique identifier of the professional.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Average rating based on customer reviews.

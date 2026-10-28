@@ -3,16 +3,17 @@ package fit.biejk.repository;
 import fit.biejk.entity.Customer;
 import fit.biejk.entity.Review;
 import fit.biejk.entity.Professional;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Repository for accessing and managing {@link Review} entities.
  */
 @ApplicationScoped
-public class ReviewRepository implements PanacheRepository<Review> {
+public class ReviewRepository implements PanacheRepositoryBase<Review, UUID> {
 
     /**
      * Finds all reviews submitted for the given professional.

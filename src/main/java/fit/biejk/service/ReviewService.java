@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service for managing {@link Review} entities.
@@ -62,7 +63,7 @@ public class ReviewService {
      * @param size         number of reviews per page
      * @return list of reviews for the professional
      */
-    public List<Review> getByProfessionalId(final Long professionalId, final int page, final int size) {
+    public List<Review> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Fetching reviews for professionalId={}", professionalId);
         Professional professional = professionalService.getById(professionalId);
         List<Review> reviews = reviewRepository.findByProfessional(professional, page, size);
@@ -78,7 +79,7 @@ public class ReviewService {
      * @param size     number of reviews per page
      * @return list of reviews created by the customer
      */
-    public List<Review> getByCustomerId(final Long customerId, final int page, final int size) {
+    public List<Review> getByCustomerId(final UUID customerId, final int page, final int size) {
         log.info("Fetching reviews by customerId={}", customerId);
         Customer customer = customerService.getById(customerId);
         List<Review> reviews = reviewRepository.findByCustomer(customer, page, size);

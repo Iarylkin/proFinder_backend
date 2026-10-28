@@ -7,6 +7,7 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Service layer responsible for managing {@link Location} entities.
@@ -43,7 +44,7 @@ public class LocationService {
      * @return the found {@link Location}
      * @throws NotFoundException if no location with the given ID exists
      */
-    public Location getById(final Long locationId) {
+    public Location getById(final UUID locationId) {
         Location result = locationRepository.findById(locationId);
         if (result == null) {
             throw new NotFoundException("Location not found");
