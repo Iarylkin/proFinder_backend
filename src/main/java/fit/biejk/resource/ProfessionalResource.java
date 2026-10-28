@@ -274,7 +274,7 @@ public class ProfessionalResource {
      * @return list of proposals submitted by the professional
      */
     @GET
-    @Path("/{professionalId}/proposals")
+    @Path("/{professionalId}/responses")
     @RolesAllowed("PROFESSIONAL")
     public Response getProposals(
             @PathParam("professionalId") final Long professionalId,

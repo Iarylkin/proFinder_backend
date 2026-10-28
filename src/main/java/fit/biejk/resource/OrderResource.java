@@ -115,7 +115,7 @@ public class OrderResource {
      * @return created proposal
      */
     @POST
-    @Path("/{orderId}/proposals")
+    @Path("/{orderId}/responses")
     @RolesAllowed("PROFESSIONAL")
     public Response proposal(
             @PathParam("orderId") final Long orderId,
@@ -138,7 +138,7 @@ public class OrderResource {
      * @return list of proposals for the order
      */
     @GET
-    @Path("/{orderId}/proposals")
+    @Path("/{orderId}/responses")
     @RolesAllowed("CUSTOMER")
     public Response getProposals(
             @PathParam("orderId") final Long orderId,

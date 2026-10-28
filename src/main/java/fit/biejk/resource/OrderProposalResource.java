@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
-@Path("/v1/proposals")
+@Path("/v1/responses")
 @RequiredArgsConstructor
 public class OrderProposalResource {
 
@@ -58,19 +58,20 @@ public class OrderProposalResource {
     }
 
     /**
-     * Confirms an order proposal and transitions the order to the next stage.
+     * Accepts an order response and transitions the order to the next stage.
      * <p>
-     * This endpoint allows a customer to accept a specific professional's proposal.
+     * This endpoint allows a customer to accept a specific professional's response by sending
+     * {@code "status": "APPROVED"} together with the final price and deadline.
      * By confirming, the system updates the order with the final agreed-upon terms
      * and assigns the professional to the project.
      * </p>
      *
-     * @param proposalId the unique ID of the proposal to be confirmed
-     * @param confirm the DTO containing final price and deadline details
+     * @param proposalId the unique ID of the response to be accepted
+     * @param confirm the DTO containing the status, final price and deadline details
      * @return order
      */
-    @POST
-    @Path("/{proposalId}/confirm")
+    @PATCH
+    @Path("/{proposalId}")
     @RolesAllowed("CUSTOMER")
     public Response confirm(@PathParam("proposalId") final Long proposalId,
                             @Valid final ConfirmProposal confirm) {

@@ -1,5 +1,6 @@
 package fit.biejk.dto;
 
+import fit.biejk.entity.ProposalStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConfirmProposal {
+
+    /**
+     * Status to set on the response. Only {@code APPROVED} is supported.
+     */
+    @NotNull(message = "Status cannot be null")
+    private ProposalStatus status;
     /**
      * The final agreed deadline for the proposal.
      * Must not be null.

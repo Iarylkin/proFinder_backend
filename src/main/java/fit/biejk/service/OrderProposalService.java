@@ -2,6 +2,7 @@ package fit.biejk.service;
 
 import fit.biejk.dto.ConfirmProposal;
 import fit.biejk.entity.*;
+import fit.biejk.exception.StatusConflictException;
 import fit.biejk.repository.OrderProposalRepository;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchDto;
@@ -92,6 +93,9 @@ public class OrderProposalService {
 
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
+        }
+        if (dto.getStatus() != ProposalStatus.APPROVED) {
+            throw new StatusConflictException("Only the APPROVED status can be set on a response");
         }
 
         order.setPrice(dto.getFinalPrice());
