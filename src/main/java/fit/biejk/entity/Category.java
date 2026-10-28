@@ -1,15 +1,14 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /**
- * Represents a category of services that can be associated with users and orders.
+ * Represents a category of services.
+ * Professionals and orders refer to it from their own side ({@code Professional.categories} and
+ * {@code Order.categories}), so the category itself keeps no list of them.
  * This entity is stored in the "categories" table.
  */
 @Entity
@@ -31,20 +30,4 @@ public class Category {
      */
     @Column(name = "name")
     private String name;
-
-    /**
-     * List of users (professionals) who offer this service.
-     * This field is excluded from JSON serialization.
-     */
-    @ManyToMany
-    @JsonbTransient
-    private List<User> users;
-
-    /**
-     * List of orders in which this category is included.
-     * This field is excluded from JSON serialization.
-     */
-    @ManyToMany
-    @JsonbTransient
-    private List<Order> orders;
 }
