@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -64,7 +65,7 @@ class ProfessionalServiceTest {
     @Test
     void updateProfileReplacesTheOfferedServices() {
         Category plumbing = new Category();
-        plumbing.setId(1L);
+        plumbing.setId(UUID.randomUUID());
         Professional changes = new Professional();
         changes.setCategories(List.of(plumbing));
 

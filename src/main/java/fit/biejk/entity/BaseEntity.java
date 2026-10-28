@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,7 +28,9 @@ public abstract class BaseEntity {
 
     /**
      * Version of the row; a concurrent update of an outdated row fails.
+     * Not exposed in JSON.
      */
+    @JsonbTransient
     @Version
     private Long version;
 }

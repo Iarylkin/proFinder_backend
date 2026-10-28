@@ -7,6 +7,7 @@ import fit.biejk.entity.Professional;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -32,7 +33,7 @@ class ProfileMappingTest {
     @Test
     void professionalChangesCarryDescriptionAndCategories() {
         Category plumbing = new Category();
-        plumbing.setId(1L);
+        plumbing.setId(UUID.randomUUID());
         ProfileUpdateRequest request = new ProfileUpdateRequest();
         request.setDescription("I fix pipes");
         request.setCategories(List.of(plumbing));
