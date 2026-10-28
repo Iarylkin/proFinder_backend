@@ -3,8 +3,8 @@ package fit.biejk.service;
 import fit.biejk.entity.Location;
 import fit.biejk.repository.LocationRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -16,6 +16,7 @@ import java.util.List;
  * </p>
  */
 @ApplicationScoped
+@RequiredArgsConstructor
 public class LocationService {
 
     /**
@@ -24,8 +25,7 @@ public class LocationService {
      * Injected by CDI and used internally by the service methods.
      * </p>
      */
-    @Inject
-    private LocationRepository locationRepository;
+    private final LocationRepository locationRepository;
 
     /**
      * Retrieves all locations from the database.

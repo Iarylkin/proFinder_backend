@@ -5,32 +5,30 @@ import fit.biejk.entity.ChatMessage;
 import fit.biejk.entity.User;
 import fit.biejk.repository.ChatMessageRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service class responsible for creating chat messages.
  */
 @ApplicationScoped
+@RequiredArgsConstructor
 public class ChatMessageService {
 
     /**
      * Repository for performing database operations on {@link ChatMessage} entities.
      */
-    @Inject
-    private ChatMessageRepository chatMessageRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     /**
      * Service used for retrieving user information.
      */
-    @Inject
-    private UserService userService;
+    private final UserService userService;
 
     /**
      * Service used for retrieving chat information.
      */
-    @Inject
-    private ChatService chatService;
+    private final ChatService chatService;
 
     /**
      * Creates and persists a new {@link ChatMessage} entity in the specified chat.

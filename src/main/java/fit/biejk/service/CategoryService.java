@@ -3,7 +3,7 @@ package fit.biejk.service;
 import fit.biejk.entity.Category;
 import fit.biejk.repository.CategoryRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -16,13 +16,13 @@ import java.util.List;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class CategoryService {
 
     /**
      * Repository for accessing category data.
      */
-    @Inject
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
 
     /**
      * Retrieves all categories from the database.

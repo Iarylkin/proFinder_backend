@@ -3,7 +3,7 @@ package fit.biejk.service;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,13 +14,13 @@ import lombok.extern.slf4j.Slf4j;
  */
 @ApplicationScoped
 @Slf4j
+@RequiredArgsConstructor
 public class MailService {
 
     /**
      * Injected Quarkus Mailer used to send emails.
      */
-    @Inject
-    private Mailer mailer;
+    private final Mailer mailer;
 
     /**
      * Sends a plain text email to the specified recipient.

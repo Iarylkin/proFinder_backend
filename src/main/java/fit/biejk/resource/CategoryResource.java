@@ -3,10 +3,10 @@ package fit.biejk.resource;
 import fit.biejk.entity.Category;
 import fit.biejk.service.CategoryService;
 import jakarta.annotation.security.PermitAll;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -17,11 +17,11 @@ import java.util.List;
  * </p>
  */
 @Path("/v1/categories")
+@RequiredArgsConstructor
 public class CategoryResource {
 
     /** Service for handling business logic related to categories. */
-    @Inject
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
     /**
      * Retrieves all available categories.
