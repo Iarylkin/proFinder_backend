@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * REST resource for handling authentication-related operations such as sign-up, sign-in,
+ * REST resource for handling authentication-related operations such as registration, login,
  * password change, and password recovery.
  * <p>
  * Routes are grouped under the "/auth" path.
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthResource {
 
     /**
-     * Service for handling authentication logic such as user registration, signIn,
+     * Service for handling authentication logic such as user registration, login,
      * password reset, and password change.
      */
     private final AuthService authService;
@@ -41,11 +41,11 @@ public class AuthResource {
     public Response register(
             @Valid final AuthRequest request
     ) {
-        log.info("Sign up request: {}", request);
-        String result = authService.signUp(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Sign up result: {}", result);
+        log.info("Register request: {}", request);
+        String result = authService.register(request.getEmail(), request.getPassword(), request.getRole());
+        log.debug("Register result: {}", result);
         AuthResponse response = new AuthResponse(result);
-        log.info("Sign up response: {}", response);
+        log.info("Register response: {}", response);
 
 
         return Response.status(Response.Status.CREATED).entity(response).build();
@@ -61,11 +61,11 @@ public class AuthResource {
     @Path("/login")
     @PermitAll
     public Response login(@Valid final AuthRequest request) {
-        log.info("Sign in request: {}", request);
-        String result = authService.signIn(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Sign in result: {}", result);
+        log.info("Login request: {}", request);
+        String result = authService.login(request.getEmail(), request.getPassword(), request.getRole());
+        log.debug("Login result: {}", result);
         AuthResponse response = new AuthResponse(result);
-        log.info("Sign in response: {}", response);
+        log.info("Login response: {}", response);
         return Response.ok(response).build();
     }
 
