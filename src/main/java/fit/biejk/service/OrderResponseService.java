@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Service class for managing {@link OrderResponse} entities.
  * <p>
- * Responsible for creating, approving, confirming, and retrieving responses,
+ * Responsible for creating, approving, and retrieving responses,
  * as well as updating the associated {@link Order} based on response status.
  * </p>
  */
@@ -215,13 +215,13 @@ public class OrderResponseService {
      * @param orderId the ID of the order
      * @return the approved professional, or {@code null} if no approved response is found
      */
-    public Professional getConfirmedProfessional(final Long orderId) {
-        log.info("Searching for confirmed professional for order ID={}", orderId);
+    public Professional getApprovedProfessional(final Long orderId) {
+        log.info("Searching for approved professional for order ID={}", orderId);
 
         List<OrderResponse> orderResponses = getAllByOrderId(orderId);
         for (OrderResponse orderResponse : orderResponses) {
             if (OrderResponseStatus.APPROVED.equals(orderResponse.getStatus())) {
-                log.debug("Confirmed professional found: professionalId={}, responseId={}",
+                log.debug("Approved professional found: professionalId={}, responseId={}",
                         orderResponse.getProfessional().getId(), orderResponse.getId());
                 return orderResponse.getProfessional();
             }

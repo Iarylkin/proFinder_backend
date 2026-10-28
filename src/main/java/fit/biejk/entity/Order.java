@@ -75,7 +75,7 @@ public class Order {
     private String description;
 
     /**
-     * Price set for the order after confirmation.
+     * Price of the order; replaced by the final agreed price when a response is approved.
      */
     @Column(name = "price")
     private Integer price;

@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * REST resource for managing orders and responses.
  * <p>
- * Supports creating, updating, confirming and retrieving orders, as well as submitting and managing responses.
+ * Supports creating, updating, cancelling and retrieving orders, as well as submitting and listing responses.
  * </p>
  */
 @Path("/v1/orders")

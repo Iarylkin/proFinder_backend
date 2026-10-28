@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * REST resource for managing order responses submitted by professionals.
  * <p>
  * This resource allows retrieval of responses by professional, by response ID, or by order ID.
- * It also supports confirming responses by the customer and fetching related order data.
+ * It also supports approving responses by the customer and fetching related order data.
  * </p>
  */
 @Slf4j
@@ -62,7 +62,7 @@ public class OrderResponseResource {
      * <p>
      * This endpoint allows a customer to accept a specific professional's response by sending
      * {@code "status": "APPROVED"} together with the final price and deadline.
-     * By confirming, the system updates the order with the final agreed-upon terms
+     * By approving, the system updates the order with the final agreed-upon terms
      * and assigns the professional to the project.
      * </p>
      *

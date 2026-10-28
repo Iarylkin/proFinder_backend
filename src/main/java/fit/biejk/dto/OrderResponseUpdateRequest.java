@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Data Transfer Object representing the confirmation of a response.
+ * Data Transfer Object representing a status change of a response, such as its approval.
  * <p>
  * Contains the final agreed deadline and price for a given response.
  * </p>

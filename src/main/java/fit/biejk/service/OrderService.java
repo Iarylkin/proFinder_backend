@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Service class for managing {@link Order} entities.
  * <p>
- * Handles business logic for creating, updating, deleting, and confirming orders,
+ * Handles business logic for creating, updating, cancelling, and deleting orders,
  * as well as working with related {@link OrderResponse} objects.
  * </p>
  */
