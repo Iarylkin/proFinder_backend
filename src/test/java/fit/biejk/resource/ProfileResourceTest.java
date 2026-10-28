@@ -80,8 +80,10 @@ class ProfileResourceTest {
     void anAccountWithoutARoleIsForbidden() {
         when(authService.getCurrentUserRole()).thenReturn(Optional.empty());
 
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+
         assertThrows(ForbiddenException.class, () -> resource.getProfile());
-        assertThrows(ForbiddenException.class, () -> resource.updateProfile(new ProfileUpdateRequest()));
+        assertThrows(ForbiddenException.class, () -> resource.updateProfile(request));
     }
 
     @Test

@@ -76,6 +76,8 @@ class UserServiceTest {
 
     @Test
     void updateProfileOfAMissingUserIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.updateProfile(999L, new User()));
+        User changes = new User();
+
+        assertThrows(NotFoundException.class, () -> service.updateProfile(999L, changes));
     }
 }

@@ -134,7 +134,9 @@ class OrderServiceTest {
 
     @Test
     void updateOfAMissingOrderIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.update(999L, new Order()));
+        Order changes = new Order();
+
+        assertThrows(NotFoundException.class, () -> service.update(999L, changes));
     }
 
     @Test
