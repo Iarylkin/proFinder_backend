@@ -1,10 +1,8 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.exception.OrderClosedException;
 import fit.biejk.exception.StatusConflictException;
-import fit.biejk.mapper.OrderMapper;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
@@ -64,11 +62,6 @@ public class OrderService {
     private final AuthService authService;
 
     /**
-     * Mapper that applies partial updates to order entities.
-     */
-    private final OrderMapper orderMapper;
-
-    /**
      * Creates a new order with default status.
      *
      * @param order order entity
@@ -88,20 +81,21 @@ public class OrderService {
     }
 
     /**
-     * Partially updates an existing order: only the fields present in the request change.
+     * Partially updates an existing order: only the non-null fields of {@code changes} are applied.
      * <p>
-     * The only status that can be requested is {@code CANCELLED}; any other status, or a
-     * transition the order cannot make from its current status, is rejected with 409.
+     * The status of {@code changes} is the requested status. The only status that can be requested
+     * is {@code CANCELLED}; any other status, or a transition the order cannot make from its current
+     * status, is rejected with 409.
      * </p>
      *
      * @param orderId ID of the order to update
-     * @param request fields to change
+     * @param changes an order holding only the requested changes
      * @return the updated order
      * @throws ForbiddenException      if the current user is not the owner of the order
      * @throws StatusConflictException if the requested status is not allowed
      */
     @Transactional
-    public Order update(final Long orderId, final OrderUpdateRequest request) {
+    public Order update(final Long orderId, final Order changes) {
         log.info("Update order: orderId={}", orderId);
         Order order = getById(orderId);
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
@@ -110,9 +104,25 @@ public class OrderService {
             throw new ForbiddenException("You are not the owner of this order");
         }
 
-        OrderStatus newStatus = nextStatus(order.getStatus(), request.getStatus());
-        orderMapper.updateEntity(request, order);
-        order.setStatus(newStatus);
+        order.setStatus(nextStatus(order.getStatus(), changes.getStatus()));
+        if (changes.getCategories() != null) {
+            order.setCategories(changes.getCategories());
+        }
+        if (changes.getTitle() != null) {
+            order.setTitle(changes.getTitle());
+        }
+        if (changes.getDescription() != null) {
+            order.setDescription(changes.getDescription());
+        }
+        if (changes.getPrice() != null) {
+            order.setPrice(changes.getPrice());
+        }
+        if (changes.getDeadline() != null) {
+            order.setDeadline(changes.getDeadline());
+        }
+        if (changes.getLocation() != null) {
+            order.setLocation(changes.getLocation());
+        }
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);

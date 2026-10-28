@@ -102,7 +102,7 @@ public class OrderResource {
     @RolesAllowed("CUSTOMER")
     public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderUpdateRequest request) {
         log.info("Update order request: orderId={}, request={}", orderId, request);
-        Order result = orderService.update(orderId, request);
+        Order result = orderService.update(orderId, orderMapper.toEntity(request));
         log.debug("Order updated with ID={}", result.getId());
         return Response.ok(orderMapper.toDto(result)).build();
     }

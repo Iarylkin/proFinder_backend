@@ -1,12 +1,10 @@
 package fit.biejk.service;
 
-import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Customer;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderStatus;
 import fit.biejk.exception.StatusConflictException;
-import fit.biejk.mapper.OrderMapperImpl;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
@@ -48,8 +46,7 @@ class OrderServiceTest {
                 orderRepository,
                 mock(OrderResponseService.class),
                 mock(ProfessionalService.class),
-                authService,
-                new OrderMapperImpl());
+                authService);
 
         Customer customer = new Customer();
         customer.setId(CUSTOMER_ID);
@@ -71,11 +68,11 @@ class OrderServiceTest {
 
     @Test
     void updateChangesOnlyTheSentFields() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setTitle("New title");
-        request.setPrice(NEW_PRICE);
+        Order changes = new Order();
+        changes.setTitle("New title");
+        changes.setPrice(NEW_PRICE);
 
-        Order result = service.update(ORDER_ID, request);
+        Order result = service.update(ORDER_ID, changes);
 
         assertSame(order, result);
         assertEquals("New title", result.getTitle());
@@ -89,21 +86,22 @@ class OrderServiceTest {
 
     @Test
     void updateWithStatusCancelledCancelsTheOrder() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setStatus(OrderStatus.CANCELLED);
+        Order changes = new Order();
+        changes.setStatus(OrderStatus.CANCELLED);
 
-        Order result = service.update(ORDER_ID, request);
+        Order result = service.update(ORDER_ID, changes);
 
         assertEquals(OrderStatus.CANCELLED, result.getStatus());
         assertEquals("Old title", result.getTitle());
+        assertEquals(PRICE, result.getPrice());
     }
 
     @Test
     void updateRejectsAnyStatusExceptCancelled() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setStatus(OrderStatus.COMPLETED);
+        Order changes = new Order();
+        changes.setStatus(OrderStatus.COMPLETED);
 
-        assertThrows(StatusConflictException.class, () -> service.update(ORDER_ID, request));
+        assertThrows(StatusConflictException.class, () -> service.update(ORDER_ID, changes));
 
         assertEquals(OrderStatus.CREATED, order.getStatus());
         verify(orderRepository, never()).persist(any(Order.class));
@@ -112,11 +110,11 @@ class OrderServiceTest {
     @Test
     void updateRejectsCancellingACompletedOrder() {
         order.setStatus(OrderStatus.COMPLETED);
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setStatus(OrderStatus.CANCELLED);
+        Order changes = new Order();
+        changes.setStatus(OrderStatus.CANCELLED);
 
         StatusConflictException exception =
-                assertThrows(StatusConflictException.class, () -> service.update(ORDER_ID, request));
+                assertThrows(StatusConflictException.class, () -> service.update(ORDER_ID, changes));
 
         assertEquals(409, exception.getResponse().getStatus());
         assertEquals(OrderStatus.COMPLETED, order.getStatus());
@@ -125,10 +123,10 @@ class OrderServiceTest {
     @Test
     void updateIsForbiddenForANonOwner() {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setTitle("Hijacked");
+        Order changes = new Order();
+        changes.setTitle("Hijacked");
 
-        assertThrows(ForbiddenException.class, () -> service.update(ORDER_ID, request));
+        assertThrows(ForbiddenException.class, () -> service.update(ORDER_ID, changes));
 
         assertEquals("Old title", order.getTitle());
         verify(orderRepository, never()).persist(any(Order.class));
@@ -136,7 +134,7 @@ class OrderServiceTest {
 
     @Test
     void updateOfAMissingOrderIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.update(999L, new OrderUpdateRequest()));
+        assertThrows(NotFoundException.class, () -> service.update(999L, new Order()));
     }
 
     @Test

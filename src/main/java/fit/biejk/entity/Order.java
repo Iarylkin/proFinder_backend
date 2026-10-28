@@ -78,7 +78,7 @@ public class Order {
      * Price set for the order after confirmation.
      */
     @Column(name = "price")
-    private int price;
+    private Integer price;
 
     /**
      * Timestamp indicating when the order was created.
