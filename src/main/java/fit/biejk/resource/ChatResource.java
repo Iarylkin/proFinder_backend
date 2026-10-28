@@ -88,7 +88,6 @@ public class ChatResource {
      * @return list of chat DTOs
      */
     @GET
-    @Path("/me")
     @Authenticated
     public Response getAllByProfile(@BeanParam final PageRequest pagination) {
         Long userId = authService.getCurrentUserId();
