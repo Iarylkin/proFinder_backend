@@ -32,17 +32,6 @@ public class OrderResponseRepository implements PanacheRepository<OrderResponse>
     }
 
     /**
-     * Retrieves all responses for a specific order without pagination.
-     *
-     * @param orderId the ID of the order
-     * @return list of all responses for the order
-     */
-    public List<OrderResponse> findAllByOrderId(final Long orderId) {
-        return find("order.id", orderId)
-                .list();
-    }
-
-    /**
      * Retrieves all responses submitted by a specific professional.
      *
      * @param professionalId the ID of the professional

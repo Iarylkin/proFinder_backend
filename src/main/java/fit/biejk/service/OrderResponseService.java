@@ -195,43 +195,6 @@ public class OrderResponseService {
     }
 
     /**
-     * Retrieves all responses for a specific order without pagination.
-     *
-     * @param orderId the ID of the order
-     * @return list of all responses for the order
-     */
-    public List<OrderResponse> getAllByOrderId(final Long orderId) {
-        log.info("Fetching all responses for order ID={}", orderId);
-
-        List<OrderResponse> orderResponses = orderResponseRepository.findAllByOrderId(orderId);
-        log.debug("Found {} response(s) for order ID={}", orderResponses.size(), orderId);
-
-        return orderResponses;
-    }
-
-    /**
-     * Returns the professional whose response has been approved for a given order.
-     *
-     * @param orderId the ID of the order
-     * @return the approved professional, or {@code null} if no approved response is found
-     */
-    public Professional getApprovedProfessional(final Long orderId) {
-        log.info("Searching for approved professional for order ID={}", orderId);
-
-        List<OrderResponse> orderResponses = getAllByOrderId(orderId);
-        for (OrderResponse orderResponse : orderResponses) {
-            if (OrderResponseStatus.APPROVED.equals(orderResponse.getStatus())) {
-                log.debug("Approved professional found: professionalId={}, responseId={}",
-                        orderResponse.getProfessional().getId(), orderResponse.getId());
-                return orderResponse.getProfessional();
-            }
-        }
-
-        log.warn("No approved response found for order ID={}", orderId);
-        return null;
-    }
-
-    /**
      * Retrieves all responses submitted by a specific professional.
      * <p>
      * The caller must be the same as the professional whose ID is provided.
