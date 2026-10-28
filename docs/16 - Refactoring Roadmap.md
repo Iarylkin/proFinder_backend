@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.13
+- **Version:** 1.14
 - **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -73,13 +73,13 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
 | **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.6.0 |
-| **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
+| **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID literals |
 | **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.4.0) |
 | **1.2.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
-| **1.3.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
+| **1.3.0** | **UUID v4** from the built-in `GenerationType.UUID` (decided 2026-10-28, see decision 3) and `version` for optimistic locking, both in one `BaseEntity` that every entity extends. A failed lock returns `409` (`ConcurrentUpdateExceptionMapper`, folded into `ApiExceptionMapper` in 1.6.0). WebSocket path parameters cannot be `UUID`, so `ChatSocket` parses the chat id from text. *Decision 3* |
 | **1.4.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance. **Unify the profile code here:** `GET`/`PATCH /users/me/profile` serve two entities, so `ProfileResource` now picks the service and the mapper by role. Replace that with one `ProfileDto` family, a MapStruct mapper with `@SubclassMapping`, and a `ProfileService` that takes a neutral `ProfileChanges` and applies the rule "description and categories are for professionals only", so the resource has no role switch |
 | **1.5.0** | **Flyway:** baseline `V1` taken from the model after 1.4.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.6.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
+| **1.6.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **`PATCH` carries `version`** (the DTOs expose it and the request is rejected with `CONFLICT` when it differs, see `docs/8` and `docs/13`); until then only concurrent transactions on the server are protected. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
 | **1.7.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
 ## M2 — Modular monolith (1.8.0 – 1.13.0)
@@ -250,7 +250,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | # | Question | Needed by |
 |---|---|---|
-| 3 | UUID v7 or `Long` | 1.3.0 (**first**) |
+| 3 | ~~UUID v7 or `Long`~~ **Decided 2026-10-28:** UUID, generated in the application by the built-in `GenerationType.UUID` (v4): no extra library or custom generator, and the index-locality gain of v7 is not needed at this size. The column type is `uuid`, so v7 can come later without a schema change | 1.3.0 |
 | 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
@@ -279,6 +279,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.14 | 2026-10-28 | Decision 3 closed: ids are UUID v4 from the built-in `GenerationType.UUID`, not v7. 1.3.0 describes the shared `BaseEntity` (UUID `id` + `version`), the `409` for a failed lock and the WebSocket path parameter. 1.6.0 gets the client-sent `version` in `PATCH`, which the code does not do yet. |
 | 1.13 | 2026-10-28 | Chat wording in the rows follows the *chat* naming (`GET /chats/me`). |
 | 1.12 | 2026-10-28 | Removed the remaining mentions of deprecated API aliases (D-5.4 and the 2.0.0 row); the Elasticsearch `*_write` aliases in 2.16.0 are unrelated and stay. |
 | 1.11 | 2026-10-28 | Removed the Compatibility principle: nothing is deployed, so the API changes without deprecated aliases. |

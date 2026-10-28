@@ -1,6 +1,6 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.6
+- **Version:** 1.7
 - **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
@@ -52,7 +52,7 @@ Every message on the bus has this exact top-level shape. `payload` is the only p
 
 ```json
 {
-  "event_id":       "0192f8c2-... (uuid v7)   — = outbox.id, the idempotency key",
+  "event_id":       "0192f8c2-... (uuid)      — = outbox.id, the idempotency key",
   "event_type":     "order.published          — = the routing key",
   "event_version":  1,
   "occurred_at":    "2026-09-07T12:34:56.789Z — = outbox.created_at, UTC ISO-8601",
@@ -407,6 +407,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-10-28 | `event_id` is a plain UUID (v4): ids are no longer v7 (decision 3). |
 | 1.6 | 2026-10-28 | **Naming:** `conversation_id` → `chat_id` in the message payloads; `ResponseService` → `OrderResponseService`. |
 | 1.5 | 2026-10-27 | **D-1.4:** `closed_reason` values are `MANUAL` / `ACCOUNT_ACTION`. |
 | 1.4 | 2026-10-27 | **D-1.3:** `quote_amount` → `quote_price`; `location` → `city` in `changed_fields`; enum values in payloads are `UPPER_SNAKE_CASE`. |

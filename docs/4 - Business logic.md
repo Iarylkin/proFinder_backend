@@ -1,6 +1,6 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.9
+- **Version:** 3.10
 - **Date:** 2026-10-28
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
@@ -872,7 +872,7 @@ See [Report System](#report-system-separate-from-order-lifecycle) above for the 
 ## Concurrency & Edge Cases
 ---
 
-- **Optimistic locking:** mutable entities (order, profile) carry a `version` column (Hibernate `@Version`). `UPDATE ... WHERE id=? AND version=?` affecting 0 rows → `409 Conflict`, the client refetches and retries. No last-write-wins.
+- **Optimistic locking:** every entity carries a `version` column (Hibernate `@Version`, in the shared base class). `UPDATE ... WHERE id=? AND version=?` affecting 0 rows → `409 Conflict`, the client refetches and retries. No last-write-wins.
 - **In-flight response vs. order close:** response creation checks `WHERE status='ACTIVE'` (or `SELECT ... FOR UPDATE` on the order row) in the same transaction. If the order is already `CLOSED` → `409 ORDER_CLOSED`.
 - **Party banned/suspended with an ACTIVE order:** customer → all their ACTIVE orders auto-close (reason `ACCOUNT_ACTION`), responders notified; professional → removed from search, their responses filtered out of customers' lists, restored on reinstatement. Nothing is deleted.
 - **No orphaned data:** account deletion is a *soft* delete — the DB row is kept and only anonymized (see [Account Deletion](#account-deletion)), so a deleted order with a dangling response / a deleted professional with a dangling review / orphaned messages simply cannot happen.
@@ -1005,6 +1005,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.10 | 2026-10-28 | **Optimistic locking** applies to every entity, not only order and profile: `version` lives in the shared `BaseEntity`. |
 | 3.9 | 2026-10-28 | **Naming:** *conversation* → *chat* (the section is now *Chat Model*). |
 | 3.8 | 2026-10-27 | **D-1.4:** order `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
 | 3.7 | 2026-10-27 | **D-1.3:** order field `location` → `city`; enum values in payloads and the preferences matrix are `UPPER_SNAKE_CASE`. |

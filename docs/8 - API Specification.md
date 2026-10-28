@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.13
+- **Version:** 1.14
 - **Date:** 2026-10-28
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -19,7 +19,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 - **Auth:** `Authorization: Bearer <JWT>` header. Endpoints marked "public" need none.
 - **Money:** all amounts are plain `numeric`, USD, no `currency` field ([A5 decision](Documentation%20Roadmap.md)).
 - **Dates:** ISO 8601 timestamps, no per-user timezone conversion ([A5 decision](Documentation%20Roadmap.md)).
-- **Identifiers:** every id is a **UUID v7** (time-ordered). Generated application-side (Hibernate `@UuidGenerator(style = TIME)` or an equivalent v7 generator), never DB-default, so the id exists before flush and travels in the outbox row. v7 over v4 because it sorts by creation time — offset pagination and `ORDER BY created_at` line up with primary-key order, and B-tree index inserts stay near-sequential (far less page fragmentation than random v4). The embedded millisecond timestamp is not considered sensitive (creation time is already exposed as `created_at`).
+- **Identifiers:** every id is a **UUID** (v4, random). Generated application-side (Hibernate `GenerationType.UUID`), never DB-default, so the id exists before flush and travels in the outbox row. The built-in generator is used instead of a time-ordered v7: it needs no extra library or custom generator, and the better index locality of v7 does not matter at the expected size. The column type is `uuid` either way, so v7 can be adopted later without a schema change. A path segment that is not a UUID returns `404`.
 - **Enums are returned raw, never localized.** The API always emits the machine token — `status: "ACTIVE"`, `reason: "NO_SHOW"`, `decision: "CONTENT_REMOVED"` — and never a display string. Turning a token into human text is the **client's** job, via its own i18n bundle keyed `enum.<enum_name>.<value>` (e.g. `enum.report_reason.NO_SHOW`). MVP ships English only ([NFR-UX-4](2%20-%20Requirements.md)); adding locales later changes nothing in the API contract. This keeps responses locale-independent (so cacheable) and keeps `Accept-Language` out of the service layer. Free-text the server composes for storage — notification `title`/`body` rows — is rendered at write time from server-side templates and is a separate concern from enum values on the wire.
 - **Load balancer (decided 2026-09-05):** every service sits behind the Nginx LB from [3 - System Design.md § Nginx Gateway](3%20-%20System%20Design.md) — fixed the "not needed" contradiction in [2 - Requirements.md](2%20-%20Requirements.md) NFR-Scale-1/2. Practically, this means:
   - Every REST endpoint below must stay **stateless** — no server-side session, no sticky-session requirement. This already holds: auth is a locally-verified JWT, rate limits/denylist live in Redis, everything else in PostgreSQL — any instance can serve any request.
@@ -454,6 +454,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.14 | 2026-10-28 | **Identifiers:** UUID v4 from the built-in `GenerationType.UUID` instead of v7 (decision 3 in [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)): no extra library or custom generator, and the index-locality gain of v7 is not needed at this size. |
 | 1.13 | 2026-10-28 | **Chat and own-user paths:** `GET /chats/me`, `/chats/{id}/messages`; profile, portfolio, preferences, device tokens and account deletion are under `/users/me/...`. **Orders:** publish, close and extend are one `PATCH /orders/{id}` (`status`, `expires_at`); the order DTO is `OrderDto`, the response DTOs are `OrderResponseCreateRequestDto` and `OrderResponseDto`. `RegisterRequestDto` carries `role`. |
 | 1.12 | 2026-10-27 | **D-1.3:** `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`; `ACCOUNT_LOCKED` (login lockout) and `RATE_LIMITED` (other limits) described as distinct; `OrderCreateRequestDto.location` → `city`; reviews `direction` is `CUSTOMER\|PROFESSIONAL`; appeal `outcome` and examples use `UPPER_SNAKE_CASE`. |
 | 1.11 | 2026-10-27 | **D-1.2:** `RegisterRequestDto` now carries `display_name`. `POST /auth/role` takes the limited `temp_token` from the Google callback (not a full JWT) and returns full tokens. The Google callback creates the account with no role. |
