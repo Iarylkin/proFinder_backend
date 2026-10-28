@@ -89,7 +89,7 @@ public class OrderResponseService {
      * @throws StatusConflictException if the status is not {@code APPROVED}
      */
     @Transactional
-    public Order updateStatus(final Long responseId, final OrderResponseStatus status,
+    public Order updateStatus(final UUID responseId, final OrderResponseStatus status,
                               final int finalPrice, final LocalDateTime finalDeadline) {
         OrderResponse orderResponse = orderResponseRepository.findByIdOptional(responseId)
                 .orElseThrow(() -> new NotFoundException("Response not found"));
@@ -135,7 +135,7 @@ public class OrderResponseService {
      * @return the response if found
      * @throws NotFoundException if no response exists with the given ID
      */
-    public OrderResponse getById(final Long responseId) {
+    public OrderResponse getById(final UUID responseId) {
         log.info("Retrieving response by ID={}", responseId);
 
         OrderResponse orderResponse = orderResponseRepository.findById(responseId);
@@ -157,7 +157,7 @@ public class OrderResponseService {
      * @throws NotFoundException  if no response exists with the given ID
      * @throws ForbiddenException if the current user is neither the order owner nor the author
      */
-    public OrderResponse getByIdForCurrentUser(final Long responseId) {
+    public OrderResponse getByIdForCurrentUser(final UUID responseId) {
         OrderResponse orderResponse = getById(responseId);
         boolean isOrderOwner = authService.isCurrentUser(orderResponse.getOrder().getCustomer().getId());
         boolean isAuthor = authService.isCurrentUser(orderResponse.getProfessional().getId());
@@ -178,7 +178,7 @@ public class OrderResponseService {
      * @throws NotFoundException  if the order does not exist
      * @throws ForbiddenException if the current user is not the owner of the order
      */
-    public List<OrderResponse> getByOrderId(final Long orderId, final int page, final int size) {
+    public List<OrderResponse> getByOrderId(final UUID orderId, final int page, final int size) {
         log.info("Fetching all responses for order ID={}", orderId);
 
         Order order = orderRepository.findById(orderId);

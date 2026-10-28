@@ -2,7 +2,7 @@ package fit.biejk.repository;
 
 import fit.biejk.entity.OrderResponse;
 import fit.biejk.entity.OrderResponseStatus;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.UUID;
  * </p>
  */
 @ApplicationScoped
-public class OrderResponseRepository implements PanacheRepository<OrderResponse> {
+public class OrderResponseRepository implements PanacheRepositoryBase<OrderResponse, UUID> {
 
     /**
      * Retrieves all responses associated with a specific order.
@@ -26,7 +26,7 @@ public class OrderResponseRepository implements PanacheRepository<OrderResponse>
      * @param size    number of responses per page
      * @return a list of {@link OrderResponse} entities related to the given order
      */
-    public List<OrderResponse> findByOrderId(final Long orderId, final int page, final int size) {
+    public List<OrderResponse> findByOrderId(final UUID orderId, final int page, final int size) {
         return find("order.id", orderId)
                 .page(page - 1, size)
                 .list();
@@ -56,7 +56,7 @@ public class OrderResponseRepository implements PanacheRepository<OrderResponse>
      * @param orderId the ID of the order whose responses should be rejected
      * @param approvedResponseId the ID of the response that is excluded from rejection
      */
-    public void rejectOthersForOrder(final Long orderId, final Long approvedResponseId) {
+    public void rejectOthersForOrder(final UUID orderId, final UUID approvedResponseId) {
         update("status = ?1 where order.id = ?2 and id != ?3",
                 OrderResponseStatus.REJECTED, orderId, approvedResponseId);
     }

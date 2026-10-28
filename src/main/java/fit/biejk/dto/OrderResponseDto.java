@@ -20,12 +20,12 @@ public class OrderResponseDto {
     /**
      * Unique identifier of the response.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Identifier of the associated order.
      */
-    private Long orderId;
+    private UUID orderId;
 
     /**
      * Identifier of the professional making the response.

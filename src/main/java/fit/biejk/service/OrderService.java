@@ -96,7 +96,7 @@ public class OrderService {
      * @throws StatusConflictException if the requested status is not allowed
      */
     @Transactional
-    public Order update(final Long orderId, final Order changes) {
+    public Order update(final UUID orderId, final Order changes) {
         log.info("Update order: orderId={}", orderId);
         Order order = getById(orderId);
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
@@ -161,7 +161,7 @@ public class OrderService {
      * @param orderId ID of the order
      */
     @Transactional
-    public void delete(final Long orderId) {
+    public void delete(final UUID orderId) {
         log.info("Delete order: orderId={}", orderId);
         Order order = getById(orderId);
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
@@ -183,7 +183,7 @@ public class OrderService {
      * @return found order
      * @throws NotFoundException if not found
      */
-    public Order getById(final Long orderId) {
+    public Order getById(final UUID orderId) {
         log.info("Get order by ID={}", orderId);
         Order order = orderRepository.findById(orderId);
         if (order == null) {
@@ -216,7 +216,7 @@ public class OrderService {
      * @return created response
      */
     @Transactional
-    public OrderResponse respond(final Long orderId, final UUID professionalId, final OrderResponse orderResponse) {
+    public OrderResponse respond(final UUID orderId, final UUID professionalId, final OrderResponse orderResponse) {
         log.info("Create response: orderId={}, professionalId={}", orderId, orderResponse.getProfessional().getId());
         Order order = getById(orderId);
         if (!order.getStatus().acceptsResponses()) {

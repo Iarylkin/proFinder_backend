@@ -37,7 +37,7 @@ public class ReviewDto {
     /**
      * ID of the order that the review is related to.
      */
-    private Long orderId;
+    private UUID orderId;
 
     /**
      * Review comment content.

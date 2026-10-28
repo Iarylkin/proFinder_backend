@@ -101,7 +101,7 @@ public class OrderResource {
     @PATCH
     @Path("/{orderId}")
     @RolesAllowed("CUSTOMER")
-    public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderUpdateRequest request) {
+    public Response update(@PathParam("orderId") final UUID orderId, @Valid final OrderUpdateRequest request) {
         log.info("Update order request: orderId={}, request={}", orderId, request);
         Order result = orderService.update(orderId, orderMapper.toEntity(request));
         log.debug("Order updated with ID={}", result.getId());
@@ -119,7 +119,7 @@ public class OrderResource {
     @Path("/{orderId}/responses")
     @RolesAllowed("PROFESSIONAL")
     public Response respond(
-            @PathParam("orderId") final Long orderId,
+            @PathParam("orderId") final UUID orderId,
             @Valid final OrderResponseDto orderResponseDto) {
         log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
         OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
@@ -142,7 +142,7 @@ public class OrderResource {
     @Path("/{orderId}/responses")
     @RolesAllowed("CUSTOMER")
     public Response getResponses(
-            @PathParam("orderId") final Long orderId,
+            @PathParam("orderId") final UUID orderId,
             @BeanParam final PageRequest pagination
     ) {
         log.info("Get all responses for orderId={}", orderId);
@@ -163,7 +163,7 @@ public class OrderResource {
     @GET
     @Path("/{orderId}")
     @PermitAll
-    public Response getById(@PathParam("orderId") final Long orderId) {
+    public Response getById(@PathParam("orderId") final UUID orderId) {
         log.info("Get order by ID: {}", orderId);
         Order result = orderService.getById(orderId);
         return Response.ok(orderMapper.toDto(result)).build();
@@ -214,7 +214,7 @@ public class OrderResource {
     @DELETE
     @Path("/{orderId}")
     @RolesAllowed("CUSTOMER")
-    public Response delete(@PathParam("orderId") final Long orderId) {
+    public Response delete(@PathParam("orderId") final UUID orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);
         return Response.ok().build();

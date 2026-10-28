@@ -1,7 +1,7 @@
 package fit.biejk.repository;
 
 import fit.biejk.entity.Order;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
@@ -10,12 +10,12 @@ import java.util.UUID;
 /**
  * Repository class for performing CRUD operations on {@link Order} entities.
  * <p>
- * Uses {@link PanacheRepository} for simplified data access with Quarkus and Hibernate ORM.
+ * Uses {@link PanacheRepositoryBase} for simplified data access with Quarkus and Hibernate ORM.
  * Provides custom queries for retrieving orders by customer and professional.
  * </p>
  */
 @ApplicationScoped
-public class OrderRepository implements PanacheRepository<Order> {
+public class OrderRepository implements PanacheRepositoryBase<Order, UUID> {
 
     /**
      * Retrieves all orders created by the specified customer.

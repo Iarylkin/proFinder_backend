@@ -26,7 +26,8 @@ import static org.mockito.Mockito.when;
 
 class OrderServiceTest {
 
-    private static final long ORDER_ID = 10L;
+    private static final UUID ORDER_ID = UUID.randomUUID();
+    private static final UUID MISSING_ORDER_ID = UUID.randomUUID();
     private static final UUID CUSTOMER_ID = UUID.randomUUID();
     private static final UUID LOCATION_ID = UUID.randomUUID();
     private static final int PRICE = 100;
@@ -139,7 +140,7 @@ class OrderServiceTest {
     void updateOfAMissingOrderIsNotFound() {
         Order changes = new Order();
 
-        assertThrows(NotFoundException.class, () -> service.update(999L, changes));
+        assertThrows(NotFoundException.class, () -> service.update(MISSING_ORDER_ID, changes));
     }
 
     @Test

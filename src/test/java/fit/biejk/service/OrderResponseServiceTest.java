@@ -30,8 +30,9 @@ import static org.mockito.Mockito.when;
 
 class OrderResponseServiceTest {
 
-    private static final long ORDER_ID = 10L;
-    private static final long RESPONSE_ID = 20L;
+    private static final UUID ORDER_ID = UUID.randomUUID();
+    private static final UUID RESPONSE_ID = UUID.randomUUID();
+    private static final UUID MISSING_RESPONSE_ID = UUID.randomUUID();
     private static final UUID CUSTOMER_ID = UUID.randomUUID();
     private static final int FINAL_PRICE = 300;
 
@@ -69,7 +70,7 @@ class OrderResponseServiceTest {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
     }
 
-    private Order updateStatus(final long responseId, final OrderResponseStatus status) {
+    private Order updateStatus(final UUID responseId, final OrderResponseStatus status) {
         return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1));
     }
 
@@ -107,6 +108,6 @@ class OrderResponseServiceTest {
     @Test
     void approvingAMissingResponseIsNotFound() {
         assertThrows(NotFoundException.class,
-                () -> updateStatus(999L, OrderResponseStatus.APPROVED));
+                () -> updateStatus(MISSING_RESPONSE_ID, OrderResponseStatus.APPROVED));
     }
 }

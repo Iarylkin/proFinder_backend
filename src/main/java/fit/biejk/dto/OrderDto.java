@@ -27,7 +27,7 @@ public class OrderDto {
     /**
      * Unique identifier of the order.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * Identifier of the customer who placed the order.
