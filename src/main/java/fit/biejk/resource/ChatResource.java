@@ -68,7 +68,7 @@ public class ChatResource {
     @GET
     @Path("/{chatId}/messages")
     @Authenticated
-    public Response getMessagesById(
+    public Response getMessagesByChatId(
             @PathParam("chatId") final Long chatId,
             @BeanParam final PageRequest pagination) {
         Long userId = authService.getCurrentUserId();
@@ -88,8 +88,9 @@ public class ChatResource {
      * @return list of chat DTOs
      */
     @GET
+    @Path("/me")
     @Authenticated
-    public Response getAllByProfile(@BeanParam final PageRequest pagination) {
+    public Response getMyChats(@BeanParam final PageRequest pagination) {
         Long userId = authService.getCurrentUserId();
         List<Chat> result = chatService.getByUserId(
                 userId,
