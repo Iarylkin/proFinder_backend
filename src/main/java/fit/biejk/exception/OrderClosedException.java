@@ -4,7 +4,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 /**
- * Thrown when a proposal is submitted to an order that no longer accepts proposals (HTTP 409, {@code ORDER_CLOSED}).
+ * Thrown when a response is submitted to an order that no longer accepts responses (HTTP 409, {@code ORDER_CLOSED}).
  */
 public class OrderClosedException extends WebApplicationException {
 

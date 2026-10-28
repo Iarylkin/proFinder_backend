@@ -13,7 +13,7 @@ import java.util.List;
  * Entity representing an order placed by a customer.
  * <p>
  * Contains details about specialization, status, price, deadline,
- * proposals from professionals, and a linked review after completion.
+ * responses from professionals, and a linked review after completion.
  * </p>
  */
 @Data
@@ -51,14 +51,14 @@ public class Order {
     private OrderStatus status;
 
     /**
-     * List of proposals submitted for this order.
+     * List of responses submitted for this order.
      * <p>
      * Ignored during JSON serialization to avoid circular references.
      * </p>
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
-    private List<OrderProposal> orderProposals;
+    private List<OrderResponse> orderResponses;
 
 
     /** Brief title summarizing the order. */

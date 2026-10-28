@@ -46,7 +46,7 @@ class OrderServiceTest {
                 orderSearchService,
                 mock(OrderSearchMapper.class),
                 orderRepository,
-                mock(OrderProposalService.class),
+                mock(OrderResponseService.class),
                 mock(ProfessionalService.class),
                 authService,
                 new OrderMapperImpl());

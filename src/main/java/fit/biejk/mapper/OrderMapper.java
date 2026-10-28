@@ -20,13 +20,13 @@ public interface OrderMapper {
 
     /**
      * Converts an OrderDto to an Order entity.
-     * Ignores the 'customer' and 'orderProposals' fields during mapping.
+     * Ignores the 'customer' and 'orderResponses' fields during mapping.
      *
      * @param orderDto the DTO to convert
      * @return the mapped Order entity
      */
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderProposals", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
     Order toEntity(OrderDto orderDto);
 
     /**
@@ -65,7 +65,7 @@ public interface OrderMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderProposals", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "status", ignore = true)
     void updateEntity(OrderUpdateRequest request, @MappingTarget Order order);

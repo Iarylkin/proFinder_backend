@@ -13,7 +13,7 @@ import java.util.List;
  * Entity representing a professional.
  * <p>
  * Inherits from {@link User} and includes domain-specific information such as specialization, description,
- * rating, submitted proposals, schedule, and received reviews.
+ * rating, submitted responses, schedule, and received reviews.
  * </p>
  */
 @Data
@@ -43,14 +43,14 @@ public class Professional extends User {
     private String description;
 
     /**
-     * List of all proposals submitted by the professional to various orders.
+     * List of all responses submitted by the professional to various orders.
      * <p>
      * Ignored during JSON serialization to prevent recursion and reduce payload size.
      * </p>
      */
     @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
-    private List<OrderProposal> orderProposals;
+    private List<OrderResponse> orderResponses;
 
     /**
      * List of reviews received from customers for completed orders.

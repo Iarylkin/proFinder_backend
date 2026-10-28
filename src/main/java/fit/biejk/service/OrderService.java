@@ -22,7 +22,7 @@ import java.util.List;
  * Service class for managing {@link Order} entities.
  * <p>
  * Handles business logic for creating, updating, deleting, and confirming orders,
- * as well as working with related {@link OrderProposal} objects.
+ * as well as working with related {@link OrderResponse} objects.
  * </p>
  */
 @Slf4j
@@ -51,9 +51,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     /**
-     * Service for managing order proposals.
+     * Service for managing order responses.
      */
-    private final OrderProposalService orderProposalService;
+    private final OrderResponseService orderResponseService;
 
     /** Service for handling business logic related to professionals. */
     private final ProfessionalService professionalService;
@@ -197,57 +197,57 @@ public class OrderService {
     }
 
     /**
-     * Adds a new proposal to an order.
+     * Adds a new response to an order.
      *
      * @param orderId  ID of the order
      * @param professionalId ID of the professional
-     * @param proposal proposal entity
-     * @return created proposal
+     * @param orderResponse response entity
+     * @return created response
      */
     @Transactional
-    public OrderProposal proposal(final Long orderId, final Long professionalId, final OrderProposal proposal) {
-        log.info("Create proposal: orderId={}, professionalId={}", orderId, proposal.getProfessional().getId());
+    public OrderResponse respond(final Long orderId, final Long professionalId, final OrderResponse orderResponse) {
+        log.info("Create response: orderId={}, professionalId={}", orderId, orderResponse.getProfessional().getId());
         Order order = getById(orderId);
-        if (!order.getStatus().acceptsProposals()) {
-            log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
+        if (!order.getStatus().acceptsResponses()) {
+            log.warn("Response rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
-        if (haveProfessionalProposal(order, proposal)) {
-            log.error("Order proposal already exists for this professional. orderId={}, professionalId={}",
-                    orderId, proposal.getProfessional().getId());
-            throw new IllegalArgumentException("Order proposal already exists");
+        if (haveProfessionalResponse(order, orderResponse)) {
+            log.error("Order response already exists for this professional. orderId={}, professionalId={}",
+                    orderId, orderResponse.getProfessional().getId());
+            throw new IllegalArgumentException("Order response already exists");
         }
-        proposal.setOrder(order);
+        orderResponse.setOrder(order);
 
         Professional professional = professionalService.getById(professionalId);
-        proposal.setProfessional(professional);
+        orderResponse.setProfessional(professional);
 
-        orderProposalService.create(proposal);
-        order.getOrderProposals().add(proposal);
+        orderResponseService.create(orderResponse);
+        order.getOrderResponses().add(orderResponse);
         order.setStatus(order.getStatus().transitionTo(OrderStatus.CUSTOMER_PENDING));
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);
         orderSearchService.save(dto);
 
-        log.debug("Proposal created with ID={}", proposal.getId());
-        return proposal;
+        log.debug("Response created with ID={}", orderResponse.getId());
+        return orderResponse;
     }
 
     /**
-     * Checks if the given professional already has a proposal for the order.
+     * Checks if the given professional already has a response for the order.
      *
      * @param order    the order
-     * @param proposal the proposal to check
-     * @return true if proposal already exists, false otherwise
+     * @param orderResponse the response to check
+     * @return true if response already exists, false otherwise
      */
-    public boolean haveProfessionalProposal(final Order order, final OrderProposal proposal) {
-        log.info("Check if professional proposal already exists: orderId={}, professionalId={}",
-                order.getId(), proposal.getProfessional().getId());
-        List<OrderProposal> orderProposals = order.getOrderProposals();
-        for (OrderProposal orderProposal : orderProposals) {
-            if (orderProposal.getProfessional().getId().equals(proposal.getProfessional().getId())) {
-                log.debug("Proposal already exists for professionalId={}", proposal.getProfessional().getId());
+    public boolean haveProfessionalResponse(final Order order, final OrderResponse orderResponse) {
+        log.info("Check if professional response already exists: orderId={}, professionalId={}",
+                order.getId(), orderResponse.getProfessional().getId());
+        List<OrderResponse> orderResponses = order.getOrderResponses();
+        for (OrderResponse existing : orderResponses) {
+            if (existing.getProfessional().getId().equals(orderResponse.getProfessional().getId())) {
+                log.debug("Response already exists for professionalId={}", existing.getProfessional().getId());
                 return true;
             }
         }

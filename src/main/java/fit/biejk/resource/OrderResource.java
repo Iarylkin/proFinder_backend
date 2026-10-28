@@ -3,7 +3,7 @@ package fit.biejk.resource;
 import fit.biejk.dto.*;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
-import fit.biejk.mapper.OrderProposalMapper;
+import fit.biejk.mapper.OrderResponseMapper;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import fit.biejk.service.*;
@@ -17,9 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 
 /**
- * REST resource for managing orders and proposals.
+ * REST resource for managing orders and responses.
  * <p>
- * Supports creating, updating, confirming and retrieving orders, as well as submitting and managing proposals.
+ * Supports creating, updating, confirming and retrieving orders, as well as submitting and managing responses.
  * </p>
  */
 @Path("/v1/orders")
@@ -27,8 +27,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderResource {
 
-    /** Service for managing order proposals. */
-    private final OrderProposalService orderProposalService;
+    /** Service for managing order responses. */
+    private final OrderResponseService orderResponseService;
 
     /**
      * Service handling order-related business logic.
@@ -61,9 +61,9 @@ public class OrderResource {
     private final AuthService authService;
 
     /**
-     * Mapper for converting between OrderProposal entities and DTOs.
+     * Mapper for converting between OrderResponse entities and DTOs.
      */
-    private final OrderProposalMapper orderProposalMapper;
+    private final OrderResponseMapper orderResponseMapper;
 
 
     /**
@@ -108,49 +108,49 @@ public class OrderResource {
     }
 
     /**
-     * Submits a proposal for an order by the authenticated professional.
+     * Submits a response for an order by the authenticated professional.
      *
      * @param orderId      ID of the order to propose on
-     * @param proposalDto  proposal data
-     * @return created proposal
+     * @param orderResponseDto  response data
+     * @return created response
      */
     @POST
     @Path("/{orderId}/responses")
     @RolesAllowed("PROFESSIONAL")
-    public Response proposal(
+    public Response respond(
             @PathParam("orderId") final Long orderId,
-            @Valid final OrderProposalDto proposalDto) {
-        log.info("Proposal request: orderId={}, proposalDto={}", orderId, proposalDto);
-        OrderProposal proposal = orderProposalMapper.toEntity(proposalDto);
+            @Valid final OrderResponseDto orderResponseDto) {
+        log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
+        OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
         Long professionalId = authService.getCurrentUserId();
 
-        OrderProposal result = orderService.proposal(orderId, professionalId, proposal);
+        OrderResponse result = orderService.respond(orderId, professionalId, orderResponse);
 
-        log.debug("Proposal created with ID={}", result.getId());
-        return Response.status(Response.Status.CREATED).entity(orderProposalMapper.toDto(result)).build();
+        log.debug("Response created with ID={}", result.getId());
+        return Response.status(Response.Status.CREATED).entity(orderResponseMapper.toDto(result)).build();
     }
 
     /**
-     * Retrieves all proposals associated with a specific order.
+     * Retrieves all responses associated with a specific order.
      *
      * @param orderId    the ID of the order
      * @param pagination the pagination parameters (page and size)
-     * @return list of proposals for the order
+     * @return list of responses for the order
      */
     @GET
     @Path("/{orderId}/responses")
     @RolesAllowed("CUSTOMER")
-    public Response getProposals(
+    public Response getResponses(
             @PathParam("orderId") final Long orderId,
             @BeanParam final PageRequest pagination
     ) {
-        log.info("Get all proposals for orderId={}", orderId);
-        List<OrderProposal> proposals = orderProposalService.getByOrderId(
+        log.info("Get all responses for orderId={}", orderId);
+        List<OrderResponse> orderResponses = orderResponseService.getByOrderId(
                 orderId,
                 pagination.getPage(),
                 pagination.getSize());
-        log.debug("Proposals found: {}", proposals.size());
-        return Response.ok(orderProposalMapper.toDtoList(proposals)).build();
+        log.debug("Responses found: {}", orderResponses.size());
+        return Response.ok(orderResponseMapper.toDtoList(orderResponses)).build();
     }
 
     /**
