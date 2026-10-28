@@ -1,6 +1,6 @@
 package fit.biejk.search;
 
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import fit.biejk.entity.Professional;
 import fit.biejk.service.ProfessionalService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,10 +34,10 @@ public class ProfessionalSearchMapper {
      * @return the corresponding DTO for search indexing
      */
     public ProfessionalSearchDto toDto(final Professional professional) {
-        List<String> serviceNames = professional.getServiceOfferings() == null
+        List<String> categoryNames = professional.getCategories() == null
                 ? List.of()
-                : professional.getServiceOfferings().stream()
-                .map(ServiceOffering::getName)
+                : professional.getCategories().stream()
+                .map(Category::getName)
                 .toList();
 
         return new ProfessionalSearchDto(
@@ -46,7 +46,7 @@ public class ProfessionalSearchMapper {
                 professional.getLastName(),
                 professional.getDescription(),
                 professional.getAverageRating(),
-                serviceNames,
+                categoryNames,
                 professional.getLocation().getName()
         );
     }

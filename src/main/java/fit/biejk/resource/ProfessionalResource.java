@@ -3,14 +3,11 @@ package fit.biejk.resource;
 import fit.biejk.dto.PageRequest;
 import fit.biejk.dto.ReviewDto;
 import fit.biejk.dto.ProfessionalDto;
-import fit.biejk.dto.ProfessionalFilterCriteria;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
-import fit.biejk.mapper.OrderProposalMapper;
+import fit.biejk.mapper.OrderResponseMapper;
 import fit.biejk.mapper.ReviewMapper;
 import fit.biejk.mapper.ProfessionalMapper;
-import fit.biejk.search.ProfessionalSearchMapper;
-import fit.biejk.search.ProfessionalSearchService;
 import fit.biejk.service.*;
 import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
@@ -36,9 +33,9 @@ import java.util.List;
 public class ProfessionalResource {
 
     /**
-     * Service responsible for handling business logic related to order proposals.
+     * Service responsible for handling business logic related to order responses.
      */
-    private final OrderProposalService orderProposalService;
+    private final OrderResponseService orderResponseService;
 
     /**
      * Service for managing order-related operations.
@@ -51,19 +48,9 @@ public class ProfessionalResource {
     private final OrderMapper orderMapper;
 
     /**
-     * Service for searching and filtering professionals.
+     * Mapper for converting between OrderResponse entities and DTOs.
      */
-    private final ProfessionalSearchService professionalSearchService;
-
-    /**
-     * Mapper for converting professional search results to DTOs.
-     */
-    private final ProfessionalSearchMapper professionalSearchMapper;
-
-    /**
-     * Mapper for converting between OrderProposal entities and DTOs.
-     */
-    private final OrderProposalMapper orderProposalMapper;
+    private final OrderResponseMapper orderResponseMapper;
 
     /** Service for handling business logic related to professionals. */
     private final ProfessionalService professionalService;
@@ -79,40 +66,6 @@ public class ProfessionalResource {
 
     /** Service for accessing customer reviews. */
     private final ReviewService reviewService;
-
-    /**
-     * Retrieves a list of all professionals.
-     *
-     * @param criteria   the filtering criteria for searching professionals
-     * @param pagination the pagination parameters (page and size)
-     * @return HTTP response containing a list of all professionals
-     */
-    @GET
-    @PermitAll
-    public Response getProfessionals(
-            @BeanParam final ProfessionalFilterCriteria criteria,
-            @BeanParam final PageRequest pagination
-    ) {
-
-        if (criteria.hasFilters()) {
-            var searchResults = professionalSearchService.search(
-                    criteria.getQuery(),
-                    criteria.getLocation(),
-                    pagination.getPage(),
-                    pagination.getSize()
-            );
-            var result = professionalSearchMapper.toEntityList(searchResults);
-            return Response.ok(professionalMapper.toPublicDtoList(result)).build();
-        }
-
-        log.info("Get all professionals");
-        List<Professional> result = professionalService.getAll(
-                pagination.getPage(),
-                pagination.getSize()
-        );
-        log.debug("Found {} professionals", result.size());
-        return Response.ok(professionalMapper.toPublicDtoList(result)).build();
-    }
 
     /**
      * Retrieves a professional by their ID.
@@ -165,38 +118,6 @@ public class ProfessionalResource {
     }
 
     /**
-     * Retrieves the profile of the currently authenticated professional.
-     *
-     * @return HTTP response containing the professional's profile
-     */
-    @GET
-    @Path("/me")
-    @RolesAllowed("PROFESSIONAL")
-    public Response getProfile() {
-        Long professionalId = authService.getCurrentUserId();
-        log.info("Get profile for professional ID={}", professionalId);
-        Professional professional = professionalService.getById(professionalId);
-        return Response.ok(professionalMapper.toDto(professional)).build();
-    }
-
-    /**
-     * Updates the profile of the currently authenticated professional.
-     *
-     * @param dto updated profile data
-     * @return HTTP response with updated profile
-     */
-    @PUT
-    @Path("/me")
-    @RolesAllowed("PROFESSIONAL")
-    public Response updateProfile(@Valid final ProfessionalDto dto) {
-        Long id = authService.getCurrentUserId();
-        log.info("Update profile for professional ID={} with dto={}", id, dto);
-        Professional professional = professionalService.update(id, professionalMapper.toEntity(dto));
-        log.debug("Professional profile updated, ID={}", professional.getId());
-        return Response.ok(professionalMapper.toDto(professional)).build();
-    }
-
-    /**
      * Deletes the profile of the currently authenticated professional.
      *
      * @return HTTP response
@@ -232,22 +153,6 @@ public class ProfessionalResource {
     }
 
     /**
-     * Updates the list of service offerings for the currently authenticated professional.
-     *
-     * @param serviceOfferings list of updated service offerings
-     * @return HTTP response with updated professional data
-     */
-    @PUT
-    @Path("/me/services")
-    @RolesAllowed("PROFESSIONAL")
-    public Response updateServiceOffering(final List<ServiceOffering> serviceOfferings) {
-        Long id = authService.getCurrentUserId();
-        log.info("Add serviceOffering for professional ID={}", id);
-        Professional professional = professionalService.updateServiceOfferings(id, serviceOfferings);
-        return Response.ok(professionalMapper.toDto(professional)).build();
-    }
-
-    /**
      * Creates a review for the given professional.
      *
      * @param professionalId professional ID
@@ -267,24 +172,24 @@ public class ProfessionalResource {
     }
 
     /**
-     * Retrieves all proposals submitted by the specified professional.
+     * Retrieves all responses submitted by the specified professional.
      *
      * @param professionalId the ID of the professional
      * @param pagination   the pagination parameters (page and size)
-     * @return list of proposals submitted by the professional
+     * @return list of responses submitted by the professional
      */
     @GET
-    @Path("/{professionalId}/proposals")
+    @Path("/{professionalId}/responses")
     @RolesAllowed("PROFESSIONAL")
-    public Response getProposals(
+    public Response getResponses(
             @PathParam("professionalId") final Long professionalId,
             @BeanParam final PageRequest pagination
     ) {
-        List<OrderProposal> result = orderProposalService.getByProfessionalId(
+        List<OrderResponse> result = orderResponseService.getByProfessionalId(
                 professionalId,
                 pagination.getPage(),
                 pagination.getSize());
-        return Response.ok(orderProposalMapper.toDtoList(result)).build();
+        return Response.ok(orderResponseMapper.toDtoList(result)).build();
     }
 
     /**

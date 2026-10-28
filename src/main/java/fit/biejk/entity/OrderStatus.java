@@ -26,7 +26,7 @@ public enum OrderStatus {
     CANCELLED,
 
     /**
-     * Status indicating the customer needs to take action (e.g., review proposals).
+     * Status indicating the customer needs to take action (e.g., review responses).
      */
     CUSTOMER_PENDING,
 
@@ -48,11 +48,11 @@ public enum OrderStatus {
     }
 
     /**
-     * Checks whether an order in this status still accepts new proposals.
+     * Checks whether an order in this status still accepts new responses.
      *
      * @return {@code true} for open orders, {@code false} for cancelled or completed ones.
      */
-    public boolean acceptsProposals() {
+    public boolean acceptsResponses() {
         return this == CREATED || this == CUSTOMER_PENDING;
     }
 

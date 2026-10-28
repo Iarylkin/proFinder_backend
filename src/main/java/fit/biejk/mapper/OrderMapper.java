@@ -1,6 +1,7 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.OrderDto;
+import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -16,13 +17,13 @@ public interface OrderMapper {
 
     /**
      * Converts an OrderDto to an Order entity.
-     * Ignores the 'customer' and 'orderProposals' fields during mapping.
+     * Ignores the 'customer' and 'orderResponses' fields during mapping.
      *
      * @param orderDto the DTO to convert
      * @return the mapped Order entity
      */
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderProposals", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
     Order toEntity(OrderDto orderDto);
 
     /**
@@ -50,4 +51,17 @@ public interface OrderMapper {
      * @return list of Order entities
      */
     List<Order> toEntityList(List<OrderDto> dtoList);
+
+    /**
+     * Converts an update request to an Order that holds only the requested changes.
+     * Fields that were not sent stay {@code null}; the service copies only the non-null ones.
+     *
+     * @param request the update request
+     * @return an Order carrying the requested changes
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "customer", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    Order toEntity(OrderUpdateRequest request);
 }

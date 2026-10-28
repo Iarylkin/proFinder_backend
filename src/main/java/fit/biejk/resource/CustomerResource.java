@@ -136,39 +136,6 @@ public class CustomerResource {
     }
 
     /**
-     * Retrieves the profile of the currently authenticated customer.
-     *
-     * @return customer profile
-     */
-    @GET
-    @Path("/me")
-    @RolesAllowed("CUSTOMER")
-    public Response getProfile() {
-        log.info("getProfile request");
-        Long customerId = authService.getCurrentUserId();
-        Customer customer = customerService.getById(customerId);
-        log.debug("Profile customer ID={}", customerId);
-        return Response.ok(customerMapper.toDto(customer)).build();
-    }
-
-    /**
-     * Updates the profile of the currently authenticated customer.
-     *
-     * @param dto updated customer data
-     * @return updated customer profile
-     */
-    @PUT
-    @Path("/me")
-    @RolesAllowed("CUSTOMER")
-    public Response updateProfile(@Valid final CustomerDto dto) {
-        log.info("updateProfile request: {}", dto);
-        Long id = authService.getCurrentUserId();
-        Customer customer = customerService.update(id, customerMapper.toEntity(dto));
-        log.debug("Updated profile for customer with ID={}", customer.getId());
-        return Response.ok(customerMapper.toDto(customer)).build();
-    }
-
-    /**
      * Deletes the profile of the currently authenticated customer.
      *
      * @return response status

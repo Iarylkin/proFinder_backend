@@ -15,38 +15,38 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Entity representing a professional's proposal for fulfilling an order.
+ * Entity representing a professional's response for fulfilling an order.
  */
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "order_proposal")
-public class OrderProposal {
+@Table(name = "responses")
+public class OrderResponse {
 
     /**
-     * Unique identifier for the order proposal.
+     * Unique identifier for the order response.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * Professional who submitted the proposal.
+     * Professional who submitted the response.
      */
     @ManyToOne
     @JoinColumn(name = "professional_id", nullable = false)
     private Professional professional;
 
     /**
-     * Order associated with this proposal.
+     * Order associated with this response.
      */
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     /**
-     * Description provided by the professional in the proposal.
+     * Description provided by the professional in the response.
      */
     @Column(name = "description")
     private String description;
@@ -58,9 +58,9 @@ public class OrderProposal {
     private int price;
 
     /**
-     * Current status of the proposal.
+     * Current status of the response.
      */
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private ProposalStatus status;
+    private OrderResponseStatus status;
 }

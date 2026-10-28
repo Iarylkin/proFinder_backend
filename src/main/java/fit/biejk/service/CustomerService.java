@@ -105,4 +105,18 @@ public class CustomerService {
         userService.delete(id);
         log.debug("Customer deleted with ID={}", id);
     }
+
+    /**
+     * Partially updates the profile of a customer: only the non-null fields of {@code changes} are applied.
+     *
+     * @param id      ID of the customer
+     * @param changes a customer holding only the requested changes
+     * @return the updated customer
+     */
+    @Transactional
+    public Customer updateProfile(final Long id, final Customer changes) {
+        Customer customer = getById(id);
+        userService.updateProfile(id, changes);
+        return customer;
+    }
 }

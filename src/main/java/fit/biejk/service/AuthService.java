@@ -17,6 +17,7 @@ import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -24,7 +25,7 @@ import java.util.Optional;
 /**
  * Service responsible for authentication logic.
  * <p>
- * Handles sign-up, sign-in, JWT token generation, and user context resolution.
+ * Handles registration, login, JWT token generation, and user context resolution.
  * </p>
  */
 @Slf4j
@@ -103,13 +104,13 @@ public class AuthService {
      * @param role     user role
      * @return JWT token for the newly created user
      */
-    public String signUp(final String email, final String password, final UserRole role) {
-        log.info("Sign up: email={}, role={}", email, role);
+    public String register(final String email, final String password, final UserRole role) {
+        log.info("Register: email={}, role={}", email, role);
         User created = switch (role) {
             case PROFESSIONAL -> professionalService.create(newUser(new Professional(), email, password, role));
             case CUSTOMER -> customerService.create(newUser(new Customer(), email, password, role));
             default -> {
-                log.warn("Sign up with unsupported role={}", role);
+                log.warn("Register with unsupported role={}", role);
                 throw new BadRequestException("Unsupported role");
             }
         };
@@ -134,8 +135,8 @@ public class AuthService {
      * @param role     expected user role
      * @return signed JWT token
      */
-    public String signIn(final String email, final String password, final UserRole role) {
-        log.info("Sign in: email={}, role={}", email, role);
+    public String login(final String email, final String password, final UserRole role) {
+        log.info("Login: email={}, role={}", email, role);
         User user = userService.getByEmail(email);
         if (!CryptoUtils.verify(password, user.getPassword())) {
             log.error("Invalid password");
@@ -157,6 +158,17 @@ public class AuthService {
     public Long getCurrentUserId() {
         log.debug("Current principal name={}", securityIdentity.getPrincipal().getName());
         return Long.parseLong(securityIdentity.getPrincipal().getName());
+    }
+
+    /**
+     * Returns the role of the current user.
+     *
+     * @return the role, or empty if the account has not chosen one yet
+     */
+    public Optional<UserRole> getCurrentUserRole() {
+        return Arrays.stream(UserRole.values())
+                .filter(role -> securityIdentity.hasRole(role.name()))
+                .findFirst();
     }
 
     /**

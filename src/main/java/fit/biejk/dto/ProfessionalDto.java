@@ -1,7 +1,7 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -15,7 +15,7 @@ import java.util.List;
  * Data Transfer Object representing a professional.
  * <p>
  * Used to transfer professional data between layers of the application.
- * Contains personal information, location, rating, services, and avatar link.
+ * Contains personal information, location, rating, categories, and avatar link.
  * </p>
  */
 @Data
@@ -78,9 +78,9 @@ public class ProfessionalDto {
     private LocalDateTime createAt;
 
     /**
-     * Services offered by the professional.
+     * Categories the professional works in.
      */
-    private List<ServiceOffering> serviceOfferings;
+    private List<Category> categories;
 
     /**
      * Detailed description of the professional's expertise.

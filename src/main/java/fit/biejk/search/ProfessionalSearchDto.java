@@ -43,9 +43,9 @@ public class ProfessionalSearchDto {
     private Double averageRating;
 
     /**
-     * List of services provided by the professional.
+     * List of categories provided by the professional.
      */
-    private List<String> services;
+    private List<String> categories;
 
     /**
      * Location (city or area) where the professional operates.

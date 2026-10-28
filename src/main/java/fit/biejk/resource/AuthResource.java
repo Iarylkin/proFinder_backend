@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * REST resource for handling authentication-related operations such as sign-up, sign-in,
+ * REST resource for handling authentication-related operations such as registration, login,
  * password change, and password recovery.
  * <p>
  * Routes are grouped under the "/auth" path.
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthResource {
 
     /**
-     * Service for handling authentication logic such as user registration, signIn,
+     * Service for handling authentication logic such as user registration, login,
      * password reset, and password change.
      */
     private final AuthService authService;
@@ -32,20 +32,19 @@ public class AuthResource {
     /**
      * Registers a new user account.
      *
-     * @param request the sign-up request containing email, password, and role
+     * @param request the registration request containing email, password, and role
      * @return HTTP 200 response with a generated authentication token
      */
     @POST
-    @Path("/sign-up")
+    @Path("/register")
     @PermitAll
-    public Response signUp(
+    public Response register(
             @Valid final AuthRequest request
     ) {
-        log.info("Sign up request: {}", request);
-        String result = authService.signUp(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Sign up result: {}", result);
+        log.info("Register request: {}", request);
+        String result = authService.register(request.getEmail(), request.getPassword(), request.getRole());
         AuthResponse response = new AuthResponse(result);
-        log.info("Sign up response: {}", response);
+        log.info("Register response: {}", response);
 
 
         return Response.status(Response.Status.CREATED).entity(response).build();
@@ -54,18 +53,17 @@ public class AuthResource {
     /**
      * Authenticates a user and returns a JWT token if credentials are valid.
      *
-     * @param request the sign-in request containing email, password, and role
+     * @param request the login request containing email, password, and role
      * @return HTTP 200 response with a generated authentication token
      */
     @POST
-    @Path("/sign-in")
+    @Path("/login")
     @PermitAll
-    public Response signIn(@Valid final AuthRequest request) {
-        log.info("Sign in request: {}", request);
-        String result = authService.signIn(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Sign in result: {}", result);
+    public Response login(@Valid final AuthRequest request) {
+        log.info("Login request: {}", request);
+        String result = authService.login(request.getEmail(), request.getPassword(), request.getRole());
         AuthResponse response = new AuthResponse(result);
-        log.info("Sign in response: {}", response);
+        log.info("Login response: {}", response);
         return Response.ok(response).build();
     }
 

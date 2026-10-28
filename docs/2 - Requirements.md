@@ -1,7 +1,7 @@
 # ProFinder — Requirements
 
-- **Version:** 1.7
-- **Date:** 2026-10-27
+- **Version:** 1.8
+- **Date:** 2026-10-28
 - **Status:** In Development
 - **Purpose:** Complete MVP requirements — functional requirements, non-functional requirements, use cases, scope, and the technology stack. Backend focus.
 
@@ -944,7 +944,7 @@ Before production launch, system must pass:
 | Search default sort? | "Recommended" = Bayesian-adjusted rating; no featured/promoted | ✅ Decided |
 | Reliable events? | Transactional outbox → RabbitMQ; idempotent consumers | ✅ Decided |
 | Detailed business-logic questions? | All resolved and folded into [4 - Business logic.md](4%20-%20Business%20logic.md) | ✅ Decided |
-| Chat without an order? | Customer can message any professional anytime, not gated by a response; conversation keyed by (customer, professional) pair | ✅ Decided (2026-09-04) |
+| Chat without an order? | Customer can message any professional anytime, not gated by a response; chat keyed by (customer, professional) pair | ✅ Decided (2026-09-04) |
 | Category hierarchy? | Flat list, no parent/leaf tree | ✅ Decided (2026-09-04) |
 | Order currency? | Single platform currency: USD | ✅ Decided (2026-09-04) |
 | `preferred professional level` field? | Dropped — leftover from the removed professional-verification concept | ✅ Decided (2026-09-04) |
@@ -987,6 +987,7 @@ Before production launch, system must pass:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-10-28 | **Naming:** *conversation* → *chat*. |
 | 1.7 | 2026-10-27 | **D-1.3:** report status in the requirement and notification channels use `UPPER_SNAKE_CASE` values. |
 | 1.6 | 2026-09-10 | Standardised to the shared doc format (title, metadata, separators, changelog). Renumbered the duplicated `## 9` / `## 10` (Launch Acceptance Criteria → §11, Key Decisions Made → §12). Fixed the test/lint stack in NFR-Maint-2 / NFR-Maint-7 (Jest/Pytest/ESLint/Prettier → JUnit 5 + JaCoCo + Checkstyle + Spotless, matching § Tech Stack and [15 - SDLC & Workflow.md](15%20-%20SDLC%20%26%20Workflow.md)). Repointed the dead file-5 links (a "Questions" doc that no longer exists — slot 5 is now State Machines) to [4 - Business logic.md](4%20-%20Business%20logic.md). Removed the stale "Next Steps" section. |
 | 1.5 | 2026-09-05 | Confirmed load balancer is used from day 1 — fixed NFR-Scale-1/2, which previously said load balancing was "not needed", contradicting [3 - System Design.md](3%20-%20System%20Design.md)'s Nginx Gateway. |

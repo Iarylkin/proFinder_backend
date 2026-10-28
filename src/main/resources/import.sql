@@ -11,8 +11,8 @@ INSERT INTO location (name) VALUES
 ('Zlín'),
 ('Karlovy Vary');
 
--- Services --
-INSERT INTO service_offering (name) VALUES
+-- Categories --
+INSERT INTO categories (name) VALUES
 ('Haircut'),
 ('Legal Consultation'),
 ('Tax Filing'),
@@ -60,8 +60,8 @@ INSERT INTO professional (id, average_rating, description) VALUES
 (108, 4.8, 'Photo editing and logo design expert.'),
 (109, 4.9, 'Website development and IT consulting.');
 
--- Professional ⟷ Services
-INSERT INTO professional_service_offering (professional_id, serviceofferings_id) VALUES
+-- Professional ⟷ Categories
+INSERT INTO professional_categories (professional_id, category_id) VALUES
 (100, 1), (100, 4),
 (101, 3), (101, 2),
 (102, 2), (102, 3),
@@ -92,8 +92,8 @@ INSERT INTO orders (id, customer_id, status, description, price, review_id, crea
 (124, 110, 'CREATED', 'Need a website for my online portfolio.',           0, NULL, now(), now() + interval '14 days', 1),
 (125, 111, 'CREATED', 'Interior design help for my apartment.',            0, NULL, now(), now() + interval '12 days', 1);
 
--- Orders ⟷ Services
-INSERT INTO orders_service_offering (order_id, serviceofferings_id) VALUES
+-- Orders ⟷ Categories
+INSERT INTO orders_categories (order_id, category_id) VALUES
 (120, 1),   -- Haircut
 (121, 6),   -- Phone Screen Replacement
 (122, 3),   -- Tax Filing

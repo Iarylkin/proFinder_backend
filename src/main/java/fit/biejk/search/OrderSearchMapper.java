@@ -1,7 +1,7 @@
 package fit.biejk.search;
 
 import fit.biejk.entity.Order;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import fit.biejk.service.OrderService;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +31,10 @@ public class OrderSearchMapper {
      * @return a populated {@link OrderSearchDto} object
      */
     public OrderSearchDto toDto(final Order entity) {
-        List<String> serviceNames = entity.getServiceOfferings() == null
+        List<String> categoryNames = entity.getCategories() == null
                 ? List.of()
-                : entity.getServiceOfferings().stream()
-                .map(ServiceOffering::getName)
+                : entity.getCategories().stream()
+                .map(Category::getName)
                 .toList();
 
         String locationName = entity.getLocation() != null ? entity.getLocation().getName() : null;
@@ -42,7 +42,7 @@ public class OrderSearchMapper {
         return new OrderSearchDto(
                 entity.getId(),
                 entity.getStatus().name(),
-                serviceNames,
+                categoryNames,
                 locationName,
                 entity.getTitle(),
                 entity.getDescription(),

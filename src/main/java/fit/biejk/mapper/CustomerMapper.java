@@ -1,9 +1,11 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.CustomerDto;
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.dto.CustomerPublicDto;
 import fit.biejk.entity.Customer;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -53,4 +55,21 @@ public interface CustomerMapper {
      * @return list of Customer entities
      */
     List<Customer> toEntityList(List<CustomerDto> dtoList);
+
+    /**
+     * Converts a profile update request to a Customer that holds only the requested changes.
+     * Fields that were not sent stay {@code null}; the service copies only the non-null ones.
+     *
+     * @param request the profile update request
+     * @return a Customer carrying the requested changes
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "password", ignore = true)
+    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "avatarKey", ignore = true)
+    @Mapping(target = "createAt", ignore = true)
+    @Mapping(target = "orders", ignore = true)
+    @Mapping(target = "reviews", ignore = true)
+    Customer toEntity(ProfileUpdateRequest request);
 }

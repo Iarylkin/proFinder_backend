@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.7
-- **Date:** 2026-10-27
+- **Version:** 1.13
+- **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -19,10 +19,9 @@
 | Version | One version for the whole repository: `pom.xml` = git tag `vX.Y.Z` = Docker tag of every service |
 | Release | One PR `develop → main`, one tag, release notes |
 | Working version | Every tag starts in compose, passes tests and checkstyle, and passes the smoke scenario (sign up → sign in → create order → respond → accept → chat → complete → review) |
-| Compatibility | The old API keeps working through deprecated aliases until `2.0.0` |
 | Unfinished work | Hidden behind feature flags, never left half-done in a tagged build |
 | Major / minor / patch | `2.0.0` marks the architecture change (five services). Features after it are `2.x` minors. Bug fixes are patches |
-| Schema | Flyway from `1.6.0`; every version that changes the schema ships its own migration |
+| Schema | Flyway from `1.5.0`; every version that changes the schema ships its own migration |
 | Docs tasks | Marked `D-…`. They belong to the milestone that needs them and do not bump the version. "Before code" means the task is closed before the first version of that milestone starts |
 | Tooling tasks | Marked `T-…`. Repository tooling, no version bump |
 
@@ -32,10 +31,10 @@
 | # | Milestone | Versions | Goal |
 |---|---|---|---|
 | M0 | Hotfixes | 1.0.1 – 1.0.4 | Close security holes and runtime bugs before any refactoring |
-| M1 | Foundation | 1.1.0 – 1.8.0 | Cross-cutting changes needed before splitting |
-| M2 | Modular monolith | 1.9.0 – 1.14.0 | Service boundaries inside one process |
-| M3 | Safety net | 1.15.0 – 1.17.0 | Tests before splitting |
-| M4 | Events & broker | 1.18.0 – 1.21.0 | Outbox, events, RabbitMQ |
+| M1 | Foundation | 1.1.0 – 1.7.0 | Cross-cutting changes needed before splitting |
+| M2 | Modular monolith | 1.8.0 – 1.13.0 | Service boundaries inside one process |
+| M3 | Safety net | 1.14.0 – 1.16.0 | Tests before splitting |
+| M4 | Events & broker | 1.17.0 – 1.20.0 | Outbox, events, RabbitMQ |
 | M5 | Service extraction | 2.0.0-rc.1 – 2.0.0 | Physical split into five services |
 | M6 | Auth features | 2.1.0 – 2.3.0 | Verification, sessions, OAuth |
 | M7 | Core domain | 2.4.0 – 2.8.0 | Categories, profiles, orders, responses, reviews |
@@ -66,58 +65,57 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **T-0.2** | Hooks in `.claude/settings.json`: replace relative paths with absolute ones so they do not break outside the repository root. Fix `CLAUDE.md` (there is no `IN_PROGRESS` status and no `completeOrder()`) |
 | Outside versions | Rotate secrets (DB and MinIO passwords, Mailtrap, `privateKey.pem`) and move them to environment variables. Needs action from the owner |
 
-## M1 — Foundation (1.1.0 – 1.8.0)
+## M1 — Foundation (1.1.0 – 1.7.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
-| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.7.0 |
+| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.6.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
-| **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.5.0) |
-| **1.2.0** | Not used: its content (`Specialist → Professional`, the new roles) shipped in 1.1.0. The number stays free so the later versions keep their numbers |
-| **1.3.0** | New paths with deprecated aliases for the old ones (`/customers` and `/professionals` already exist since 1.1.0 and have no alias): `/auth/register`, `/auth/login`, `PATCH /orders`, `/orders/{id}/close`, `/orders/{id}/responses`, `/categories`, `/conversations`, `/me/profile`, `/search/professionals` |
-| **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
-| **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
-| **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
-| **1.8.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
+| **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.4.0) |
+| **1.2.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
+| **1.3.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
+| **1.4.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance. **Unify the profile code here:** `GET`/`PATCH /users/me/profile` serve two entities, so `ProfileResource` now picks the service and the mapper by role. Replace that with one `ProfileDto` family, a MapStruct mapper with `@SubclassMapping`, and a `ProfileService` that takes a neutral `ProfileChanges` and applies the rule "description and categories are for professionals only", so the resource has no role switch |
+| **1.5.0** | **Flyway:** baseline `V1` taken from the model after 1.4.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
+| **1.6.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
+| **1.7.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
-## M2 — Modular monolith (1.9.0 – 1.14.0)
+## M2 — Modular monolith (1.8.0 – 1.13.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
-| **1.9.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
-| **1.10.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
-| **1.11.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
-| **1.12.0** | Notification boundary: `MailService` behind `NotificationApi` |
-| **1.13.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.14.0** | Cross-module relations replaced with IDs. ArchUnit tests forbid extra dependencies |
+| **1.8.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
+| **1.9.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
+| **1.10.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
+| **1.11.0** | Notification boundary: `MailService` behind `NotificationApi` |
+| **1.12.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
+| **1.13.0** | Cross-module relations replaced with IDs. ArchUnit tests forbid extra dependencies |
 
-## M3 — Safety net (1.15.0 – 1.17.0)
+## M3 — Safety net (1.14.0 – 1.16.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-3.1** | `docs/2` and `15`: clarify the coverage gate (JaCoCo 80% vs "not a gate"), "at least one test per endpoint", CI under 5 minutes for five services |
-| **1.15.0** | Testcontainers (PostgreSQL, Elasticsearch, Redis, MinIO), Flyway migrations run in tests, `%test` profile for CI |
-| **1.16.0** | E2E smoke scenario as its own CI job, remove `continue-on-error` |
-| **1.17.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests |
+| **1.14.0** | Testcontainers (PostgreSQL, Elasticsearch, Redis, MinIO), Flyway migrations run in tests, `%test` profile for CI |
+| **1.15.0** | E2E smoke scenario as its own CI job, remove `continue-on-error` |
+| **1.16.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests |
 
-## M4 — Events & broker (1.18.0 – 1.21.0)
+## M4 — Events & broker (1.17.0 – 1.20.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-4.1** (before code) | `docs/9`: events `user.unblocked`, report and appeal lifecycle, ban lifted, a mechanism for removing content (`message`, `review_reply`, content type `review_photo`); fix the reindex version when an account status changes |
 | **D-4.2** | `docs/7`: add `EventPublisher` and a poller for Auth and Messaging, `OrderExpirationJob`, `MessagePurgeJob`, `ReviewReplyService`, `ProcessedEvent`, token entities; align method names with `docs/9` |
-| **1.18.0** | Event model per `docs/9`, `EventPublisher`, outbox + relay with `SELECT … FOR UPDATE SKIP LOCKED`, retention (`sent` older than 7 days), partial index, `processed_events` |
-| **1.19.0** | Flows moved to events: `SearchIndexConsumer` builds the document from PostgreSQL, external version, 409 ignored; emails; `message.sent`, `response.created`, `review.posted`. Direct calls removed, ES errors no longer lost |
-| **1.20.0** | RabbitMQ in compose: `profinder.events`, `profinder.dlx`, five `*.notifications` queues with a 24 h TTL, `search.index` with no TTL, `notifications.deadletter`, 3 retries, `requeue=true` |
-| **1.21.0** | Contract tests for all 29 event payloads; broker flag on by default |
+| **1.17.0** | Event model per `docs/9`, `EventPublisher`, outbox + relay with `SELECT … FOR UPDATE SKIP LOCKED`, retention (`sent` older than 7 days), partial index, `processed_events` |
+| **1.18.0** | Flows moved to events: `SearchIndexConsumer` builds the document from PostgreSQL, external version, 409 ignored; emails; `message.sent`, `response.created`, `review.posted`. Direct calls removed, ES errors no longer lost |
+| **1.19.0** | RabbitMQ in compose: `profinder.events`, `profinder.dlx`, five `*.notifications` queues with a 24 h TTL, `search.index` with no TTL, `notifications.deadletter`, 3 retries, `requeue=true` |
+| **1.20.0** | Contract tests for all 29 event payloads; broker flag on by default |
 
 ## M5 — Service extraction (2.0.0-rc.1 – 2.0.0)
 ---
@@ -127,7 +125,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-5.1** (before code) | Denylist owner (Auth or Core), decision 6. Recommendation: Core publishes `moderation.banned`, Auth consumes it and sets the denylist |
 | **D-5.2** (before code) | How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
 | **D-5.3** | Deployment: VPS + Compose or Kubernetes (decision 10); make `docs/3` and `15` agree. Scaling: change NFR-Scale-1/2 in `docs/2` to one instance at launch |
-| **D-5.4** | `docs/15`: update workflow names, paths, the `fit.biejk` package, Mailpit, commit format; API deprecation policy (aliases until `2.0.0`); wiki sync (currently one-way, action pinned to `@main`) |
+| **D-5.4** | `docs/15`: update workflow names, paths, the `fit.biejk` package, Mailpit, commit format; wiki sync (currently one-way, action pinned to `@main`) |
 | **D-5.5** | Availability and latency targets: one set of values in `docs/2` (uptime, search under 2 s vs under 500 ms, cache TTL) |
 | **rc.1** | Multi-module Maven, `contracts` (events, DTOs, errors). Monorepo layout `services/<name>` |
 | **rc.2** | Notification: own schema, `MailService`, recipient projection |
@@ -136,7 +134,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **rc.5** | Moderation Service: `POST /moderation/check-text` and `/check-url` (under 200 ms), internal access only |
 | **rc.6** | Nginx: routing, per-IP rate limiting, TLS (Let's Encrypt), `Connection: upgrade` for WS, health checks; one compose file; CI/CD, GHCR and one image per service; update required checks in branch protection |
 | **rc.7** | Prometheus and Grafana dashboards per service, JSON logs with trace id, PII masking, 30-day log retention, alerts, cross-service E2E, timeouts and retries |
-| **2.0.0** | Remove deprecated aliases, final smoke test, release |
+| **2.0.0** | Final smoke test, release |
 
 ## M6 — Auth features (2.1.0 – 2.3.0)
 ---
@@ -144,7 +142,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version / task | What we do |
 |---|---|
 | **D-6.1** (before code) | `docs/4`, `11`, `13`: the `account_status` claim in the JWT can be stale for up to 15 minutes, so decide how the token is refreshed; denylist by `iat`, not by `user_id`; bcrypt truncates at 72 bytes; do not trim passwords and tokens; the ASCII-only name regex rejects names like "José" |
-| **D-6.2** | Contact with support for banned and suspended users: a channel and an endpoint, or an explicit "out of MVP" (decision 11); response shape of `GET /me/profile` for `MODERATOR` |
+| **D-6.2** | Contact with support for banned and suspended users: a channel and an endpoint, or an explicit "out of MVP" (decision 11); response shape of `GET /users/me/profile` for `MODERATOR` |
 | **2.1.0** | Registration with email verification (24 h link, resend 1/60 s and at most 5/h), email normalization, disposable-domain blocklist, password policy, account statuses, one status gate on every request |
 | **2.2.0** | Access 15 min + refresh 7 days with rotation and reuse detection, 30-day cap, denylist, lockout 5/15, logout and logout-all, role chosen once, password reset by a 15-minute link, email and password change with session revocation |
 | **2.3.0** | Google OAuth 1:1, unlink (only when a password is set), set password, `ROLE_SELECTION_REQUIRED` and `temp_token` |
@@ -159,7 +157,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-7.3** | Outlier-filter algorithm, source and recalculation of `m` in the Bayesian sort, rules for reviewing blocked, suspended, deleted and `INCOMPLETE` users, the "Self-Employed Discovery" scenario |
 | **2.4.0** | Categories per `docs/14` (32 seeded), cities as strings (normalized), one category per order; `category.*` events |
 | **2.5.0** | Profiles: professional (`INCOMPLETE → ACTIVE`, sticky, `years_experience`, `hourly_rate`, hours, `available`) and customer (city, `preferred_category_ids`, bio, avatar); public contact email; `@Version`; `v1:profile:*` cache with delete-on-write |
-| **2.6.0** | Order lifecycle `DRAFT → ACTIVE → CLOSED`, publish, close, extend (1–90 days), `expires_at`, `published_at`, `closed_at`, `closed_reason`, expiry scheduler, visibility for professionals (their categories and cities), customer history, `@Version` → 409. *Decision 1* |
+| **2.6.0** | Order lifecycle `DRAFT → ACTIVE → CLOSED`, publish, close, extend (1–90 days), `expires_at`, `published_at`, `closed_at`, `closed_reason`, expiry scheduler, visibility for professionals (their categories and cities), customer history, role-dependent `GET /orders` (customer: own orders with `?status=`; professional: `ACTIVE` orders in their categories and cities), `@Version` → 409. *Decision 1* |
 | **2.7.0** | Responses: upsert, `edited`, sealed bids, sorting, `ORDER_CLOSED`/`ORDER_EXPIRED`/`PROFILE_INCOMPLETE`, professional-category check |
 | **2.8.0** | Reviews in both directions, one per pair, replies (only on `CUSTOMER`-direction reviews), `deleted_at`, `is_outlier`, `rating_avg` and `review_count`, Bayesian sort, customer reliability rating; synchronous `check-text` call. Review photos arrive in 2.12.0 |
 
@@ -177,9 +175,9 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version / task | What we do |
 |---|---|
-| **D-9.1** (before code) | Chat attachments: `docs/2` (MVP) vs `docs/4` (later), decision 4; chat retention (while the order is active vs until deletion); who may open a conversation (professional or only the customer) |
+| **D-9.1** (before code) | Chat attachments: `docs/2` (MVP) vs `docs/4` (later), decision 4; chat retention (while the order is active vs until deletion); who may open a chat (professional or only the customer) |
 | **D-9.2** | `docs/13` §9, `docs/4`: HEIC/HEIF and animated GIF on re-encoding, "quality 82" for PNG and WebP, `Cache-Control: immutable` on private evidence, evidence types (`text/photo/message_link` vs files) |
-| **2.11.0** | Chat: conversation only between customer and professional, text up to 200 characters, WS protocol per `docs/8`, `GET /conversations`, backfill `?after=`, HTTP fallback, SENT/DELIVERED/READ statuses, deletion (kept 2 days for moderators), purge job, blocks and a notice to the blocked user |
+| **2.11.0** | Chat: only between a customer and a professional, text up to 200 characters, WS protocol per `docs/8`, `GET /chats/me`, backfill `?after=`, HTTP fallback, SENT/DELIVERED/READ statuses, deletion (kept 2 days for moderators), purge job, blocks and a notice to the blocked user |
 | **2.12.0** | Files and portfolio: `files`, `FileController` with `purpose`, 302 to MinIO, magic bytes, limits, EXIF stripping, resize (avatar 512×512 + 128×128), `Content-Disposition: attachment`, immediate MinIO deletion; review photos, report evidence; chat attachments per decision |
 
 ## M10 — Rate limiting (2.13.0)
@@ -197,7 +195,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-11.1** (before code) | `docs/4`, `5`, `11`, `13`: content identifier for `content_removed`; endpoint for `submitted → under_review` and concurrent decisions by two moderators; a report against a `PENDING_VERIFICATION` user (closing deadline); abuse of "an open report blocks deletion"; effect of a block on responses; contradiction between "moderator contacts a party" and the missing channel |
 | **D-11.2** (before code) | Appeals: may a `SENIOR` review a ban they issued; manual unban (`docs/11`) vs the only `BANNED → ACTIVE` transition; moderator deleting orders (decision 5); support tickets and moderation reports (decision 11); audit log for reading private messages |
-| **2.14.0** | Role `MODERATOR` + `moderator_level`, moderator account creation, reports (7 reasons, at most 1 per day per pair, `report_evidence`), shared queue, decisions (dismiss, warning with counter, suspend 1–365, ban, content_removed), cascades, automatic return from suspension, `PENDING_VERIFICATION` protected from bans, access to case data and any conversation, deletion of messages and photos, audit log. *Decision 2* |
+| **2.14.0** | Role `MODERATOR` + `moderator_level`, moderator account creation, reports (7 reasons, at most 1 per day per pair, `report_evidence`), shared queue, decisions (dismiss, warning with counter, suspend 1–365, ban, content_removed), cascades, automatic return from suspension, `PENDING_VERIFICATION` protected from bans, access to case data and any chat, deletion of messages and photos, audit log. *Decision 2* |
 | **2.15.0** | Appeals (within 30 days, one per ban, a different moderator), appeal list and detail, manual unban, lifecycle events, category management for `SENIOR`, deletion of problematic orders. *Decisions 2 and 5* |
 
 ## M12 — Search (2.16.0 – 2.17.0)
@@ -252,7 +250,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | # | Question | Needed by |
 |---|---|---|
-| 3 | UUID v7 or `Long` | 1.4.0 (**first**) |
+| 3 | UUID v7 or `Long` | 1.3.0 (**first**) |
 | 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
@@ -269,18 +267,24 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Risk | Mitigation |
 |---|---|
-| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.4.0–1.5.0); cross-module relations become IDs in 1.14.0 |
+| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.13.0 |
 | No test net during the split | M3 is entirely about the net and runs before M4 and M5 |
 | Features are slower to build in a distributed system | One compose file, cross-service E2E in rc.7, a shared `contracts` module |
-| Schemas keep changing in `2.x` | Flyway from 1.6.0, one migration per version, per-service folders ready for extraction |
+| Schemas keep changing in `2.x` | Flyway from 1.5.0, one migration per version, per-service folders ready for extraction |
 | No user-facing features before `2.0.0` | M0 closes the critical holes; M1–M5 change shape only |
-| Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.18.0), Redis Pub/Sub for WS (rc.4) |
+| Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.17.0), Redis Pub/Sub for WS (rc.4) |
 
 ## Changelog
 ---
 
 | Version | Date | Change |
 |---|---|---|
+| 1.13 | 2026-10-28 | Chat wording in the rows follows the *chat* naming (`GET /chats/me`). |
+| 1.12 | 2026-10-28 | Removed the remaining mentions of deprecated API aliases (D-5.4 and the 2.0.0 row); the Elasticsearch `*_write` aliases in 2.16.0 are unrelated and stay. |
+| 1.11 | 2026-10-28 | Removed the Compatibility principle: nothing is deployed, so the API changes without deprecated aliases. |
+| 1.10 | 2026-10-28 | Renumbered the 1.x versions: the two naming steps are one version (1.1.0), the new paths are 1.2.0, and every later 1.x version moves down by one (the old 1.4.0 – 1.21.0 are now 1.3.0 – 1.20.0; M1 = 1.1.0 – 1.7.0, M2 = 1.8.0 – 1.13.0, M3 = 1.14.0 – 1.16.0, M4 = 1.17.0 – 1.20.0). The 2.x series is unchanged. Older changelog rows keep the numbers they used at the time. |
+| 1.9 | 2026-10-28 | Noted the profile unification (one DTO family, polymorphic mapper, role handled in the service) in the account-and-profiles version; until then `ProfileResource` branches by role. |
+| 1.8 | 2026-10-28 | The paths version now lists what is implemented: no aliases, state changes through `PATCH`, `/chats`, `/users/me/profile`. The role-dependent `GET /orders` moved to 2.6.0 with the order lifecycle. |
 | 1.7 | 2026-10-27 | 1.1.0 now covers `Client → Customer` and `Specialist → Professional` together with the roles, table, index and path names; 1.2.0 is not used; 1.3.0 no longer lists `/customers` and `/professionals`. |
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |

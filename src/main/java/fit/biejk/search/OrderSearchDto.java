@@ -30,7 +30,7 @@ public class OrderSearchDto {
     /**
      * List of service names associated with the order.
      */
-    private List<String> services;
+    private List<String> categories;
 
     /**
      * Name of the location where the order is to be performed.

@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 
 import java.util.List;
 
@@ -120,7 +121,7 @@ public class ProfessionalService {
         old.setDescription(professional.getDescription());
         professionalRepository.flush();
 
-        old.getServiceOfferings().size();
+        old.getCategories().size();
 
         professionalSearchService.save(professionalSearchMapper.toDto(old));
 
@@ -179,28 +180,6 @@ public class ProfessionalService {
     }
 
     /**
-     * Updates the list of service offerings associated with the professional.
-     *
-     * @param professionalId ID of the professional to update
-     * @param serviceOfferings new list of service offerings to associate
-     * @return updated professional
-     */
-    @Transactional
-    public Professional updateServiceOfferings(final Long professionalId,
-                                             final List<ServiceOffering> serviceOfferings) {
-        log.info("Update services: professionalId={}", professionalId);
-        Professional professional = getById(professionalId);
-        professional.setServiceOfferings(serviceOfferings);
-
-        professionalRepository.persist(professional);
-
-        professionalSearchService.save(professionalSearchMapper.toDto(professional));
-
-        log.debug("Updated services with ID={}", professionalId);
-        return professional;
-    }
-
-    /**
      * Creates and saves a review for the specified professional.
      *
      * @param professionalId professional ID
@@ -221,6 +200,32 @@ public class ProfessionalService {
         return reviewService.create(review);
     }
 
+    /**
+     * Partially updates the profile of a professional, including the description and the categories:
+     * only the non-null fields of {@code changes} are applied.
+     *
+     * @param id      ID of the professional
+     * @param changes a professional holding only the requested changes
+     * @return the updated professional
+     */
+    @Transactional
+    public Professional updateProfile(final Long id, final Professional changes) {
+        log.info("Update professional profile: ID={}", id);
+        Professional professional = getById(id);
+        userService.updateProfile(id, changes);
+        if (changes.getDescription() != null) {
+            professional.setDescription(changes.getDescription());
+        }
+        if (changes.getCategories() != null) {
+            professional.setCategories(changes.getCategories());
+        }
+        professionalRepository.flush();
+        // the resource maps the result after the transaction ends, so load the lazy categories now
+        Hibernate.initialize(professional.getCategories());
 
+        professionalSearchService.save(professionalSearchMapper.toDto(professional));
 
+        log.debug("Professional profile updated, ID={}", id);
+        return professional;
+    }
 }

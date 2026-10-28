@@ -13,7 +13,7 @@ import java.util.List;
  * Entity representing an order placed by a customer.
  * <p>
  * Contains details about specialization, status, price, deadline,
- * proposals from professionals, and a linked review after completion.
+ * responses from professionals, and a linked review after completion.
  * </p>
  */
 @Data
@@ -41,7 +41,10 @@ public class Order {
      * Specialization required for fulfilling the order.
      */
     @ManyToMany
-    private List<ServiceOffering> serviceOfferings;
+    @JoinTable(name = "orders_categories",
+            joinColumns = @JoinColumn(name = "order_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private List<Category> categories;
 
     /**
      * Current status of the order.
@@ -51,14 +54,14 @@ public class Order {
     private OrderStatus status;
 
     /**
-     * List of proposals submitted for this order.
+     * List of responses submitted for this order.
      * <p>
      * Ignored during JSON serialization to avoid circular references.
      * </p>
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
-    private List<OrderProposal> orderProposals;
+    private List<OrderResponse> orderResponses;
 
 
     /** Brief title summarizing the order. */
@@ -72,10 +75,10 @@ public class Order {
     private String description;
 
     /**
-     * Price set for the order after confirmation.
+     * Price of the order; replaced by the final agreed price when a response is approved.
      */
     @Column(name = "price")
-    private int price;
+    private Integer price;
 
     /**
      * Timestamp indicating when the order was created.

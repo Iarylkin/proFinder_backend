@@ -69,28 +69,30 @@ docker-compose up -d                              # Start all services (PostgreS
 #### `/src/main/java/fit/biejk`
 Main application code organized by layers:
 
-- **`entity/`** — JPA entities (User, Order, Professional, Customer, OrderProposal, Chat, ChatMessage, Review, ServiceOffering, Location)
+- **`entity/`** — JPA entities (User, Order, Professional, Customer, OrderResponse, Chat, ChatMessage, Review, Category, Location)
   - Inheritance hierarchy: `User` → `Customer` / `Professional`
-  - `OrderStatus`, `ProposalStatus`, `UserRole` enums
+  - `OrderStatus`, `OrderResponseStatus`, `UserRole` enums
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
-  - `AuthResource` — Sign-up, sign-in, password recovery (`/password-recovery`)
+  - `AuthResource` — Register (`POST /auth/register`), login (`POST /auth/login`), password recovery (`/password-recovery`)
   - `UserResource` — Avatar upload/download, email/password changes
-  - `CustomerResource`, `ProfessionalResource` — Profile CRUD & search; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`)
-  - `OrderResource`, `OrderProposalResource` — Job posting & proposal workflows
-  - `ChatResource` — Chat creation and history; WebSocket communication in `ChatSocket`
-  - `LocationResource`, `ServiceOfferingResource` — Reference data
+  - `ProfileResource` — The current user's profile (`GET`/`PATCH /users/me/profile`); picks the customer or professional service and mapper by role
+  - `CustomerResource`, `ProfessionalResource` — Profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
+  - `ProfessionalSearchResource` — Professional search (`GET /search/professionals`)
+  - `OrderResource`, `OrderResponseResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
+  - `ChatResource` — Chat creation, the current user's chats (`GET /chats/me`) and history; WebSocket communication in `ChatSocket`
+  - `LocationResource`, `CategoryResource` — Reference data (`/locations`, `/categories`)
 
 - **`service/`** — Business logic (one service per domain entity)
   - `AuthService` — Registration, JWT token generation, password recovery flows
   - `UserService` — Profile updates, email/password changes
   - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
-  - `OrderProposalService` — Proposal lifecycle (create, accept, reject, confirm)
+  - `OrderResponseService` — Response lifecycle (create, approve; the other responses of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
   - `TokenService` — JWT token generation (the current user is resolved from the `SecurityIdentity` in `AuthService`)
   - `ReviewService` — Review creation and rating aggregation
-  - `LocationService`, `ServiceOfferingService` — Reference data
+  - `LocationService`, `CategoryService` — Reference data
 
 - **`repository/`** — Panache repositories extending `PanacheRepository<Entity, ID>`
   - Each entity has a corresponding repository with custom query methods
@@ -115,7 +117,7 @@ Main application code organized by layers:
   - `FileUploadForm` — Multipart form binding
   - `ImageType` — Magic-byte detection of jpeg, png, gif, webp, heic, heif
 
-- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; there is no common error body or `ExceptionMapper` yet
+- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `StatusConflictException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; there is no common error body or `ExceptionMapper` yet
 
 - **`utilits/`** — Shared utilities
   - `CryptoUtils` — Password hashing with BCrypt
@@ -127,7 +129,7 @@ Configuration and reference data:
 - `logstash.conf` — Log forwarding config for production
 
 #### `/src/test`
-Unit tests (JUnit 5 + REST Assured):
+Unit tests (JUnit 5, Mockito + REST Assured):
 - Test structure mirrors source structure
 - Run with `mvn test`
 
@@ -144,29 +146,30 @@ Unit tests (JUnit 5 + REST Assured):
 
 ### Security Model
 - **Authentication:** JWT verified by SmallRye JWT; endpoints are protected with `@Authenticated` / `@RolesAllowed`
-- **Authorization:** Role guards use string roles, e.g. `@RolesAllowed("CUSTOMER")`; ownership/participation is checked in services (chat participants, order owner, proposal author)
+- **Authorization:** Role guards use string roles, e.g. `@RolesAllowed("CUSTOMER")`; ownership/participation is checked in services (chat participants, order owner, response author)
 - **Password Hashing:** BCrypt via `CryptoUtils`
 - **API Base Path:** `/api/v1/` for all endpoints
 
 ### Key Features & Workflows
 
 #### User Registration & Authentication
-1. `AuthResource.signUp()` (`POST /v1/auth/sign-up`) → `AuthService.signUp()` → create Customer/Professional by role, hash password
-2. `AuthResource.signIn()` (`POST /v1/auth/sign-in`) → `TokenService.generateToken()` returns a JWT with userId and role
-3. The current user ID is read from the `SecurityIdentity` via `AuthService.getCurrentUserId()`
+1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create Customer/Professional by role, hash password
+2. `AuthResource.login()` (`POST /v1/auth/login`) → `TokenService.generateToken()` returns a JWT with userId and role
+3. The current user ID and role are read from the `SecurityIdentity` via `AuthService.getCurrentUserId()` and `getCurrentUserRole()`; resources and services never use `SecurityIdentity` directly
 4. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
 
 #### Order Lifecycle (Customer → Professional workflow)
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
 2. Professionals browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
-3. Professional submits a proposal via `OrderResource.proposal()` (`POST /v1/orders/{id}/proposals`) → `OrderService.proposal()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
-4. The order owner lists proposals (`GET /v1/orders/{id}/proposals`) and accepts one via `OrderProposalResource.confirm()` (`POST /v1/proposals/{id}/confirm`)
-5. Upon acceptance, the order status becomes `COMPLETED` and the other proposals are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
-6. An order can be cancelled via `OrderResource.cancel()` (`POST /v1/orders/{id}:cancel`); a customer can review a professional via `POST /v1/professionals/{id}/reviews`
+3. Professional submits a response via `OrderResource.respond()` (`POST /v1/orders/{id}/responses`) → `OrderService.respond()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
+4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `OrderResponseResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
+5. Upon acceptance, the order status becomes `COMPLETED` and the other responses are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
+6. An order is updated with `PATCH /v1/orders/{id}` (`OrderResource.update()`, only the sent fields change); `{"status": "CANCELLED"}` cancels it, any other status or an invalid transition returns `409`, a non-owner gets `403`; a customer can review a professional via `POST /v1/professionals/{id}/reviews`
 
 #### Search
 - Orders & Professionals indexed in Elasticsearch via `*IndexInitializer` (the indexes are recreated on startup)
-- Keyword and location filters are applied only when provided; orders are searchable by title and description; pagination is 1-based everywhere
+- Keyword and location filters are applied only when provided; orders are searchable by title and description and filterable by `categories`; pagination is 1-based everywhere
+- Professionals are searched with `GET /v1/search/professionals` (`ProfessionalSearchResource`)
 - Index updated on entity create/update via service layer
 
 #### Real-time Chat
@@ -187,8 +190,11 @@ Unit tests (JUnit 5 + REST Assured):
 2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
 3. **Validation:** Use Jakarta `@Valid` annotations; validation errors return 400 Bad Request
 4. **Exception Handling:** Custom exception handling (if implemented) centralized in resources
-5. **Logging:** `@Slf4j` from Lombok for structured logging
-6. **ID Mapping:** Services use `TokenService` to extract current user ID from JWT claims
+5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
+6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
+7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
+8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (profile) or the resource's own `/me` (`/chats/me`)
+9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID and role from the JWT claims
 
 ### Debugging & Development Tips
 

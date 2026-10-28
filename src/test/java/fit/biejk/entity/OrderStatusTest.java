@@ -8,14 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OrderStatusTest {
 
     @Test
-    void openOrdersAcceptProposals() {
-        assertTrue(OrderStatus.CREATED.acceptsProposals());
-        assertTrue(OrderStatus.CUSTOMER_PENDING.acceptsProposals());
+    void openOrdersAcceptResponses() {
+        assertTrue(OrderStatus.CREATED.acceptsResponses());
+        assertTrue(OrderStatus.CUSTOMER_PENDING.acceptsResponses());
     }
 
     @Test
-    void closedOrdersDoNotAcceptProposals() {
-        assertFalse(OrderStatus.CANCELLED.acceptsProposals());
-        assertFalse(OrderStatus.COMPLETED.acceptsProposals());
+    void closedOrdersDoNotAcceptResponses() {
+        assertFalse(OrderStatus.CANCELLED.acceptsResponses());
+        assertFalse(OrderStatus.COMPLETED.acceptsResponses());
     }
 }

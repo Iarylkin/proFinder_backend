@@ -2,12 +2,14 @@ package fit.biejk.service;
 
 import fit.biejk.entity.*;
 import fit.biejk.exception.OrderClosedException;
+import fit.biejk.exception.StatusConflictException;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +19,8 @@ import java.util.List;
 /**
  * Service class for managing {@link Order} entities.
  * <p>
- * Handles business logic for creating, updating, deleting, and confirming orders,
- * as well as working with related {@link OrderProposal} objects.
+ * Handles business logic for creating, updating, cancelling, and deleting orders,
+ * as well as working with related {@link OrderResponse} objects.
  * </p>
  */
 @Slf4j
@@ -47,9 +49,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     /**
-     * Service for managing order proposals.
+     * Service for managing order responses.
      */
-    private final OrderProposalService orderProposalService;
+    private final OrderResponseService orderResponseService;
 
     /** Service for handling business logic related to professionals. */
     private final ProfessionalService professionalService;
@@ -79,33 +81,77 @@ public class OrderService {
     }
 
     /**
-     * Updates the fields of an existing order.
+     * Partially updates an existing order: only the non-null fields of {@code changes} are applied.
+     * <p>
+     * The status of {@code changes} is the requested status. The only status that can be requested
+     * is {@code CANCELLED}; any other status, or a transition the order cannot make from its current
+     * status, is rejected with 409.
+     * </p>
      *
      * @param orderId ID of the order to update
-     * @param order   new order data
-     * @return original order (before update)
+     * @param changes an order holding only the requested changes
+     * @return the updated order
+     * @throws ForbiddenException      if the current user is not the owner of the order
+     * @throws StatusConflictException if the requested status is not allowed
      */
     @Transactional
-    public Order update(final Long orderId, final Order order) {
-        log.info("Update order: orderId={}, newDescription={}", orderId, order.getDescription());
-        Order old = getById(orderId);
-        if (!authService.isCurrentUser(old.getCustomer().getId())) {
+    public Order update(final Long orderId, final Order changes) {
+        log.info("Update order: orderId={}", orderId);
+        Order order = getById(orderId);
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
-                    orderId, old.getCustomer().getId());
-            throw new IllegalArgumentException();
+                    orderId, order.getCustomer().getId());
+            throw new ForbiddenException("You are not the owner of this order");
         }
-        old.setServiceOfferings(order.getServiceOfferings());
-        old.setLocation(order.getLocation());
-        old.setTitle(order.getTitle());
-        old.setDescription(order.getDescription());
-        old.setPrice(order.getPrice());
-        old.setDeadline(order.getDeadline());
 
-        OrderSearchDto dto = orderSearchMapper.toDto(old);
+        order.setStatus(nextStatus(order.getStatus(), changes.getStatus()));
+        if (changes.getCategories() != null) {
+            order.setCategories(changes.getCategories());
+        }
+        if (changes.getTitle() != null) {
+            order.setTitle(changes.getTitle());
+        }
+        if (changes.getDescription() != null) {
+            order.setDescription(changes.getDescription());
+        }
+        if (changes.getPrice() != null) {
+            order.setPrice(changes.getPrice());
+        }
+        if (changes.getDeadline() != null) {
+            order.setDeadline(changes.getDeadline());
+        }
+        if (changes.getLocation() != null) {
+            order.setLocation(changes.getLocation());
+        }
+        orderRepository.persist(order);
+
+        OrderSearchDto dto = orderSearchMapper.toDto(order);
         orderSearchService.save(dto);
 
         log.debug("Order updated with ID={}", orderId);
-        return old;
+        return order;
+    }
+
+    /**
+     * Decides the status of an order after an update request.
+     *
+     * @param current   current status of the order
+     * @param requested status from the request, or {@code null} to keep the current one
+     * @return the status the order must have after the update
+     * @throws StatusConflictException if the requested status is not {@code CANCELLED}
+     *                                 or the transition is not valid from the current status
+     */
+    static OrderStatus nextStatus(final OrderStatus current, final OrderStatus requested) {
+        if (requested == null || requested == current) {
+            return current;
+        }
+        if (requested != OrderStatus.CANCELLED) {
+            throw new StatusConflictException("Only the CANCELLED status can be set on an order");
+        }
+        if (!current.isValidTransition(requested)) {
+            throw new StatusConflictException("Cannot change the status from " + current + " to " + requested);
+        }
+        return requested;
     }
 
     /**
@@ -127,31 +173,6 @@ public class OrderService {
         orderSearchService.delete(orderId);
 
         log.debug("Order deleted with ID={}", orderId);
-    }
-
-    /**
-     * Cancels an order, transitioning its status to CANCELLED.
-     *
-     * @param orderId ID of the order
-     * @return updated order
-     */
-    @Transactional
-    public Order cancel(final Long orderId) {
-        log.info("Cancel order: orderId={}", orderId);
-        Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
-            log.error(NOT_ORDER_OWNER_MESSAGE,
-                    orderId, order.getCustomer().getId());
-            throw new IllegalArgumentException();
-        }
-        order.setStatus(order.getStatus().transitionTo(OrderStatus.CANCELLED));
-        orderRepository.persist(order);
-
-        OrderSearchDto dto = orderSearchMapper.toDto(order);
-        orderSearchService.save(dto);
-
-        log.debug("Order canceled with ID={}", orderId);
-        return order;
     }
 
     /**
@@ -186,57 +207,57 @@ public class OrderService {
     }
 
     /**
-     * Adds a new proposal to an order.
+     * Adds a new response to an order.
      *
      * @param orderId  ID of the order
      * @param professionalId ID of the professional
-     * @param proposal proposal entity
-     * @return created proposal
+     * @param orderResponse response entity
+     * @return created response
      */
     @Transactional
-    public OrderProposal proposal(final Long orderId, final Long professionalId, final OrderProposal proposal) {
-        log.info("Create proposal: orderId={}, professionalId={}", orderId, proposal.getProfessional().getId());
+    public OrderResponse respond(final Long orderId, final Long professionalId, final OrderResponse orderResponse) {
+        log.info("Create response: orderId={}, professionalId={}", orderId, orderResponse.getProfessional().getId());
         Order order = getById(orderId);
-        if (!order.getStatus().acceptsProposals()) {
-            log.warn("Proposal rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
+        if (!order.getStatus().acceptsResponses()) {
+            log.warn("Response rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
-        if (haveProfessionalProposal(order, proposal)) {
-            log.error("Order proposal already exists for this professional. orderId={}, professionalId={}",
-                    orderId, proposal.getProfessional().getId());
-            throw new IllegalArgumentException("Order proposal already exists");
+        if (haveProfessionalResponse(order, orderResponse)) {
+            log.error("Order response already exists for this professional. orderId={}, professionalId={}",
+                    orderId, orderResponse.getProfessional().getId());
+            throw new IllegalArgumentException("Order response already exists");
         }
-        proposal.setOrder(order);
+        orderResponse.setOrder(order);
 
         Professional professional = professionalService.getById(professionalId);
-        proposal.setProfessional(professional);
+        orderResponse.setProfessional(professional);
 
-        orderProposalService.create(proposal);
-        order.getOrderProposals().add(proposal);
+        orderResponseService.create(orderResponse);
+        order.getOrderResponses().add(orderResponse);
         order.setStatus(order.getStatus().transitionTo(OrderStatus.CUSTOMER_PENDING));
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);
         orderSearchService.save(dto);
 
-        log.debug("Proposal created with ID={}", proposal.getId());
-        return proposal;
+        log.debug("Response created with ID={}", orderResponse.getId());
+        return orderResponse;
     }
 
     /**
-     * Checks if the given professional already has a proposal for the order.
+     * Checks if the given professional already has a response for the order.
      *
      * @param order    the order
-     * @param proposal the proposal to check
-     * @return true if proposal already exists, false otherwise
+     * @param orderResponse the response to check
+     * @return true if response already exists, false otherwise
      */
-    public boolean haveProfessionalProposal(final Order order, final OrderProposal proposal) {
-        log.info("Check if professional proposal already exists: orderId={}, professionalId={}",
-                order.getId(), proposal.getProfessional().getId());
-        List<OrderProposal> orderProposals = order.getOrderProposals();
-        for (OrderProposal orderProposal : orderProposals) {
-            if (orderProposal.getProfessional().getId().equals(proposal.getProfessional().getId())) {
-                log.debug("Proposal already exists for professionalId={}", proposal.getProfessional().getId());
+    public boolean haveProfessionalResponse(final Order order, final OrderResponse orderResponse) {
+        log.info("Check if professional response already exists: orderId={}, professionalId={}",
+                order.getId(), orderResponse.getProfessional().getId());
+        List<OrderResponse> orderResponses = order.getOrderResponses();
+        for (OrderResponse existing : orderResponses) {
+            if (existing.getProfessional().getId().equals(orderResponse.getProfessional().getId())) {
+                log.debug("Response already exists for professionalId={}", existing.getProfessional().getId());
                 return true;
             }
         }

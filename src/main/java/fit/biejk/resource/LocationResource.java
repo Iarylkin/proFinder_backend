@@ -3,9 +3,9 @@ package fit.biejk.resource;
 import fit.biejk.entity.Location;
 import fit.biejk.service.LocationService;
 import jakarta.annotation.security.PermitAll;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -16,6 +16,7 @@ import java.util.List;
  * </p>
  */
 @Path("/v1/locations")
+@RequiredArgsConstructor
 public class LocationResource {
 
     /**
@@ -24,8 +25,7 @@ public class LocationResource {
      * Injected via CDI and used to delegate business logic.
      * </p>
      */
-    @Inject
-    private LocationService locationService;
+    private final LocationService locationService;
 
     /**
      * Retrieves a list of all available locations.

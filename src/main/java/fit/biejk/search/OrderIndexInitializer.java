@@ -49,7 +49,7 @@ public class OrderIndexInitializer {
      * Initializes the index after application startup.
      * <p>
      * If the "orders" index already exists, it is deleted and recreated.
-     * The index is created with mappings for ID, status, services, and location.
+     * The index is created with mappings for ID, status, categories, and location.
      * Then, all orders from the database are loaded and indexed.
      * </p>
      */
@@ -73,7 +73,7 @@ public class OrderIndexInitializer {
                                             .fields("keyword", k -> k.keyword(kk -> kk))
                                     )
                             )
-                            .properties("services", p -> p
+                            .properties("categories", p -> p
                                     .text(t -> t
                                             .fields("keyword", k -> k.keyword(kk -> kk))
                                     )

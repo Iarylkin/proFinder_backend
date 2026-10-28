@@ -244,4 +244,32 @@ public class UserService {
                     + "\nIf this wasn’t you, please contact support.");
         return user;
     }
+
+    /**
+     * Partially updates the common profile fields of a user: only the non-null fields of
+     * {@code changes} are applied.
+     *
+     * @param userId  ID of the user
+     * @param changes a user holding only the requested changes
+     * @return the updated user
+     * @throws NotFoundException if the user does not exist
+     */
+    public User updateProfile(final Long userId, final User changes) {
+        log.info("Update profile: userId={}", userId);
+        User user = getById(userId);
+        if (changes.getFirstName() != null) {
+            user.setFirstName(changes.getFirstName());
+        }
+        if (changes.getLastName() != null) {
+            user.setLastName(changes.getLastName());
+        }
+        if (changes.getPhoneNumber() != null) {
+            user.setPhoneNumber(changes.getPhoneNumber());
+        }
+        if (changes.getLocation() != null) {
+            user.setLocation(locationService.getById(changes.getLocation().getId()));
+        }
+        log.debug("Profile updated for userId={}", userId);
+        return user;
+    }
 }
