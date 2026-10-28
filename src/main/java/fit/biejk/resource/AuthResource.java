@@ -32,13 +32,13 @@ public class AuthResource {
     /**
      * Registers a new user account.
      *
-     * @param request the sign-up request containing email, password, and role
+     * @param request the registration request containing email, password, and role
      * @return HTTP 200 response with a generated authentication token
      */
     @POST
-    @Path("/sign-up")
+    @Path("/register")
     @PermitAll
-    public Response signUp(
+    public Response register(
             @Valid final AuthRequest request
     ) {
         log.info("Sign up request: {}", request);
@@ -54,13 +54,13 @@ public class AuthResource {
     /**
      * Authenticates a user and returns a JWT token if credentials are valid.
      *
-     * @param request the sign-in request containing email, password, and role
+     * @param request the login request containing email, password, and role
      * @return HTTP 200 response with a generated authentication token
      */
     @POST
-    @Path("/sign-in")
+    @Path("/login")
     @PermitAll
-    public Response signIn(@Valid final AuthRequest request) {
+    public Response login(@Valid final AuthRequest request) {
         log.info("Sign in request: {}", request);
         String result = authService.signIn(request.getEmail(), request.getPassword(), request.getRole());
         log.debug("Sign in result: {}", result);
