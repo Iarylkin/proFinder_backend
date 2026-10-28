@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.7
-- **Date:** 2026-10-27
+- **Version:** 1.8
+- **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -77,7 +77,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
 | **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.5.0) |
 | **1.2.0** | Not used: its content (`Specialist → Professional`, the new roles) shipped in 1.1.0. The number stays free so the later versions keep their numbers |
-| **1.3.0** | New paths with deprecated aliases for the old ones (`/customers` and `/professionals` already exist since 1.1.0 and have no alias): `/auth/register`, `/auth/login`, `PATCH /orders`, `/orders/{id}/close`, `/orders/{id}/responses`, `/categories`, `/conversations`, `/me/profile`, `/search/professionals` |
+| **1.3.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats`; `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
 | **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
 | **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
 | **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
@@ -159,7 +159,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-7.3** | Outlier-filter algorithm, source and recalculation of `m` in the Bayesian sort, rules for reviewing blocked, suspended, deleted and `INCOMPLETE` users, the "Self-Employed Discovery" scenario |
 | **2.4.0** | Categories per `docs/14` (32 seeded), cities as strings (normalized), one category per order; `category.*` events |
 | **2.5.0** | Profiles: professional (`INCOMPLETE → ACTIVE`, sticky, `years_experience`, `hourly_rate`, hours, `available`) and customer (city, `preferred_category_ids`, bio, avatar); public contact email; `@Version`; `v1:profile:*` cache with delete-on-write |
-| **2.6.0** | Order lifecycle `DRAFT → ACTIVE → CLOSED`, publish, close, extend (1–90 days), `expires_at`, `published_at`, `closed_at`, `closed_reason`, expiry scheduler, visibility for professionals (their categories and cities), customer history, `@Version` → 409. *Decision 1* |
+| **2.6.0** | Order lifecycle `DRAFT → ACTIVE → CLOSED`, publish, close, extend (1–90 days), `expires_at`, `published_at`, `closed_at`, `closed_reason`, expiry scheduler, visibility for professionals (their categories and cities), customer history, role-dependent `GET /orders` (customer: own orders with `?status=`; professional: `ACTIVE` orders in their categories and cities), `@Version` → 409. *Decision 1* |
 | **2.7.0** | Responses: upsert, `edited`, sealed bids, sorting, `ORDER_CLOSED`/`ORDER_EXPIRED`/`PROFILE_INCOMPLETE`, professional-category check |
 | **2.8.0** | Reviews in both directions, one per pair, replies (only on `CUSTOMER`-direction reviews), `deleted_at`, `is_outlier`, `rating_avg` and `review_count`, Bayesian sort, customer reliability rating; synchronous `check-text` call. Review photos arrive in 2.12.0 |
 
@@ -281,6 +281,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-10-28 | The paths version now lists what is implemented: no aliases, state changes through `PATCH`, `/chats`, `/users/me/profile`. The role-dependent `GET /orders` moved to 2.6.0 with the order lifecycle. |
 | 1.7 | 2026-10-27 | 1.1.0 now covers `Client → Customer` and `Specialist → Professional` together with the roles, table, index and path names; 1.2.0 is not used; 1.3.0 no longer lists `/customers` and `/professionals`. |
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
 | 1.1 | 2026-10-26 | DTOs move to records in 1.7.0; D-1.3 covers the decision. |
