@@ -88,36 +88,22 @@ public class OrderResource {
     }
 
     /**
-     * Updates an existing order by ID.
+     * Partially updates an order of the authenticated customer.
+     * <p>
+     * Only the sent fields change. Sending {@code "status": "CANCELLED"} cancels the order.
+     * </p>
      *
      * @param orderId order ID
-     * @param dto     updated order data
+     * @param request fields to change
      * @return updated order
      */
-    @PUT
+    @PATCH
     @Path("/{orderId}")
     @RolesAllowed("CUSTOMER")
-    public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderDto dto) {
-        log.info("Update order request: orderId={}, dto={}", orderId, dto);
-        Order order = orderMapper.toEntity(dto);
-        Order result = orderService.update(orderId, order);
+    public Response update(@PathParam("orderId") final Long orderId, @Valid final OrderUpdateRequest request) {
+        log.info("Update order request: orderId={}, request={}", orderId, request);
+        Order result = orderService.update(orderId, request);
         log.debug("Order updated with ID={}", result.getId());
-        return Response.ok(orderMapper.toDto(result)).build();
-    }
-
-    /**
-     * Cancels an order by ID.
-     *
-     * @param orderId order ID
-     * @return canceled order
-     */
-    @POST
-    @Path("/{orderId}:cancel")
-    @RolesAllowed("CUSTOMER")
-    public Response cancel(@PathParam("orderId") final Long orderId) {
-        log.info("Cancel order request: orderId={}", orderId);
-        Order result = orderService.cancel(orderId);
-        log.debug("Order canceled with ID={}", result.getId());
         return Response.ok(orderMapper.toDto(result)).build();
     }
 

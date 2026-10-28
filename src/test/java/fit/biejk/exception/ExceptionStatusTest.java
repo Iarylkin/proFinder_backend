@@ -14,6 +14,7 @@ class ExceptionStatusTest {
         assertEquals(413, new FileTooLargeException().getResponse().getStatus());
         assertEquals(415, new InvalidFileTypeException().getResponse().getStatus());
         assertEquals(400, new InvalidResetCodeException().getResponse().getStatus());
+        assertEquals(409, new StatusConflictException("conflict").getResponse().getStatus());
     }
 
     @Test

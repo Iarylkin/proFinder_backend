@@ -1,13 +1,17 @@
 package fit.biejk.service;
 
+import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.exception.OrderClosedException;
+import fit.biejk.exception.StatusConflictException;
+import fit.biejk.mapper.OrderMapper;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchDto;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +64,11 @@ public class OrderService {
     private final AuthService authService;
 
     /**
+     * Mapper that applies partial updates to order entities.
+     */
+    private final OrderMapper orderMapper;
+
+    /**
      * Creates a new order with default status.
      *
      * @param order order entity
@@ -79,33 +88,60 @@ public class OrderService {
     }
 
     /**
-     * Updates the fields of an existing order.
+     * Partially updates an existing order: only the fields present in the request change.
+     * <p>
+     * The only status that can be requested is {@code CANCELLED}; any other status, or a
+     * transition the order cannot make from its current status, is rejected with 409.
+     * </p>
      *
      * @param orderId ID of the order to update
-     * @param order   new order data
-     * @return original order (before update)
+     * @param request fields to change
+     * @return the updated order
+     * @throws ForbiddenException      if the current user is not the owner of the order
+     * @throws StatusConflictException if the requested status is not allowed
      */
     @Transactional
-    public Order update(final Long orderId, final Order order) {
-        log.info("Update order: orderId={}, newDescription={}", orderId, order.getDescription());
-        Order old = getById(orderId);
-        if (!authService.isCurrentUser(old.getCustomer().getId())) {
+    public Order update(final Long orderId, final OrderUpdateRequest request) {
+        log.info("Update order: orderId={}", orderId);
+        Order order = getById(orderId);
+        if (!authService.isCurrentUser(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
-                    orderId, old.getCustomer().getId());
-            throw new IllegalArgumentException();
+                    orderId, order.getCustomer().getId());
+            throw new ForbiddenException("You are not the owner of this order");
         }
-        old.setServiceOfferings(order.getServiceOfferings());
-        old.setLocation(order.getLocation());
-        old.setTitle(order.getTitle());
-        old.setDescription(order.getDescription());
-        old.setPrice(order.getPrice());
-        old.setDeadline(order.getDeadline());
 
-        OrderSearchDto dto = orderSearchMapper.toDto(old);
+        OrderStatus newStatus = nextStatus(order.getStatus(), request.getStatus());
+        orderMapper.updateEntity(request, order);
+        order.setStatus(newStatus);
+        orderRepository.persist(order);
+
+        OrderSearchDto dto = orderSearchMapper.toDto(order);
         orderSearchService.save(dto);
 
         log.debug("Order updated with ID={}", orderId);
-        return old;
+        return order;
+    }
+
+    /**
+     * Decides the status of an order after an update request.
+     *
+     * @param current   current status of the order
+     * @param requested status from the request, or {@code null} to keep the current one
+     * @return the status the order must have after the update
+     * @throws StatusConflictException if the requested status is not {@code CANCELLED}
+     *                                 or the transition is not valid from the current status
+     */
+    static OrderStatus nextStatus(final OrderStatus current, final OrderStatus requested) {
+        if (requested == null || requested == current) {
+            return current;
+        }
+        if (requested != OrderStatus.CANCELLED) {
+            throw new StatusConflictException("Only the CANCELLED status can be set on an order");
+        }
+        if (!current.isValidTransition(requested)) {
+            throw new StatusConflictException("Cannot change the status from " + current + " to " + requested);
+        }
+        return requested;
     }
 
     /**
@@ -127,31 +163,6 @@ public class OrderService {
         orderSearchService.delete(orderId);
 
         log.debug("Order deleted with ID={}", orderId);
-    }
-
-    /**
-     * Cancels an order, transitioning its status to CANCELLED.
-     *
-     * @param orderId ID of the order
-     * @return updated order
-     */
-    @Transactional
-    public Order cancel(final Long orderId) {
-        log.info("Cancel order: orderId={}", orderId);
-        Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
-            log.error(NOT_ORDER_OWNER_MESSAGE,
-                    orderId, order.getCustomer().getId());
-            throw new IllegalArgumentException();
-        }
-        order.setStatus(order.getStatus().transitionTo(OrderStatus.CANCELLED));
-        orderRepository.persist(order);
-
-        OrderSearchDto dto = orderSearchMapper.toDto(order);
-        orderSearchService.save(dto);
-
-        log.debug("Order canceled with ID={}", orderId);
-        return order;
     }
 
     /**
