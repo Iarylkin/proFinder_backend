@@ -16,7 +16,7 @@ import java.util.List;
  * Provides an endpoint for retrieving the list of all available services.
  * </p>
  */
-@Path("/v1/services")
+@Path("/v1/categories")
 public class ServiceOfferingResource {
 
     /** Service for handling business logic related to service offerings. */
