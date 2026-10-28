@@ -621,7 +621,7 @@ One PostgreSQL instance, one schema per service ([3 - System Design.md § Postgr
 | `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
 | `moderation` | the rules and decision log tables (Phase 2) |
 
-Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The `users` columns that are profile data (`display_name`, `phone`, `bio`, `avatar_file_id`) and the `users` / profile split are settled with the account-and-profiles change in roadmap version 1.5.0 ([16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
+Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The `users` columns that are profile data (`display_name`, `phone`, `bio`, `avatar_file_id`) and the `users` / profile split are settled with the account-and-profiles change in roadmap version 1.4.0 ([16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
 
 
 ## Foreign Keys & ON DELETE

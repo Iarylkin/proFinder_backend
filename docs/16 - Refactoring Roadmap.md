@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.9
+- **Version:** 1.10
 - **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -22,7 +22,7 @@
 | Compatibility | The old API keeps working through deprecated aliases until `2.0.0` |
 | Unfinished work | Hidden behind feature flags, never left half-done in a tagged build |
 | Major / minor / patch | `2.0.0` marks the architecture change (five services). Features after it are `2.x` minors. Bug fixes are patches |
-| Schema | Flyway from `1.6.0`; every version that changes the schema ships its own migration |
+| Schema | Flyway from `1.5.0`; every version that changes the schema ships its own migration |
 | Docs tasks | Marked `D-…`. They belong to the milestone that needs them and do not bump the version. "Before code" means the task is closed before the first version of that milestone starts |
 | Tooling tasks | Marked `T-…`. Repository tooling, no version bump |
 
@@ -32,10 +32,10 @@
 | # | Milestone | Versions | Goal |
 |---|---|---|---|
 | M0 | Hotfixes | 1.0.1 – 1.0.4 | Close security holes and runtime bugs before any refactoring |
-| M1 | Foundation | 1.1.0 – 1.8.0 | Cross-cutting changes needed before splitting |
-| M2 | Modular monolith | 1.9.0 – 1.14.0 | Service boundaries inside one process |
-| M3 | Safety net | 1.15.0 – 1.17.0 | Tests before splitting |
-| M4 | Events & broker | 1.18.0 – 1.21.0 | Outbox, events, RabbitMQ |
+| M1 | Foundation | 1.1.0 – 1.7.0 | Cross-cutting changes needed before splitting |
+| M2 | Modular monolith | 1.8.0 – 1.13.0 | Service boundaries inside one process |
+| M3 | Safety net | 1.14.0 – 1.16.0 | Tests before splitting |
+| M4 | Events & broker | 1.17.0 – 1.20.0 | Outbox, events, RabbitMQ |
 | M5 | Service extraction | 2.0.0-rc.1 – 2.0.0 | Physical split into five services |
 | M6 | Auth features | 2.1.0 – 2.3.0 | Verification, sessions, OAuth |
 | M7 | Core domain | 2.4.0 – 2.8.0 | Categories, profiles, orders, responses, reviews |
@@ -66,58 +66,57 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **T-0.2** | Hooks in `.claude/settings.json`: replace relative paths with absolute ones so they do not break outside the repository root. Fix `CLAUDE.md` (there is no `IN_PROGRESS` status and no `completeOrder()`) |
 | Outside versions | Rotate secrets (DB and MinIO passwords, Mailtrap, `privateKey.pem`) and move them to environment variables. Needs action from the owner |
 
-## M1 — Foundation (1.1.0 – 1.8.0)
+## M1 — Foundation (1.1.0 – 1.7.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
-| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.7.0 |
+| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.6.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID v7 literals |
-| **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.5.0) |
-| **1.2.0** | Not used: its content (`Specialist → Professional`, the new roles) shipped in 1.1.0. The number stays free so the later versions keep their numbers |
-| **1.3.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
-| **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
-| **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance. **Unify the profile code here:** `GET`/`PATCH /users/me/profile` serve two entities, so `ProfileResource` now picks the service and the mapper by role. Replace that with one `ProfileDto` family, a MapStruct mapper with `@SubclassMapping`, and a `ProfileService` that takes a neutral `ProfileChanges` and applies the rule "description and categories are for professionals only", so the resource has no role switch |
-| **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
-| **1.8.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
+| **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.4.0) |
+| **1.2.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
+| **1.3.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
+| **1.4.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance. **Unify the profile code here:** `GET`/`PATCH /users/me/profile` serve two entities, so `ProfileResource` now picks the service and the mapper by role. Replace that with one `ProfileDto` family, a MapStruct mapper with `@SubclassMapping`, and a `ProfileService` that takes a neutral `ProfileChanges` and applies the rule "description and categories are for professionals only", so the resource has no role switch |
+| **1.5.0** | **Flyway:** baseline `V1` taken from the model after 1.4.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
+| **1.6.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
+| **1.7.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
-## M2 — Modular monolith (1.9.0 – 1.14.0)
+## M2 — Modular monolith (1.8.0 – 1.13.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
-| **1.9.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
-| **1.10.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
-| **1.11.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
-| **1.12.0** | Notification boundary: `MailService` behind `NotificationApi` |
-| **1.13.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.14.0** | Cross-module relations replaced with IDs. ArchUnit tests forbid extra dependencies |
+| **1.8.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
+| **1.9.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
+| **1.10.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
+| **1.11.0** | Notification boundary: `MailService` behind `NotificationApi` |
+| **1.12.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
+| **1.13.0** | Cross-module relations replaced with IDs. ArchUnit tests forbid extra dependencies |
 
-## M3 — Safety net (1.15.0 – 1.17.0)
+## M3 — Safety net (1.14.0 – 1.16.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-3.1** | `docs/2` and `15`: clarify the coverage gate (JaCoCo 80% vs "not a gate"), "at least one test per endpoint", CI under 5 minutes for five services |
-| **1.15.0** | Testcontainers (PostgreSQL, Elasticsearch, Redis, MinIO), Flyway migrations run in tests, `%test` profile for CI |
-| **1.16.0** | E2E smoke scenario as its own CI job, remove `continue-on-error` |
-| **1.17.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests |
+| **1.14.0** | Testcontainers (PostgreSQL, Elasticsearch, Redis, MinIO), Flyway migrations run in tests, `%test` profile for CI |
+| **1.15.0** | E2E smoke scenario as its own CI job, remove `continue-on-error` |
+| **1.16.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests |
 
-## M4 — Events & broker (1.18.0 – 1.21.0)
+## M4 — Events & broker (1.17.0 – 1.20.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-4.1** (before code) | `docs/9`: events `user.unblocked`, report and appeal lifecycle, ban lifted, a mechanism for removing content (`message`, `review_reply`, content type `review_photo`); fix the reindex version when an account status changes |
 | **D-4.2** | `docs/7`: add `EventPublisher` and a poller for Auth and Messaging, `OrderExpirationJob`, `MessagePurgeJob`, `ReviewReplyService`, `ProcessedEvent`, token entities; align method names with `docs/9` |
-| **1.18.0** | Event model per `docs/9`, `EventPublisher`, outbox + relay with `SELECT … FOR UPDATE SKIP LOCKED`, retention (`sent` older than 7 days), partial index, `processed_events` |
-| **1.19.0** | Flows moved to events: `SearchIndexConsumer` builds the document from PostgreSQL, external version, 409 ignored; emails; `message.sent`, `response.created`, `review.posted`. Direct calls removed, ES errors no longer lost |
-| **1.20.0** | RabbitMQ in compose: `profinder.events`, `profinder.dlx`, five `*.notifications` queues with a 24 h TTL, `search.index` with no TTL, `notifications.deadletter`, 3 retries, `requeue=true` |
-| **1.21.0** | Contract tests for all 29 event payloads; broker flag on by default |
+| **1.17.0** | Event model per `docs/9`, `EventPublisher`, outbox + relay with `SELECT … FOR UPDATE SKIP LOCKED`, retention (`sent` older than 7 days), partial index, `processed_events` |
+| **1.18.0** | Flows moved to events: `SearchIndexConsumer` builds the document from PostgreSQL, external version, 409 ignored; emails; `message.sent`, `response.created`, `review.posted`. Direct calls removed, ES errors no longer lost |
+| **1.19.0** | RabbitMQ in compose: `profinder.events`, `profinder.dlx`, five `*.notifications` queues with a 24 h TTL, `search.index` with no TTL, `notifications.deadletter`, 3 retries, `requeue=true` |
+| **1.20.0** | Contract tests for all 29 event payloads; broker flag on by default |
 
 ## M5 — Service extraction (2.0.0-rc.1 – 2.0.0)
 ---
@@ -252,7 +251,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | # | Question | Needed by |
 |---|---|---|
-| 3 | UUID v7 or `Long` | 1.4.0 (**first**) |
+| 3 | UUID v7 or `Long` | 1.3.0 (**first**) |
 | 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
@@ -269,18 +268,19 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Risk | Mitigation |
 |---|---|
-| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.4.0–1.5.0); cross-module relations become IDs in 1.14.0 |
+| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.13.0 |
 | No test net during the split | M3 is entirely about the net and runs before M4 and M5 |
 | Features are slower to build in a distributed system | One compose file, cross-service E2E in rc.7, a shared `contracts` module |
-| Schemas keep changing in `2.x` | Flyway from 1.6.0, one migration per version, per-service folders ready for extraction |
+| Schemas keep changing in `2.x` | Flyway from 1.5.0, one migration per version, per-service folders ready for extraction |
 | No user-facing features before `2.0.0` | M0 closes the critical holes; M1–M5 change shape only |
-| Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.18.0), Redis Pub/Sub for WS (rc.4) |
+| Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.17.0), Redis Pub/Sub for WS (rc.4) |
 
 ## Changelog
 ---
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-10-28 | Renumbered the 1.x versions: the two naming steps are one version (1.1.0), the new paths are 1.2.0, and every later 1.x version moves down by one (the old 1.4.0 – 1.21.0 are now 1.3.0 – 1.20.0; M1 = 1.1.0 – 1.7.0, M2 = 1.8.0 – 1.13.0, M3 = 1.14.0 – 1.16.0, M4 = 1.17.0 – 1.20.0). The 2.x series is unchanged. Older changelog rows keep the numbers they used at the time. |
 | 1.9 | 2026-10-28 | Noted the profile unification (one DTO family, polymorphic mapper, role handled in the service) in the account-and-profiles version; until then `ProfileResource` branches by role. |
 | 1.8 | 2026-10-28 | The paths version now lists what is implemented: no aliases, state changes through `PATCH`, `/chats`, `/users/me/profile`. The role-dependent `GET /orders` moved to 2.6.0 with the order lifecycle. |
 | 1.7 | 2026-10-27 | 1.1.0 now covers `Client → Customer` and `Specialist → Professional` together with the roles, table, index and path names; 1.2.0 is not used; 1.3.0 no longer lists `/customers` and `/professionals`. |
