@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.8
+- **Version:** 1.9
 - **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -79,7 +79,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **1.2.0** | Not used: its content (`Specialist → Professional`, the new roles) shipped in 1.1.0. The number stays free so the later versions keep their numbers |
 | **1.3.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
 | **1.4.0** | UUID v7 (generated in the application), `version` for optimistic locking. *Decision 3* |
-| **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance |
+| **1.5.0** | `User` → account + `customer_profiles` and `professional_profiles`; `citext`, `CHECK`, "Key Indexes" for these tables; drop `JOINED` inheritance. **Unify the profile code here:** `GET`/`PATCH /users/me/profile` serve two entities, so `ProfileResource` now picks the service and the mapper by role. Replace that with one `ProfileDto` family, a MapStruct mapper with `@SubclassMapping`, and a `ProfileService` that takes a neutral `ProfileChanges` and applies the rule "description and categories are for professionals only", so the resource has no role switch |
 | **1.6.0** | **Flyway:** baseline `V1` taken from the model after 1.5.0; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
 | **1.7.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
 | **1.8.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
@@ -281,6 +281,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-10-28 | Noted the profile unification (one DTO family, polymorphic mapper, role handled in the service) in the account-and-profiles version; until then `ProfileResource` branches by role. |
 | 1.8 | 2026-10-28 | The paths version now lists what is implemented: no aliases, state changes through `PATCH`, `/chats`, `/users/me/profile`. The role-dependent `GET /orders` moved to 2.6.0 with the order lifecycle. |
 | 1.7 | 2026-10-27 | 1.1.0 now covers `Client → Customer` and `Specialist → Professional` together with the roles, table, index and path names; 1.2.0 is not used; 1.3.0 no longer lists `/customers` and `/professionals`. |
 | 1.0 | 2026-10-26 | Initial. Milestones M0–M16, versions 1.0.1–2.23.0, docs and tooling tasks per milestone, open decisions, risks. |
