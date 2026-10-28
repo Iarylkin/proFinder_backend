@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * DTO for filtering order search results.
  * <p>
- * Combines search criteria such as services, location, and text query
+ * Combines search criteria such as categories, location, and text query
  * with pagination support by extending {@link PageRequest}.
  * </p>
  */
@@ -17,10 +17,10 @@ import java.util.List;
 public class OrderFilterCriteria extends PageRequest {
 
     /**
-     * List of services to filter orders by.
+     * List of categories to filter orders by.
      */
-    @QueryParam("services")
-    private List<String> services;
+    @QueryParam("categories")
+    private List<String> categories;
 
     /**
      * Geographical location filter for the orders.
@@ -40,7 +40,7 @@ public class OrderFilterCriteria extends PageRequest {
      * @return true if at least one filter is active, false otherwise
      */
     public boolean hasFilters() {
-        return (services != null && !services.isEmpty())
+        return (categories != null && !categories.isEmpty())
                 || (location != null && !location.isBlank())
                 || (query != null && !query.isBlank());
     }

@@ -97,7 +97,7 @@ public class ProfessionalSearchService {
                                             b.must(m -> m
                                                     .multiMatch(mm -> mm
                                                             .fields("firstName", "lastName",
-                                                                    "description", "services")
+                                                                    "description", "categories")
                                                             .query(keyword)
                                                             .fuzziness("AUTO")
                                                     )

@@ -121,7 +121,7 @@ public class ProfessionalService {
         old.setDescription(professional.getDescription());
         professionalRepository.flush();
 
-        old.getServiceOfferings().size();
+        old.getCategories().size();
 
         professionalSearchService.save(professionalSearchMapper.toDto(old));
 
@@ -215,8 +215,8 @@ public class ProfessionalService {
         if (request.getDescription() != null) {
             professional.setDescription(request.getDescription());
         }
-        if (request.getServiceOfferings() != null) {
-            professional.setServiceOfferings(request.getServiceOfferings());
+        if (request.getCategories() != null) {
+            professional.setCategories(request.getCategories());
         }
         professionalRepository.flush();
 

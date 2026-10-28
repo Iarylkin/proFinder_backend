@@ -69,7 +69,7 @@ public class ProfessionalIndexInitializer {
                             .properties("lastName", p -> p.text(t -> t))
                             .properties("description", p -> p.text(t -> t))
                             .properties("averageRating", p -> p.double_(d -> d))
-                            .properties("services", p -> p.text(t -> t))
+                            .properties("categories", p -> p.text(t -> t))
                             .properties("location", p -> p
                                     .text(t -> t
                                             .fields("keyword", k -> k.keyword(kk -> kk))

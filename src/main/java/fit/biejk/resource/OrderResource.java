@@ -185,7 +185,7 @@ public class OrderResource {
             var searchResults = orderSearchService.search(
                     criteria.getQuery(),
                     criteria.getLocation(),
-                    criteria.getServices(),
+                    criteria.getCategories(),
                     pagination.getPage(),
                     pagination.getSize()
             );

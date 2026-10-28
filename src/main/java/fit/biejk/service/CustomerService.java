@@ -118,8 +118,8 @@ public class CustomerService {
      */
     @Transactional
     public Customer updateProfile(final Long id, final ProfileUpdateRequest request) {
-        if (request.getDescription() != null || request.getServiceOfferings() != null) {
-            throw new BadRequestException("Description and services are available for professionals only");
+        if (request.getDescription() != null || request.getCategories() != null) {
+            throw new BadRequestException("Description and categories are available for professionals only");
         }
         Customer customer = getById(id);
         userService.updateProfile(id, request);

@@ -41,7 +41,10 @@ public class Order {
      * Specialization required for fulfilling the order.
      */
     @ManyToMany
-    private List<ServiceOffering> serviceOfferings;
+    @JoinTable(name = "orders_categories",
+            joinColumns = @JoinColumn(name = "order_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private List<Category> categories;
 
     /**
      * Current status of the order.

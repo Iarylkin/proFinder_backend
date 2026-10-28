@@ -28,7 +28,10 @@ public class Professional extends User {
      * Professional's area of expertise.
      */
     @ManyToMany
-    private List<ServiceOffering> serviceOfferings;
+    @JoinTable(name = "professional_categories",
+            joinColumns = @JoinColumn(name = "professional_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private List<Category> categories;
 
     /**
      * Average rating calculated from customer reviews.

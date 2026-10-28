@@ -2,7 +2,7 @@ package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
 import fit.biejk.entity.OrderStatus;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,9 +23,9 @@ import java.util.List;
 public class OrderUpdateRequest {
 
     /**
-     * New list of services for the order.
+     * New list of categories for the order.
      */
-    private List<ServiceOffering> serviceOfferings;
+    private List<Category> categories;
 
     /**
      * Requested status. Only {@code CANCELLED} can be set through an order update.

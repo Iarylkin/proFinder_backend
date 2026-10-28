@@ -67,14 +67,14 @@ public class OrderSearchService {
      *
      * @param keyword  the search keyword (e.g., title or description)
      * @param location the city/location to filter orders by
-     * @param services a list of service names to search for
+     * @param categories a list of service names to search for
      * @param page     page number for pagination (1-based)
      * @param size     number of orders per page
      * @return a list of matching {@link OrderSearchDto} objects
      */
     public List<OrderSearchDto> search(final String keyword,
                                        final String location,
-                                       final List<String> services,
+                                       final List<String> categories,
                                        final int page,
                                        final int size) {
 
@@ -106,12 +106,12 @@ public class OrderSearchService {
                                                     )
                                             );
                                         }
-                                        if (services != null && !services.isEmpty()) {
+                                        if (categories != null && !categories.isEmpty()) {
                                             b.filter(f -> f
                                                     .terms(t -> t
-                                                            .field("services.keyword")
+                                                            .field("categories.keyword")
                                                             .terms(ts -> ts
-                                                                    .value(services.stream()
+                                                                    .value(categories.stream()
                                                                             .map(FieldValue::of)
                                                                             .toList())
                                                             )

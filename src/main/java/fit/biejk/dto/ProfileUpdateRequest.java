@@ -1,7 +1,7 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.List;
  * Request body for a partial update of the current user's profile.
  * <p>
  * Every field is optional: a missing or {@code null} field keeps its current value.
- * {@link #description} and {@link #serviceOfferings} belong to professionals only.
+ * {@link #description} and {@link #categories} belong to professionals only.
  * </p>
  */
 @Data
@@ -50,7 +50,7 @@ public class ProfileUpdateRequest {
     private String description;
 
     /**
-     * New list of offered services (professionals only).
+     * New list of categories (professionals only).
      */
-    private List<ServiceOffering> serviceOfferings;
+    private List<Category> categories;
 }

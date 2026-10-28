@@ -1,7 +1,7 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -56,9 +56,9 @@ public class ProfessionalPublicDto {
     private LocalDateTime createAt;
 
     /**
-     * Services offered by the professional.
+     * Categories the professional works in.
      */
-    private List<ServiceOffering> serviceOfferings;
+    private List<Category> categories;
 
     /**
      * Detailed description of the professional's expertise.

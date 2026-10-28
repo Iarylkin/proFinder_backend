@@ -2,7 +2,7 @@ package fit.biejk.service;
 
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Professional;
-import fit.biejk.entity.ServiceOffering;
+import fit.biejk.entity.Category;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
@@ -44,7 +44,7 @@ class ProfessionalServiceTest {
         professional = new Professional();
         professional.setId(PROFESSIONAL_ID);
         professional.setDescription("Old description");
-        professional.setServiceOfferings(List.of());
+        professional.setCategories(List.of());
         when(repository.findById(PROFESSIONAL_ID)).thenReturn(professional);
     }
 
@@ -57,21 +57,21 @@ class ProfessionalServiceTest {
 
         assertSame(professional, result);
         assertEquals("New description", result.getDescription());
-        assertEquals(List.of(), result.getServiceOfferings());
+        assertEquals(List.of(), result.getCategories());
         verify(userService).updateProfile(PROFESSIONAL_ID, request);
         verify(searchService).save(any());
     }
 
     @Test
     void updateProfileReplacesTheOfferedServices() {
-        ServiceOffering plumbing = new ServiceOffering();
+        Category plumbing = new Category();
         plumbing.setId(1L);
         ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setServiceOfferings(List.of(plumbing));
+        request.setCategories(List.of(plumbing));
 
         Professional result = service.updateProfile(PROFESSIONAL_ID, request);
 
-        assertEquals(List.of(plumbing), result.getServiceOfferings());
+        assertEquals(List.of(plumbing), result.getCategories());
         assertEquals("Old description", result.getDescription());
     }
 }
