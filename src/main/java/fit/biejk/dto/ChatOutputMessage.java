@@ -22,12 +22,12 @@ public class ChatOutputMessage {
     /**
      * Unique identifier of the message.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * ID of the chat to which the message belongs.
      */
-    private Long chatId;
+    private UUID chatId;
 
     /**
      * The content of the message.

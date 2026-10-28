@@ -70,7 +70,7 @@ public class ChatResource {
     @Path("/{chatId}/messages")
     @Authenticated
     public Response getMessagesByChatId(
-            @PathParam("chatId") final Long chatId,
+            @PathParam("chatId") final UUID chatId,
             @BeanParam final PageRequest pagination) {
         UUID userId = authService.getCurrentUserId();
         List<ChatMessage> result = chatService.getMessagesById(

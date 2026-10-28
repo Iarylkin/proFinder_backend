@@ -1,7 +1,7 @@
 package fit.biejk.repository;
 
 import fit.biejk.entity.Chat;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.UUID;
  * </p>
  */
 @ApplicationScoped
-public class ChatRepository implements PanacheRepository<Chat> {
+public class ChatRepository implements PanacheRepositoryBase<Chat, UUID> {
 
     /**
      * Finds a chat by the IDs of two users.

@@ -22,7 +22,7 @@ public class ReviewDto {
     /**
      * Unique identifier of the review.
      */
-    private Long id;
+    private UUID id;
 
     /**
      * ID of the professional receiving the review.

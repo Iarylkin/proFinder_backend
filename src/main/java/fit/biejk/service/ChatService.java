@@ -79,7 +79,7 @@ public class ChatService {
      * @return the found {@link Chat} entity
      * @throws NotFoundException if no chat is found with the given ID
      */
-    public Chat getById(final Long chatId) {
+    public Chat getById(final UUID chatId) {
         Chat result = chatRepository.findById(chatId);
         if (result == null) {
             throw new NotFoundException("Chat with id " + chatId + " not found");
@@ -98,7 +98,7 @@ public class ChatService {
      * @throws NotFoundException  if the chat does not exist
      * @throws ForbiddenException if the user is not a participant of the chat
      */
-    public List<ChatMessage> getMessagesById(final Long chatId, final UUID userId,
+    public List<ChatMessage> getMessagesById(final UUID chatId, final UUID userId,
                                              final int page, final int size) {
         log.info("Getting history for chat {}", chatId);
 
@@ -118,7 +118,7 @@ public class ChatService {
      * @param userId ID of the user
      * @return true if the chat exists and the user is one of its participants
      */
-    public boolean isParticipant(final Long chatId, final UUID userId) {
+    public boolean isParticipant(final UUID chatId, final UUID userId) {
         Chat chat = chatRepository.findById(chatId);
         return chat != null && chat.hasParticipant(userId);
     }
@@ -129,7 +129,7 @@ public class ChatService {
      * @param chatId ID of the chat
      * @return true if chat exists, false otherwise
      */
-    public boolean existById(final Long chatId) {
+    public boolean existById(final UUID chatId) {
         Chat chat = chatRepository.findById(chatId);
         if (chat == null) {
             log.warn("Chat with id {} not found", chatId);

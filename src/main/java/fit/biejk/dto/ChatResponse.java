@@ -15,7 +15,7 @@ import java.util.UUID;
 public class ChatResponse {
 
     /** Unique ID of the chat. */
-    private Long chatId;
+    private UUID chatId;
 
     /** ID of the other user in the chat. */
     private UUID partnerId;

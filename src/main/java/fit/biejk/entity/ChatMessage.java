@@ -19,14 +19,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatMessage {
-
-    /**
-     * Unique identifier for the chat message.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ChatMessage extends BaseEntity {
 
     /**
      * User who sent the message.

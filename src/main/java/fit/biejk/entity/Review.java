@@ -15,14 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "review")
-public class Review {
-
-    /**
-     * Unique identifier of the review.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Review extends BaseEntity {
 
     /**
      * The customer who submitted the review.

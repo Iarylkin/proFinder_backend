@@ -21,14 +21,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Chat {
-
-    /**
-     * Unique identifier for the chat.
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Chat extends BaseEntity {
 
     /**
      * First participant in the chat.

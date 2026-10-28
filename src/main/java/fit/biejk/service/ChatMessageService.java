@@ -41,7 +41,7 @@ public class ChatMessageService {
      * @return the newly created {@link ChatMessage}
      */
     @Transactional
-    public ChatMessage create(final Long chatId, final UUID fromId, final String content) {
+    public ChatMessage create(final UUID chatId, final UUID fromId, final String content) {
         User fromUser = userService.getById(fromId);
         Chat chat = chatService.getById(chatId);
 
