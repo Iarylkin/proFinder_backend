@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.10
+- **Version:** 1.11
 - **Date:** 2026-10-28
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -19,7 +19,6 @@
 | Version | One version for the whole repository: `pom.xml` = git tag `vX.Y.Z` = Docker tag of every service |
 | Release | One PR `develop → main`, one tag, release notes |
 | Working version | Every tag starts in compose, passes tests and checkstyle, and passes the smoke scenario (sign up → sign in → create order → respond → accept → chat → complete → review) |
-| Compatibility | The old API keeps working through deprecated aliases until `2.0.0` |
 | Unfinished work | Hidden behind feature flags, never left half-done in a tagged build |
 | Major / minor / patch | `2.0.0` marks the architecture change (five services). Features after it are `2.x` minors. Bug fixes are patches |
 | Schema | Flyway from `1.5.0`; every version that changes the schema ships its own migration |
@@ -280,6 +279,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.11 | 2026-10-28 | Removed the Compatibility principle: nothing is deployed, so the API changes without deprecated aliases. |
 | 1.10 | 2026-10-28 | Renumbered the 1.x versions: the two naming steps are one version (1.1.0), the new paths are 1.2.0, and every later 1.x version moves down by one (the old 1.4.0 – 1.21.0 are now 1.3.0 – 1.20.0; M1 = 1.1.0 – 1.7.0, M2 = 1.8.0 – 1.13.0, M3 = 1.14.0 – 1.16.0, M4 = 1.17.0 – 1.20.0). The 2.x series is unchanged. Older changelog rows keep the numbers they used at the time. |
 | 1.9 | 2026-10-28 | Noted the profile unification (one DTO family, polymorphic mapper, role handled in the service) in the account-and-profiles version; until then `ProfileResource` branches by role. |
 | 1.8 | 2026-10-28 | The paths version now lists what is implemented: no aliases, state changes through `PATCH`, `/chats`, `/users/me/profile`. The role-dependent `GET /orders` moved to 2.6.0 with the order lifecycle. |
