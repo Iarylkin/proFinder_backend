@@ -43,7 +43,6 @@ public class AuthResource {
     ) {
         log.info("Register request: {}", request);
         String result = authService.register(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Register result: {}", result);
         AuthResponse response = new AuthResponse(result);
         log.info("Register response: {}", response);
 
@@ -63,7 +62,6 @@ public class AuthResource {
     public Response login(@Valid final AuthRequest request) {
         log.info("Login request: {}", request);
         String result = authService.login(request.getEmail(), request.getPassword(), request.getRole());
-        log.debug("Login result: {}", result);
         AuthResponse response = new AuthResponse(result);
         log.info("Login response: {}", response);
         return Response.ok(response).build();
