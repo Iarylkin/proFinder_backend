@@ -1,7 +1,7 @@
 # ProFinder — Permission Matrix
 
-- **Version:** 1.3
-- **Date:** 2026-10-28
+- **Version:** 1.4
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** One table of who can do what — roles × actions, plus the account-status and ownership conditions layered on top. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 ("permission matrix (role × action)").
 
@@ -79,7 +79,7 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 
 | Action | Endpoint | CUSTOMER | PROFESSIONAL | MODERATOR |
 |---|---|---|---|---|
-| View / edit own profile | `GET/PATCH /users/me/profile` | ✅ own | ✅ own | ✅ own (minimal) |
+| View / edit own profile | `GET/PATCH /customers/me`, `GET/PATCH /professionals/me` | ✅ own (`/customers/me`) | ✅ own (`/professionals/me`) | ✅ own (minimal) |
 | View a professional's public profile | `GET /professionals/{id}` | ✅ public | ✅ public | ✅ public |
 | View a customer's public profile | `GET /customers/{id}` | ✅ | ✅ | ✅ |
 | Upload / delete own portfolio photo | `POST/DELETE /users/me/portfolio[/{id}]` | ⛔ | ✅ own | delete: ✅ (any) |
@@ -126,7 +126,7 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 | Manage own notifications / preferences / device tokens | `/notifications`, `/users/me/notification-preferences`, `/users/me/device-tokens` | ✅ own | ✅ own | ✅ own |
 | Delete own account | `DELETE /users/me` | ✅ (blocked during active ban or open report) | ✅ (same) | ✅ (same) |
 | Register / login / refresh / logout | `/auth/*` | public / self | public / self | public / self |
-| Choose role (once) | `POST /auth/role` | self, if unset (`ROLE_IMMUTABLE` otherwise) | self, if unset | n/a |
+| Choose role (once) | `role` of the registration or of `GET /auth/{provider}/login` | set at sign-up, `ROLE_IMMUTABLE` afterwards | same | n/a |
 
 
 ## 4. `STANDARD` vs `SENIOR` moderator
@@ -159,6 +159,7 @@ Everything a hypothetical Admin would do (category management is the concrete ca
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-31 | **D-1.5:** per-role profile endpoints; the role is chosen at sign-up, not by `POST /auth/role`. |
 | 1.3 | 2026-10-28 | **Paths:** `PATCH /orders/{id}` for publish, close and extend; `GET /chats/me`, `/chats/{id}/messages`; `/users/me/...` for profile, portfolio, preferences, device tokens and account deletion. |
 | 1.2 | 2026-10-26 | Added `GET /customers/{id}` (public customer view, any authenticated user, no contact data). |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata, separators). |

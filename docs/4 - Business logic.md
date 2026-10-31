@@ -1,7 +1,7 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.10
-- **Date:** 2026-10-28
+- **Version:** 3.11
+- **Date:** 2026-10-31
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
 
@@ -651,9 +651,10 @@ The platform intentionally uses a **single metric**: a 1–5 star rating. There 
 
 - Requested scopes are kept minimal (just what's needed to identify the user — no broad profile/calendar access)
 - Edge cases not covered by our own logic (e.g. a Google account without an email, or a deleted Google account) are handled the standard way the Google OAuth/OIDC library handles them — no custom handling needed
-- A ProFinder account can be linked to **exactly one** Google account (strict 1:1 link), not multiple
-- **Unlinking Google:** allowed if the account already has a password. If the account is Google-only (no password), the user must first complete a "set password" flow (link sent to the verified email), then unlink — this prevents self-lockout.
-- **Role selection:** after the first Google login, if no role is set yet, the user is sent to a mandatory "Customer or Professional?" screen, then profile completion. The role is never auto-detected.
+- A provider identity (for example one Google account) belongs to **exactly one** ProFinder account; an account can link several providers, one identity per provider. The identities are kept in `linked_identities` together with what the provider reported (`claims`; never the tokens)
+- **Unlinking a provider:** allowed while another way to sign in remains (a password or another provider). Otherwise the user must first add one (for a provider-only account: the "set password" flow, link sent to the verified email) — this prevents self-lockout.
+- **Role selection:** the role is chosen **before** the redirect to the provider ("Sign up as Customer / Professional") and travels in the signed `state`; it is never auto-detected. A sign-in with no linked account and no role gets `ACCOUNT_NOT_FOUND` and is sent to sign-up. The account and its profile are created together, with the name and avatar taken from the provider profile as defaults.
+- **A verified email is required:** a provider that returns no email, or one it has not verified, is rejected (`PROVIDER_EMAIL_REQUIRED`). A new identity whose verified email matches an existing account is linked to that account instead of creating a second one. One person, one account: duplicate accounts per email or per identity are impossible, and an account has exactly one profile.
 - **Role is immutable in MVP** (for both email and Google users) — changing it is a support-only operation.
 
 ### 2FA — NOT in MVP
@@ -1005,6 +1006,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.11 | 2026-10-31 | **Account vs profile (D-1.5):** Google OAuth rules rewritten for several providers (`linked_identities`), the role is chosen before the redirect, a verified email is required, one account and one profile per person. |
 | 3.10 | 2026-10-28 | **Optimistic locking** applies to every entity, not only order and profile: `version` lives in the shared `BaseEntity`. |
 | 3.9 | 2026-10-28 | **Naming:** *conversation* → *chat* (the section is now *Chat Model*). |
 | 3.8 | 2026-10-27 | **D-1.4:** order `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |

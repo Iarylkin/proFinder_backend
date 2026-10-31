@@ -1,7 +1,7 @@
 # ProFinder — API Specification
 
-- **Version:** 1.14
-- **Date:** 2026-10-28
+- **Version:** 1.15
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
 
@@ -72,10 +72,14 @@ State changes are `PATCH`es of the order: there are no `/publish`, `/close` or `
 #### Profiles & Categories
 ---
 
+Each role has its own `/…/me` endpoints: the type of the profile is the address, the server never guesses it from the account.
+
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /users/me/profile` | any authenticated | — | `200 ProfessionalProfileDto \| CustomerProfileDto` | — |
-| `PATCH /users/me/profile` | any authenticated | `ProfileUpdateRequestDto` (role-appropriate fields) | `200` (same shape as GET) | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
+| `GET /customers/me` | `CUSTOMER` | — | `200 CustomerProfileDto` | — |
+| `PATCH /customers/me` | `CUSTOMER` | `CustomerProfileUpdateRequestDto` (name, phone, city, bio…) | `200 CustomerProfileDto` | `VALIDATION_ERROR` |
+| `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalProfileDto` | — |
+| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalProfileUpdateRequestDto` (name, phone, bio, categories, cities, rate…) | `200 ProfessionalProfileDto` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
 | `GET /professionals/{id}` | **public** | — | `200 ProfessionalProfileDto` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
 | `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicDto` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
 | `GET /categories` | **public** | — | `200 CategoryDto[]` (flat list) | — |
@@ -157,9 +161,10 @@ Source: [7 - Application Classes.md § 2. Auth Service](7%20-%20Application%20Cl
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
 | `POST /auth/login` | **public** | `LoginRequestDto {email, password}` | `200 LoginResponseDto {access_token, refresh_token, user: {id, role, status}}` — succeeds even if `SUSPENDED`/`BANNED` (they can still log in to see their status/file an appeal per [4 - Business logic.md § Report Workflow](4%20-%20Business%20logic.md#report-workflow)); logging in while `DELETED` triggers reactivation (`account.reactivated`) | `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `VALIDATION_ERROR` |
-| `GET /auth/google/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponseDto`, or `200 {role_selection_required: true, temp_token}` on first login with no role yet; the account is created with `role = NULL` and `display_name` from the Google profile | `VALIDATION_ERROR`, `GOOGLE_ACCOUNT_ALREADY_LINKED` |
-| `POST /auth/google/unlink` | authenticated | — | `204` | `PASSWORD_REQUIRED_TO_UNLINK` |
-| `POST /auth/role` | `temp_token` from the Google callback (limited token: valid only for this call), role not set yet | `RoleSelectionRequestDto {role: CUSTOMER\|PROFESSIONAL}` | `200 LoginResponseDto` (full tokens with the chosen role) | `VALIDATION_ERROR`, `ROLE_IMMUTABLE` (role already set), `UNAUTHORIZED` (missing or expired `temp_token`) |
+| `GET /auth/{provider}/login` | **public** | `?role=CUSTOMER\|PROFESSIONAL` (required for a new account) | `302` to the provider; the role travels in the signed `state`. Only `google` in MVP | `VALIDATION_ERROR` |
+| `GET /auth/{provider}/link` | authenticated | — | `302` to the provider, to add another way to sign in to the current account | — |
+| `GET /auth/{provider}/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponseDto`. A new identity creates the account **and its profile** with the role from `state` (display name and avatar from the provider profile); a known identity just signs in; a new identity with a verified email that matches an existing account is linked to it; in link mode it is added to the current account | `VALIDATION_ERROR`, `ACCOUNT_NOT_FOUND`, `PROVIDER_EMAIL_REQUIRED`, `IDENTITY_ALREADY_LINKED` |
+| `DELETE /auth/identities/{provider}` | authenticated | — | `204` | `LAST_LOGIN_METHOD` |
 
 #### Sessions & Tokens
 ---
@@ -350,9 +355,10 @@ Apply to every service, not tied to one domain.
 | `VERIFICATION_TOKEN_INVALID` | 400 | "This verification link is invalid or expired" | expired (>24h) or already-used verification token |
 | `RESET_TOKEN_INVALID` | 400 | "This reset link is invalid or expired" | expired (>15min) or already-used password-reset token |
 | `RESEND_TOO_SOON` | 429 | "Please wait before requesting another email" | resend verification faster than 1/60s or beyond 5/hour |
-| `GOOGLE_ACCOUNT_ALREADY_LINKED` | 409 | "This Google account is already linked to another user" | strict 1:1 Google↔account link violated |
-| `PASSWORD_REQUIRED_TO_UNLINK` | 400 | "Set a password before unlinking Google" | Google-only account tries to unlink without a password set first |
-| `ROLE_SELECTION_REQUIRED` | 403 | "Please choose Customer or Professional first" | first Google login, no role chosen yet, action requires a role |
+| `IDENTITY_ALREADY_LINKED` | 409 | "This account is already linked to another user" | the provider identity belongs to another ProFinder account (one identity, one account) |
+| `LAST_LOGIN_METHOD` | 400 | "Add another way to sign in before removing this one" | unlinking the only remaining way to sign in (no password and no other provider) |
+| `PROVIDER_EMAIL_REQUIRED` | 400 | "The provider did not share a verified email" | the provider returned no email, or an unverified one |
+| `ACCOUNT_NOT_FOUND` | 404 | "No account for this sign-in, please sign up first" | provider sign-in with no linked account and no role to create one with |
 | `ROLE_IMMUTABLE` | 403 | "Role can't be changed — contact support" | attempt to change role via a non-support path ([FR-Auth-3](2%20-%20Requirements.md)) |
 | `REFRESH_TOKEN_INVALID` | 401 | "Session expired, please log in again" | refresh token expired, revoked, or unknown |
 | `REFRESH_TOKEN_REUSED` | 401 | "Session expired, please log in again" | a rotated (already-used) refresh token is presented again → whole family revoked ([4 - Business logic.md § Sessions & Tokens](4%20-%20Business%20logic.md#sessions--tokens)) |
@@ -454,6 +460,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.15 | 2026-10-31 | **Account vs profile (D-1.5):** profile endpoints are per role (`GET/PATCH /customers/me`, `GET/PATCH /professionals/me`) instead of `/users/me/profile`; provider sign-in is `GET /auth/{provider}/login\|link\|callback` with the role in the signed `state` (the account and its profile are created together), `DELETE /auth/identities/{provider}` replaces `unlink`; `POST /auth/role`, `temp_token` and `ROLE_SELECTION_REQUIRED` are removed; new codes `IDENTITY_ALREADY_LINKED`, `LAST_LOGIN_METHOD`, `PROVIDER_EMAIL_REQUIRED`, `ACCOUNT_NOT_FOUND`. |
 | 1.14 | 2026-10-28 | **Identifiers:** UUID v4 from the built-in `GenerationType.UUID` instead of v7 (decision 3 in [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)): no extra library or custom generator, and the index-locality gain of v7 is not needed at this size. |
 | 1.13 | 2026-10-28 | **Chat and own-user paths:** `GET /chats/me`, `/chats/{id}/messages`; profile, portfolio, preferences, device tokens and account deletion are under `/users/me/...`. **Orders:** publish, close and extend are one `PATCH /orders/{id}` (`status`, `expires_at`); the order DTO is `OrderDto`, the response DTOs are `OrderResponseCreateRequestDto` and `OrderResponseDto`. `RegisterRequestDto` carries `role`. |
 | 1.12 | 2026-10-27 | **D-1.3:** `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`; `ACCOUNT_LOCKED` (login lockout) and `RATE_LIMITED` (other limits) described as distinct; `OrderCreateRequestDto.location` → `city`; reviews `direction` is `CUSTOMER\|PROFESSIONAL`; appeal `outcome` and examples use `UPPER_SNAKE_CASE`. |

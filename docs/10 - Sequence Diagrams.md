@@ -1,7 +1,7 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.3
-- **Date:** 2026-10-28
+- **Version:** 1.4
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
 
@@ -183,7 +183,7 @@ sequenceDiagram
 - Reuse of a rotated token nukes the **whole family** and denylists the user — both the thief and the victim are logged out, victim re-authenticates.
 
 
-### A5. Google OAuth — first login + role selection
+### A5. Provider sign-in (Google) — sign-up, sign-in and linking
 ---
 
 ```mermaid
@@ -192,39 +192,44 @@ sequenceDiagram
     actor U as Client
     participant G as Google
     participant Auth as Auth Service
+    participant Core as Core API
     participant PG as PostgreSQL
 
-    U->>G: (redirect) consent screen, minimal scopes
+    U->>Auth: GET /auth/google/login?role=PROFESSIONAL
+    Auth-->>U: 302 to Google (signed state carries the role)
+    U->>G: consent screen, minimal scopes
     G-->>U: redirect back with ?code&state
     U->>Auth: GET /auth/google/callback?code=&state=
     Auth->>G: exchange code -> id_token (OIDC library)
     Auth->>G: (library) validate id_token signature + claims
-    Auth->>PG: SELECT users WHERE google_id = ?
-    alt google_id known
-        Auth->>Auth: issue access + refresh tokens
+    Auth->>PG: SELECT linked_identities WHERE provider = GOOGLE AND subject = ?
+    alt identity known
+        Auth->>PG: refresh claims
         Auth-->>U: 200 LoginResponseDto
-    else first time — check email match
-        alt existing local account with same verified email
-            Auth->>PG: link google_id to that account (strict 1:1)
+    else new identity
+        alt email missing or not verified by the provider
+            Auth-->>U: 400 PROVIDER_EMAIL_REQUIRED
+        else existing account with the same verified email
+            Auth->>PG: INSERT linked_identities (user_id = that account)
+            Auth-->>U: 200 LoginResponseDto
+        else no account and no role in state
+            Auth-->>U: 404 ACCOUNT_NOT_FOUND (client sends the user to sign-up)
         else brand new
-            Auth->>PG: INSERT users (status=ACTIVE, email pre-verified by Google, role=NULL)
-        end
-        alt role not set
-            Auth-->>U: 200 {role_selection_required: true, temp_token}
-            U->>Auth: POST /auth/role {role} (Bearer temp_token)
-            Auth->>PG: UPDATE users SET role=? (ROLE_IMMUTABLE if already set)
-            Auth-->>U: 200 -> then client calls login/refresh for full tokens
-        else role present
-            Auth->>Auth: issue access + refresh tokens
+            Auth->>PG: INSERT users (role from state, status=ACTIVE, email pre-verified, no password)
+            Auth->>PG: INSERT linked_identities (claims)
+            Auth->>Core: account-created event (role, display name and picture URL from the claims)
+            Core->>PG: INSERT the profile of that role (avatar fetched through the avatar pipeline, best effort)
             Auth-->>U: 200 LoginResponseDto
         end
     end
 ```
 
 **Notes**
-- Google accounts arrive **email pre-verified** — no `PENDING_VERIFICATION` step.
-- Strict 1:1: a Google identity links to exactly one ProFinder account (`GOOGLE_ACCOUNT_ALREADY_LINKED` otherwise).
-- Unlink requires a password already set, else the "set password" flow first (A6 variant) — prevents self-lockout.
+- The role is chosen **before** the redirect and travels in the signed `state`, so no account ever exists without a role or a profile: there is no `temp_token` step.
+- Google accounts arrive **email pre-verified** — no `PENDING_VERIFICATION` step. A provider that does not return a verified email is rejected.
+- Strict: one provider identity links to exactly one ProFinder account (`IDENTITY_ALREADY_LINKED` otherwise); an account has at most one identity per provider.
+- In the monolith the profile is created in the same transaction as the account.
+- Linking a second provider to a signed-in account uses `GET /auth/{provider}/link` and the same callback. Unlinking (`DELETE /auth/identities/{provider}`) needs another way to sign in left (`LAST_LOGIN_METHOD` otherwise) — prevents self-lockout.
 
 
 ### A6. Password reset
@@ -706,6 +711,7 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-31 | **D-1.5:** A5 rewritten: the role is chosen before the provider redirect (signed `state`), identities live in `linked_identities`, the account and its profile are created together, no `temp_token` or `POST /auth/role`. |
 | 1.3 | 2026-10-28 | **Naming:** *conversation* → *chat*; `PATCH /orders/{id}` replaces `/publish`; `DELETE /users/me`; DTO names `OrderDto` and `OrderResponseDto`. |
 | 1.2 | 2026-10-27 | **D-1.4:** `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format. Account-deletion guard now returns `409 ACCOUNT_DELETION_BLOCKED` (was bare `409 CONFLICT`), matching [8 - API Specification.md](8%20-%20API%20Specification.md). Token-table inserts renamed to `email_verification_tokens` / `password_reset_tokens` to match [6 - Database Schema.md](6%20-%20Database%20Schema.md). |

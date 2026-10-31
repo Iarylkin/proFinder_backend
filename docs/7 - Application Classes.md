@@ -1,7 +1,7 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.4
-- **Date:** 2026-10-28
+- **Version:** 1.5
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
 
@@ -63,7 +63,7 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ProfileService` | Service | `completeProfile()`, `updateCategories()` / `updateCities()` — enforces "replace, never clear to zero" ([5 - State Machines.md](5%20-%20State%20Machines.md)), recomputes `INCOMPLETE`→`ACTIVE` |
 | `CategoryService` | Service | admin/moderator CRUD on the flat category list |
 | `PortfolioService` | Service | `upload()`, `updateCaption()`, `delete()` (own or moderator) |
-| `ProfileController` | Controller | `GET/PATCH /users/me/profile`, `GET /professionals/{id}` |
+| `ProfileController` | Controller | `GET/PATCH /customers/me`, `GET/PATCH /professionals/me`, `GET /professionals/{id}` |
 | `CategoryController` | Controller | `POST/PATCH/DELETE /categories`, `GET /categories` |
 | `PortfolioController` | Controller | `POST /users/me/portfolio`, `DELETE /users/me/portfolio/{id}` |
 | `ProfessionalProfileDto`, `CustomerProfileDto`, `ProfileUpdateRequestDto`, `CategoryDto`, `PortfolioPhotoDto`, `PortfolioUploadRequestDto` | DTO | profile/category/portfolio shapes |
@@ -158,10 +158,10 @@ Source: [3 - System Design.md § 3. Auth Service](3%20-%20System%20Design.md), [
 | Class | Layer | Responsibility |
 |---|---|---|
 | `LoginService` | Service | `login()` — 5-failures/15-min lockout, `429` on trip |
-| `OAuthService` | Service | Google code exchange, strict 1:1 link, `unlink()` (requires a password set first), role-selection gate on first login |
+| `OAuthService` | Service | provider code exchange, finds or creates the account by `(provider, subject)`, links an identity to a matching verified email, `unlink()` (needs another way to sign in), creates the account with the role from `state` |
 | `AuthController` | Controller | `POST /auth/login` |
-| `OAuthController` | Controller | `GET /auth/google/callback`, `POST /auth/google/unlink`, `POST /auth/role` |
-| `LoginRequestDto`, `LoginResponseDto`, `RoleSelectionRequestDto` | DTO | request/response shapes |
+| `OAuthController` | Controller | `GET /auth/{provider}/login`, `GET /auth/{provider}/link`, `GET /auth/{provider}/callback`, `DELETE /auth/identities/{provider}` |
+| `LoginRequestDto`, `LoginResponseDto` | DTO | request/response shapes |
 
 ### 2.3 Sessions & Tokens
 ---
@@ -293,6 +293,7 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-10-31 | **D-1.5:** `OAuthService` / `OAuthController` work with several providers and no role-selection step; `RoleSelectionRequestDto` removed; `ProfileController` serves per-role `/…/me` endpoints. |
 | 1.4 | 2026-10-28 | **Naming:** *conversation* → *chat* (`ChatService`, `ChatController`, `ChatDto`); the response entity is `OrderResponse` (not `Response`, which clashes with the JAX-RS type); the order DTO is `OrderDto`; own-user paths are under `/users/me`; order publish, close and extend are one `PATCH /orders/{id}`. |
 | 1.3 | 2026-10-27 | **D-1.3:** DTOs are Java records serialized with Jackson; records with secrets mask `toString`. |
 | 1.2 | 2026-10-27 | **D-1.1:** added the data ownership convention (schema per service, no cross-schema repositories). |
