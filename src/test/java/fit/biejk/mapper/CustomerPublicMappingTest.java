@@ -20,11 +20,11 @@ class CustomerPublicMappingTest {
     @Test
     void publicDtoHasNoContactData() {
         User user = new User();
-        user.setFirstName("Ann");
         user.setEmail(EMAIL);
-        user.setPhoneNumber(PHONE);
         CustomerProfile customer = new CustomerProfile();
         customer.setUser(user);
+        customer.setFirstName("Ann");
+        customer.setPhoneNumber(PHONE);
 
         CustomerPublicDto dto = mapper.toPublicDto(customer);
 

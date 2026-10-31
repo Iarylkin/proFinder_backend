@@ -1,7 +1,6 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.ProfessionalProfile;
-import fit.biejk.entity.User;
 import fit.biejk.entity.Category;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -26,11 +25,13 @@ class ProfessionalServiceTest {
     private ProfessionalSearchService searchService;
     private UserService userService;
     private ProfessionalService service;
+    private ProfileService profileService;
     private ProfessionalProfile professional;
 
     @BeforeEach
     void setUp() {
         ProfessionalRepository repository = mock(ProfessionalRepository.class);
+        profileService = mock(ProfileService.class);
         userService = mock(UserService.class);
         searchService = mock(ProfessionalSearchService.class);
         service = new ProfessionalService(
@@ -40,7 +41,8 @@ class ProfessionalServiceTest {
                 mock(ProfessionalSearchMapper.class),
                 mock(ReviewService.class),
                 mock(AuthService.class),
-                mock(CustomerService.class));
+                mock(CustomerService.class),
+                profileService);
 
         professional = new ProfessionalProfile();
         professional.setId(PROFESSIONAL_ID);
@@ -52,7 +54,6 @@ class ProfessionalServiceTest {
     @Test
     void updateProfileChangesOnlyTheSentFields() {
         ProfessionalProfile changes = new ProfessionalProfile();
-        changes.setUser(new User());
         changes.setDescription("New description");
 
         ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
@@ -60,7 +61,7 @@ class ProfessionalServiceTest {
         assertSame(professional, result);
         assertEquals("New description", result.getDescription());
         assertEquals(List.of(), result.getCategories());
-        verify(userService).updateProfile(PROFESSIONAL_ID, changes.getUser());
+        verify(profileService).updatePersonalData(professional, changes);
         verify(searchService).save(any());
     }
 
@@ -69,7 +70,6 @@ class ProfessionalServiceTest {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
         ProfessionalProfile changes = new ProfessionalProfile();
-        changes.setUser(new User());
         changes.setCategories(List.of(plumbing));
 
         ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);

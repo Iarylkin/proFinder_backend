@@ -81,7 +81,7 @@ public class OrderResource {
         UUID customerId = authService.getCurrentUserId();
         CustomerProfile customer = customerService.getById(customerId);
         order.setCustomer(customer);
-        order.setLocation(customer.getUser().getLocation());
+        order.setLocation(customer.getLocation());
         Order result = orderService.create(order);
         log.debug("Order created with ID={}", result.getId());
 

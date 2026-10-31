@@ -1,5 +1,6 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.ProfessionalUpdateRequest;
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Category;
 import fit.biejk.entity.CustomerProfile;
@@ -24,17 +25,17 @@ class ProfileMappingTest {
 
         CustomerProfile changes = customerMapper.toEntity(request);
 
-        assertEquals("222222222", changes.getUser().getPhoneNumber());
-        assertNull(changes.getUser().getFirstName());
-        assertNull(changes.getUser().getLastName());
-        assertNull(changes.getUser().getLocation());
+        assertEquals("222222222", changes.getPhoneNumber());
+        assertNull(changes.getFirstName());
+        assertNull(changes.getLastName());
+        assertNull(changes.getLocation());
     }
 
     @Test
     void professionalChangesCarryDescriptionAndCategories() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
         request.setDescription("I fix pipes");
         request.setCategories(List.of(plumbing));
 
@@ -42,7 +43,7 @@ class ProfileMappingTest {
 
         assertEquals("I fix pipes", changes.getDescription());
         assertEquals(List.of(plumbing), changes.getCategories());
-        assertNull(changes.getUser().getFirstName());
-        assertNull(changes.getUser().getPhoneNumber());
+        assertNull(changes.getFirstName());
+        assertNull(changes.getPhoneNumber());
     }
 }

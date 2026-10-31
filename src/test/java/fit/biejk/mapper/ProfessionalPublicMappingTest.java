@@ -21,9 +21,9 @@ class ProfessionalPublicMappingTest {
     void publicDtoKeepsPhoneButHasNoEmail() {
         User user = new User();
         user.setEmail(EMAIL);
-        user.setPhoneNumber(PHONE);
         ProfessionalProfile professional = new ProfessionalProfile();
         professional.setUser(user);
+        professional.setPhoneNumber(PHONE);
 
         ProfessionalPublicDto dto = mapper.toPublicDto(professional);
 

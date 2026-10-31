@@ -2,6 +2,7 @@ package fit.biejk.resource;
 
 import fit.biejk.dto.CustomerDto;
 import fit.biejk.dto.PageRequest;
+import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.Review;
@@ -134,6 +135,36 @@ public class CustomerResource {
         customerService.delete(customerId);
         log.debug("Deleted customer with ID={}", customerId);
         return Response.ok().build();
+    }
+
+    /**
+     * Returns the profile of the currently authenticated customer.
+     *
+     * @return the customer
+     */
+    @GET
+    @Path("/me")
+    @RolesAllowed("CUSTOMER")
+    public Response getMe() {
+        UUID id = authService.getCurrentUserId();
+        log.info("Get profile for customer ID={}", id);
+        return Response.ok(customerMapper.toDto(customerService.getById(id))).build();
+    }
+
+    /**
+     * Partially updates the profile of the currently authenticated customer: only the fields that are sent change.
+     *
+     * @param request the fields to change
+     * @return the updated customer
+     */
+    @PATCH
+    @Path("/me")
+    @RolesAllowed("CUSTOMER")
+    public Response updateMe(@Valid final ProfileUpdateRequest request) {
+        UUID id = authService.getCurrentUserId();
+        log.info("Update profile for customer ID={}", id);
+        CustomerProfile result = customerService.updateProfile(id, customerMapper.toEntity(request));
+        return Response.ok(customerMapper.toDto(result)).build();
     }
 
     /**

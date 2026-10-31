@@ -24,16 +24,6 @@ import java.util.List;
 public class User extends BaseEntity {
 
     /**
-     * Maximum length for firstName and lastName fields.
-     */
-    public static final int NAME_MAX_LENGTH = 50;
-
-    /**
-     * Maximum length for phoneNumber field.
-     */
-    public static final int PHONE_MAX_LENGTH = 20;
-
-    /**
      * User's email address. Must be unique.
      */
     @Column(name = "email", nullable = false, unique = true)
@@ -47,31 +37,6 @@ public class User extends BaseEntity {
     private String password;
 
     /**
-     * User's first name.
-     */
-    @Column(name = "first_name", length = NAME_MAX_LENGTH)
-    private String firstName;
-
-    /**
-     * User's last name.
-     */
-    @Column(name = "last_name", length = NAME_MAX_LENGTH)
-    private String lastName;
-
-    /**
-     * User's phone number.
-     */
-    @Column(name = "phone_number", length = PHONE_MAX_LENGTH)
-    private String phoneNumber;
-
-    /**
-     * User's geographical location.
-     */
-    @ManyToOne
-    @JoinColumn(name = "location_id", nullable = false)
-    private Location location;
-
-    /**
      * Role assigned to the user (e.g., CUSTOMER, PROFESSIONAL).
      */
     @Column(name = "role")
@@ -83,12 +48,6 @@ public class User extends BaseEntity {
      */
     @Column(name = "createAt", nullable = false, updatable = false)
     private final LocalDateTime createAt = LocalDateTime.now();
-
-    /**
-     * Key of the user's avatar stored in object storage (e.g. MinIO/S3).
-     */
-    @Column(name = "avatar_key")
-    private String avatarKey;
 
     /**
      * List of chats initiated by the user.

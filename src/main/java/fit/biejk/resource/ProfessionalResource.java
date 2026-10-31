@@ -3,6 +3,7 @@ package fit.biejk.resource;
 import fit.biejk.dto.PageRequest;
 import fit.biejk.dto.ReviewDto;
 import fit.biejk.dto.ProfessionalDto;
+import fit.biejk.dto.ProfessionalUpdateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
 import fit.biejk.mapper.OrderResponseMapper;
@@ -116,6 +117,37 @@ public class ProfessionalResource {
         log.info("Delete professional request: ID={}", professionalId);
         professionalService.delete(professionalId);
         return Response.ok().build();
+    }
+
+    /**
+     * Returns the profile of the currently authenticated professional.
+     *
+     * @return HTTP response containing the professional
+     */
+    @GET
+    @Path("/me")
+    @RolesAllowed("PROFESSIONAL")
+    public Response getMe() {
+        UUID id = authService.getCurrentUserId();
+        log.info("Get profile for professional ID={}", id);
+        return Response.ok(professionalMapper.toDto(professionalService.getById(id))).build();
+    }
+
+    /**
+     * Partially updates the profile of the currently authenticated professional: only the fields that are sent
+     * change.
+     *
+     * @param request the fields to change
+     * @return HTTP response containing the updated professional
+     */
+    @PATCH
+    @Path("/me")
+    @RolesAllowed("PROFESSIONAL")
+    public Response updateMe(@Valid final ProfessionalUpdateRequest request) {
+        UUID id = authService.getCurrentUserId();
+        log.info("Update profile for professional ID={}", id);
+        ProfessionalProfile result = professionalService.updateProfile(id, professionalMapper.toEntity(request));
+        return Response.ok(professionalMapper.toDto(result)).build();
     }
 
     /**

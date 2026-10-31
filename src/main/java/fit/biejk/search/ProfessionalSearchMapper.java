@@ -42,12 +42,12 @@ public class ProfessionalSearchMapper {
 
         return new ProfessionalSearchDto(
                 professional.getId(),
-                professional.getUser().getFirstName(),
-                professional.getUser().getLastName(),
+                professional.getFirstName(),
+                professional.getLastName(),
                 professional.getDescription(),
                 professional.getAverageRating(),
                 categoryNames,
-                professional.getUser().getLocation().getName()
+                professional.getLocation().getName()
         );
     }
 

@@ -34,6 +34,11 @@ public class CustomerService {
     private final UserService userService;
 
     /**
+     * Service for the profiles of the users.
+     */
+    private final ProfileService profileService;
+
+    /**
      * Retrieves a list of all customers.
      *
      * @param page page number for pagination
@@ -73,9 +78,9 @@ public class CustomerService {
      */
     @Transactional
     public CustomerProfile update(final UUID id, final CustomerProfile customer) {
-        log.info("Update customer: ID={}, email={}", id, customer.getUser().getEmail());
+        log.info("Update customer: ID={}", id);
         CustomerProfile old = getById(id);
-        userService.update(id, customer.getUser());
+        profileService.updatePersonalData(old, customer);
         log.debug("Customer updated with ID={}", id);
         return old;
     }
@@ -102,7 +107,7 @@ public class CustomerService {
     @Transactional
     public CustomerProfile updateProfile(final UUID id, final CustomerProfile changes) {
         CustomerProfile customer = getById(id);
-        userService.updateProfile(id, changes.getUser());
+        profileService.updatePersonalData(customer, changes);
         return customer;
     }
 }

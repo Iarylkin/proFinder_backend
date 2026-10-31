@@ -56,6 +56,9 @@ public class ProfessionalService {
     /** Service for customer management. */
     private final CustomerService customerService;
 
+    /** Service for the profiles of the users. */
+    private final ProfileService profileService;
+
 
     /**
      * Puts a newly created professional profile into the search index.
@@ -111,9 +114,9 @@ public class ProfessionalService {
      */
     @Transactional
     public ProfessionalProfile update(final UUID id, final ProfessionalProfile professional) {
-        log.info("Update professional: ID={}, email={}", id, professional.getUser().getEmail());
+        log.info("Update professional: ID={}", id);
         ProfessionalProfile old = getById(id);
-        userService.update(id, professional.getUser());
+        profileService.updatePersonalData(old, professional);
         old.setDescription(professional.getDescription());
         professionalRepository.flush();
 
@@ -208,7 +211,7 @@ public class ProfessionalService {
     public ProfessionalProfile updateProfile(final UUID id, final ProfessionalProfile changes) {
         log.info("Update professional profile: ID={}", id);
         ProfessionalProfile professional = getById(id);
-        userService.updateProfile(id, changes.getUser());
+        profileService.updatePersonalData(professional, changes);
         if (changes.getDescription() != null) {
             professional.setDescription(changes.getDescription());
         }

@@ -18,7 +18,7 @@ import java.util.UUID;
  * <ul>
  *     <li>{@code chatId} – the identifier of the chat.</li>
  *     <li>{@code partnerId} – the identifier of the chat partner (computed based on the current user).</li>
- *     <li>{@code partnerFirstName} – first name of the chat partner.</li>
+ *     <li>{@code partnerFirstName} – first name from the profile of the chat partner.</li>
  * </ul>
  * <p>
  * The mapper requires the {@code currentUserId} in {@link org.mapstruct.Context} to correctly resolve the
@@ -40,7 +40,7 @@ public interface ChatMapper {
     @Mapping(target = "partnerId",
             expression = "java(getPartner(chat, currentUserId).getId())")
     @Mapping(target = "partnerFirstName",
-            expression = "java(getPartner(chat, currentUserId).getFirstName())")
+            expression = "java(getPartner(chat, currentUserId).getProfile().getFirstName())")
     ChatResponse toDto(Chat chat, @Context UUID currentUserId);
 
     /**

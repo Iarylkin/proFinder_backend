@@ -29,7 +29,6 @@ class AuthServiceRegisterTest {
         TokenService tokenService = mock(TokenService.class);
         service = new AuthService(
                 mock(MailService.class),
-                mock(LocationService.class),
                 profileService,
                 userService,
                 mock(SecurityIdentity.class),

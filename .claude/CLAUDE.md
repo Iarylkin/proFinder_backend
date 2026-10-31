@@ -69,16 +69,15 @@ docker-compose up -d                              # Start all services (PostgreS
 #### `/src/main/java/fit/biejk`
 Main application code organized by layers:
 
-- **`entity/`** — JPA entities (User, Order, Professional, Customer, OrderResponse, Chat, ChatMessage, Review, Category, Location)
+- **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, OrderResponse, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
-  - Inheritance hierarchy: `User` → `Customer` / `Professional`
+  - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at users
   - `OrderStatus`, `OrderResponseStatus`, `UserRole` enums
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
   - `AuthResource` — Register (`POST /auth/register`), login (`POST /auth/login`), password recovery (`/password-recovery`)
-  - `UserResource` — Avatar upload/download, email/password changes
-  - `ProfileResource` — The current user's profile (`GET`/`PATCH /users/me/profile`); picks the customer or professional service and mapper by role
-  - `CustomerResource`, `ProfessionalResource` — Profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
+  - `UserResource` — Avatar upload/download, email/password changes (the avatar is kept in the profile)
+  - `CustomerResource`, `ProfessionalResource` — Own profile (`GET`/`PATCH /customers/me`, `/professionals/me`: the type is the address), profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
   - `ProfessionalSearchResource` — Professional search (`GET /search/professionals`)
   - `OrderResource`, `OrderResponseResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
   - `ChatResource` — Chat creation, the current user's chats (`GET /chats/me`) and history; WebSocket communication in `ChatSocket`
@@ -86,7 +85,8 @@ Main application code organized by layers:
 
 - **`service/`** — Business logic (one service per domain entity)
   - `AuthService` — Registration, JWT token generation, password recovery flows
-  - `UserService` — Profile updates, email/password changes
+  - `UserService` — Account creation, email/password changes
+  - `ProfileService`, `ProfileFactory` — Creates the profile of a new user by its role (and sets the default location), reads a profile by user id, applies the personal data (name, phone, location) to a profile
   - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
   - `OrderResponseService` — Response lifecycle (create, approve; the other responses of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
@@ -154,7 +154,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Key Features & Workflows
 
 #### User Registration & Authentication
-1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create Customer/Professional by role, hash password
+1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create the `User` (hashed password), then its profile by role through `ProfileService`
 2. `AuthResource.login()` (`POST /v1/auth/login`) → `TokenService.generateToken()` returns a JWT with userId and role
 3. The current user ID and role are read from the `SecurityIdentity` via `AuthService.getCurrentUserId()` and `getCurrentUserRole()`; resources and services never use `SecurityIdentity` directly
 4. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
@@ -194,7 +194,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
-8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (profile) or the resource's own `/me` (`/chats/me`)
+8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (account: avatar, email, password) or the resource's own `/me` (`/customers/me`, `/professionals/me`, `/chats/me`)
 9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
 10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. `version` is checked only between concurrent transactions on the server: the DTOs do not carry it yet, so a client-sent `version` in `PATCH` (docs/8, docs/13) is planned for 1.6.0
 

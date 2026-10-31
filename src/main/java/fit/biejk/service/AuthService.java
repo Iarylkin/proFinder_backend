@@ -63,11 +63,6 @@ public class AuthService {
     private final MailService mailService;
 
     /**
-     * Service for managing locations.
-     */
-    private final LocationService locationService;
-
-    /**
      * Service for managing profiles.
      */
     private final ProfileService profileService;
@@ -116,7 +111,6 @@ public class AuthService {
         user.setEmail(email);
         user.setPassword(CryptoUtils.hash(password));
         user.setRole(role);
-        user.setLocation(locationService.getDefault());
         return user;
     }
 
