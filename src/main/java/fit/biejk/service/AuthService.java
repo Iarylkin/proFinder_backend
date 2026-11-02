@@ -1,8 +1,6 @@
 package fit.biejk.service;
 
 import fit.biejk.dto.ResetPasswordRequest;
-import fit.biejk.entity.Customer;
-import fit.biejk.entity.Professional;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
 import fit.biejk.exception.InvalidResetCodeException;
@@ -65,19 +63,9 @@ public class AuthService {
     private final MailService mailService;
 
     /**
-     * Service for managing locations.
+     * Service for managing profiles.
      */
-    private final LocationService locationService;
-
-    /**
-     * Service for managing professionals.
-     */
-    private final ProfessionalService professionalService;
-
-    /**
-     * Service for managing customers.
-     */
-    private final CustomerService customerService;
+    private final ProfileService profileService;
 
     /**
      * Service for managing users.
@@ -105,26 +93,24 @@ public class AuthService {
      * @param role     user role
      * @return JWT token for the newly created user
      */
+    @Transactional
     public String register(final String email, final String password, final UserRole role) {
         log.info("Register: email={}, role={}", email, role);
-        User created = switch (role) {
-            case PROFESSIONAL -> professionalService.create(newUser(new Professional(), email, password, role));
-            case CUSTOMER -> customerService.create(newUser(new Customer(), email, password, role));
-            default -> {
-                log.warn("Register with unsupported role={}", role);
-                throw new BadRequestException("Unsupported role");
-            }
-        };
+        if (role == null) {
+            log.warn("Register without a role");
+            throw new BadRequestException("Unsupported role");
+        }
+        User created = userService.create(newUser(email, password, role));
+        profileService.create(created);
         log.debug("Created user with ID={}, role={}", created.getId(), role);
         return tokenService.generateToken(created);
     }
 
-    private <T extends User> T newUser(final T user, final String email, final String password,
-                                       final UserRole role) {
+    private User newUser(final String email, final String password, final UserRole role) {
+        User user = new User();
         user.setEmail(email);
         user.setPassword(CryptoUtils.hash(password));
         user.setRole(role);
-        user.setLocation(locationService.getDefault());
         return user;
     }
 

@@ -1,7 +1,7 @@
 # ProFinder — Elasticsearch Mapping
 
-- **Version:** 1.3
-- **Date:** 2026-10-27
+- **Version:** 1.4
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** The two Elasticsearch indexes — `professionals` and `orders` — their field mappings, analyzers, how each document is assembled from PostgreSQL, and how the queries behind [FR-Search](2%20-%20Requirements.md) map onto them. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Elasticsearch mapping".
 
@@ -113,8 +113,8 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 | Field | Origin | Used for |
 |---|---|---|
 | `professional_id` | `professional_profiles.user_id` | document `_id`, lookups |
-| `display_name` | `users.display_name` | BM25 relevance (`name_analyzer`); `.keyword` for the `newest`/name tie-break and aggregations |
-| `bio` | `users.bio` | BM25 relevance only |
+| `display_name` | `professional_profiles.display_name` | BM25 relevance (`name_analyzer`); `.keyword` for the `newest`/name tie-break and aggregations |
+| `bio` | `professional_profiles.bio` | BM25 relevance only |
 | `category_ids` | `professional_categories.category_id[]` | **hard filter** — [FR-Search-1](2%20-%20Requirements.md) exact category match |
 | `category_names` | `categories.name[]` (joined) | BM25 relevance — so a text query "electrician" hits the category even if it's not in the bio |
 | `cities` | `professional_cities.city[]` | **hard filter** — [FR-Search-2](2%20-%20Requirements.md) exact city (normalized) |
@@ -125,7 +125,7 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 | `review_count` | `professional_profiles.review_count` | display; tie-break in "Recommended"; input to `popularity` |
 | `sort_rating` | **computed at index time** — `(C·m + rating_avg·review_count) / (C + review_count)` | the "Recommended" sort key and the `function_score` multiplier for text search. `C` and `m` are config (`bayes_prior_count` ≈ 5, `bayes_prior_mean` ≈ platform mean). Never shown to users. |
 | `popularity` | **computed at index time** — `rating_avg · log10(review_count + 1)` | the `popularity` sort ([FR-Search-9](2%20-%20Requirements.md)) |
-| `avatar_thumb_url` | derived from `users.avatar_file_id` → the 128×128 thumb key | result-card display only, `index: false` |
+| `avatar_thumb_url` | derived from `professional_profiles.avatar_file_id` → the 128×128 thumb key | result-card display only, `index: false` |
 | `created_at` | `professional_profiles.created_at` | the `newest` sort |
 | `last_active_at` | `professional_profiles.last_active_at` (falls back to `created_at` when `NULL`) | final tie-break in "Recommended" ("most recently active") |
 | `version` | `professional_profiles.version` | external-version guard, `index: false` |
@@ -144,7 +144,7 @@ The API returns **only** these fields to `SearchResultCardDto` ([FR-Search-10](2
 on message { professional_id, version, reason }:
     dedupe: INSERT processed_events (event_id, "search-indexer") -- skip if present
 
-    row = SELECT pp.*, u.display_name, u.bio, u.status, u.avatar_file_id, u.updated_at
+    row = SELECT pp.*, u.status, u.updated_at
           FROM professional_profiles pp JOIN users u ON u.id = pp.user_id
           WHERE pp.user_id = :professional_id
 
@@ -297,6 +297,7 @@ sort: published_at desc
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4 | 2026-10-31 | **D-1.5:** `display_name`, `bio` and the avatar are read from `professional_profiles`, not from `users`. |
 | 1.3 | 2026-10-27 | **D-1.4:** `last_active_at` is read from `professional_profiles.last_active_at` (falls back to `created_at`). |
 | 1.2 | 2026-10-27 | **D-1.3:** the order document takes `city` from `orders.city`. |
 | 1.1 | 2026-09-10 | Standardised to the shared doc format (metadata, separators). |

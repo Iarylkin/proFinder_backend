@@ -1,10 +1,10 @@
 package fit.biejk.minio;
 
 import fit.biejk.dto.AvatarData;
-import fit.biejk.entity.User;
+import fit.biejk.entity.Profile;
 import fit.biejk.exception.FileTooLargeException;
 import fit.biejk.exception.InvalidFileTypeException;
-import fit.biejk.service.UserService;
+import fit.biejk.service.ProfileService;
 import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -49,9 +49,9 @@ public class FileService {
     private final MinioClient minioClient;
 
     /**
-     * Service for accessing and updating {@link User} entities.
+     * Service for accessing the profile of a user, where the avatar key is kept.
      */
-    private final UserService userService;
+    private final ProfileService profileService;
 
     /**
      * Uploads the avatar to MinIO and saves the avatar key to the user.
@@ -66,7 +66,7 @@ public class FileService {
     public void uploadAvatar(final UUID userId, final InputStream fileInputStream) {
         log.info("Uploading avatar for userId={}", userId);
 
-        User user = userService.getById(userId);
+        Profile profile = profileService.get(userId);
         byte[] fileBytes = readAvatar(fileInputStream);
         if (fileBytes.length > AVATAR_MAX_BYTES) {
             log.warn("Avatar rejected, too large: userId={}", userId);
@@ -94,7 +94,7 @@ public class FileService {
             throw new InternalServerErrorException("Failed to upload avatar");
         }
 
-        user.setAvatarKey(avatarKey);
+        profile.setAvatarKey(avatarKey);
 
         log.debug("Avatar uploaded and key set for userId={}", userId);
     }
@@ -118,8 +118,8 @@ public class FileService {
     public AvatarData getAvatar(final UUID userId) throws Exception {
         log.info("Getting avatar for userId={}", userId);
 
-        User user = userService.getById(userId);
-        if (user.getAvatarKey() == null) {
+        Profile profile = profileService.get(userId);
+        if (profile.getAvatarKey() == null) {
             log.warn("User with id={} has no avatar", userId);
             throw new IllegalStateException("User does not have an avatar");
         }
@@ -127,7 +127,7 @@ public class FileService {
         StatObjectResponse stat = minioClient.statObject(
                 StatObjectArgs.builder()
                         .bucket(BUCKET)
-                        .object(user.getAvatarKey())
+                        .object(profile.getAvatarKey())
                         .build());
 
         String contentType = stat.contentType() != null
@@ -138,7 +138,7 @@ public class FileService {
         InputStream stream = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(BUCKET)
-                        .object(user.getAvatarKey())
+                        .object(profile.getAvatarKey())
                         .build());
 
         log.info("Successfully retrieved avatar stream for userId={}", userId);

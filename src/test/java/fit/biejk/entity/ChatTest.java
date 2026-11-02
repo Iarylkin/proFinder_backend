@@ -14,9 +14,9 @@ class ChatTest {
     private static final UUID OUTSIDER_ID = UUID.randomUUID();
 
     private static Chat chatBetween(final UUID firstId, final UUID secondId) {
-        Customer first = new Customer();
+        User first = new User();
         first.setId(firstId);
-        Professional second = new Professional();
+        User second = new User();
         second.setId(secondId);
         Chat chat = new Chat();
         chat.setUser1(first);

@@ -1,7 +1,7 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.5
-- **Date:** 2026-10-28
+- **Version:** 1.6
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
@@ -36,11 +36,11 @@ Applied everywhere, not repeated per field below.
 |---|---|---|---|---|
 | `email` | register, login, forgot-password | ✅ | `@Email`; ≤ 254 chars; normalized lowercase; case-insensitive unique (register). Disposable-domain blocklist (config, empty in MVP). No MX check. | `VALIDATION_ERROR`; `EMAIL_ALREADY_REGISTERED` (register) |
 | `password` | register, reset-password | ✅ | ≥ `password_min_length` (default **8**); complexity: ≥1 upper, ≥1 lower, ≥1 digit, ≥1 special — each toggle config, all on by default; ≤ **128**; no reuse restriction; not equal to the email local-part. Hashed bcrypt cost 12. | `VALIDATION_ERROR` |
-| `display_name` | register, profile update | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". For a Google sign-up the value comes from the Google profile name, cleaned to this format (fallback: the email local-part). | `VALIDATION_ERROR` |
-| `role` | register, `POST /auth/role` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via these paths); settable once. Required at email registration; a Google sign-up that has no role yet sets it with `POST /auth/role` and the `temp_token`. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
+| `display_name` | register, profile update (stored in the profile) | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". For a Google sign-up the value comes from the Google profile name, cleaned to this format (fallback: the email local-part). | `VALIDATION_ERROR` |
+| `role` | register, `GET /auth/{provider}/login` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via these paths); settable once. Required at registration; a provider sign-up sends it as `role` in the login request and it travels in the signed `state`. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
 | `token` (verify / reset / unsubscribe) | verify-email, reset-password, unsubscribe | ✅ | opaque string, exact match, single-use, unexpired (verify 24 h, reset 15 min). | `VERIFICATION_TOKEN_INVALID` / `RESET_TOKEN_INVALID` |
 | `refresh_token` | refresh, logout | ✅ | opaque; looked up by hash. | `REFRESH_TOKEN_INVALID` / `REFRESH_TOKEN_REUSED` |
-| OAuth `code` / `state` | google/callback | ✅ | validated by the OIDC library; `state` must match the issued value. | `VALIDATION_ERROR` |
+| OAuth `code` / `state` | {provider}/callback | ✅ | validated by the OIDC library; `state` must match the issued value. | `VALIDATION_ERROR` |
 | account deletion | `DELETE /users/me` | — | no body; rejected if the caller has an active ban/suspension or an open report against them. | `ACCOUNT_DELETION_BLOCKED` (409) |
 
 
@@ -195,6 +195,7 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-10-31 | **D-1.5:** `role` comes with the registration or the provider login request (no `POST /auth/role`); `display_name` is stored in the profile; callback path is `{provider}/callback`. |
 | 1.5 | 2026-10-28 | **Naming and paths:** `conversation_id` → `chat_id`, `/users/me/...`; `expires_at` replaces `additional_days` for extending an order; `role` is part of email registration. |
 | 1.4 | 2026-10-27 | **D-1.3:** order field `location` → `city`; report reason, decision, appeal outcome and notification channel values are `UPPER_SNAKE_CASE`. |
 | 1.3 | 2026-10-27 | **D-1.2:** `role` is set only via `temp_token` for Google sign-ups; `display_name` source for Google sign-ups. |

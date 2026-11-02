@@ -22,14 +22,14 @@ public class Review extends BaseEntity {
      */
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    private CustomerProfile customer;
 
     /**
      * The professional being reviewed.
      */
     @ManyToOne
     @JoinColumn(name = "professional_id", nullable = false)
-    private Professional professional;
+    private ProfessionalProfile professional;
 
     /**
      * Rating score from 1 to 5.

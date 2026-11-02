@@ -2,27 +2,24 @@ package fit.biejk.entity;
 
 import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
 /**
- * Entity representing a professional.
+ * Profile of a professional: services, rating and the responses and reviews of the professional.
  * <p>
- * Inherits from {@link User} and includes domain-specific information such as specialization, description,
- * rating, submitted responses, schedule, and received reviews.
+ * The account data (email, name, location) lives in the {@link User} of the profile.
  * </p>
  */
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "professional")
-public class Professional extends User {
+@Table(name = "professional_profiles")
+public class ProfessionalProfile extends Profile {
 
     /**
      * Professional's area of expertise.

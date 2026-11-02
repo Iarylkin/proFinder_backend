@@ -5,26 +5,24 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
 /**
- * Entity representing a customer.
+ * Profile of a customer: the orders the customer created and the reviews the customer wrote.
  * <p>
- * Inherits from {@link User} and defines relationships to orders and reviews created by the customer.
+ * The account data (email, name, location) lives in the {@link User} of the profile.
  * </p>
  */
-@Data
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "customer")
-public class Customer extends User {
+@Table(name = "customer_profiles")
+public class CustomerProfile extends Profile {
 
     /**
      * List of orders created by the customer.

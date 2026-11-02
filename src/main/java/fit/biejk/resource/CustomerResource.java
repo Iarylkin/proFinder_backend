@@ -2,7 +2,8 @@ package fit.biejk.resource;
 
 import fit.biejk.dto.CustomerDto;
 import fit.biejk.dto.PageRequest;
-import fit.biejk.entity.Customer;
+import fit.biejk.dto.ProfileUpdateRequest;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.Review;
 import fit.biejk.mapper.CustomerMapper;
@@ -75,7 +76,7 @@ public class CustomerResource {
     @DenyAll
     public Response getCustomers(@BeanParam final PageRequest pagination) {
         log.info("getAll request");
-        List<Customer> result = customerService.getAll(
+        List<CustomerProfile> result = customerService.getAll(
                 pagination.getPage(),
                 pagination.getSize()
         );
@@ -95,7 +96,7 @@ public class CustomerResource {
     @RolesAllowed({"CUSTOMER", "PROFESSIONAL"})
     public Response getById(@PathParam("customerId") final UUID customerId) {
         log.info("getById request: {}", customerId);
-        Customer result = customerService.getById(customerId);
+        CustomerProfile result = customerService.getById(customerId);
         log.debug("Found customer with ID={}", result.getId());
         return Response.ok(customerMapper.toPublicDto(result)).build();
     }
@@ -113,8 +114,8 @@ public class CustomerResource {
     @DenyAll
     public Response update(@PathParam("customerId") final UUID customerId, @Valid final CustomerDto dto) {
         log.info("update request: customerId={}, dto={}", customerId, dto);
-        Customer entity = customerMapper.toEntity(dto);
-        Customer result = customerService.update(customerId, entity);
+        CustomerProfile entity = customerMapper.toEntity(dto);
+        CustomerProfile result = customerService.update(customerId, entity);
         log.debug("Updated customer with ID={}", result.getId());
         return Response.ok(customerMapper.toDto(result)).build();
     }
@@ -134,6 +135,36 @@ public class CustomerResource {
         customerService.delete(customerId);
         log.debug("Deleted customer with ID={}", customerId);
         return Response.ok().build();
+    }
+
+    /**
+     * Returns the profile of the currently authenticated customer.
+     *
+     * @return the customer
+     */
+    @GET
+    @Path("/me")
+    @RolesAllowed("CUSTOMER")
+    public Response getMe() {
+        UUID id = authService.getCurrentUserId();
+        log.info("Get profile for customer ID={}", id);
+        return Response.ok(customerMapper.toDto(customerService.getById(id))).build();
+    }
+
+    /**
+     * Partially updates the profile of the currently authenticated customer: only the fields that are sent change.
+     *
+     * @param request the fields to change
+     * @return the updated customer
+     */
+    @PATCH
+    @Path("/me")
+    @RolesAllowed("CUSTOMER")
+    public Response updateMe(@Valid final ProfileUpdateRequest request) {
+        UUID id = authService.getCurrentUserId();
+        log.info("Update profile for customer ID={}", id);
+        CustomerProfile result = customerService.updateProfile(id, customerMapper.toEntity(request));
+        return Response.ok(customerMapper.toDto(result)).build();
     }
 
     /**

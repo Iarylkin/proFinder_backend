@@ -1,6 +1,6 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.repository.CustomerRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service class for managing {@link Customer} entities.
+ * Service class for managing {@link CustomerProfile} entities.
  * <p>
  * Handles creation, retrieval, updating, and deletion of customers,
  * and delegates shared logic to {@link UserService}.
@@ -34,19 +34,9 @@ public class CustomerService {
     private final UserService userService;
 
     /**
-     * Creates a new customer and persists it to the database.
-     *
-     * @param customer customer entity to create
-     * @return the created customer
+     * Service for the profiles of the users.
      */
-    @Transactional
-    public Customer create(final Customer customer) {
-        log.info("Create customer: {}", customer.getEmail());
-        userService.checkUniqueEmail(customer.getEmail());
-        customerRepository.persist(customer);
-        log.debug("Customer created with ID={}", customer.getId());
-        return customer;
-    }
+    private final ProfileService profileService;
 
     /**
      * Retrieves a list of all customers.
@@ -55,9 +45,9 @@ public class CustomerService {
      * @param size number of customers per page
      * @return list of customers
      */
-    public List<Customer> getAll(final int page, final int size) {
+    public List<CustomerProfile> getAll(final int page, final int size) {
         log.info("Get all customers");
-        List<Customer> result = customerRepository.findAll().page(page - 1, size).list();
+        List<CustomerProfile> result = customerRepository.findAll().page(page - 1, size).list();
         log.debug("Found {} customers", result.size());
         return result;
     }
@@ -69,9 +59,9 @@ public class CustomerService {
      * @return found customer
      * @throws NotFoundException if the customer is not found
      */
-    public Customer getById(final UUID id) {
+    public CustomerProfile getById(final UUID id) {
         log.info("Get customer by ID={}", id);
-        Customer result = customerRepository.findById(id);
+        CustomerProfile result = customerRepository.findById(id);
         if (result == null) {
             log.error("Customer with ID={} not found", id);
             throw new NotFoundException("Customer with id " + id + " not found");
@@ -87,10 +77,10 @@ public class CustomerService {
      * @return the original customer before update
      */
     @Transactional
-    public Customer update(final UUID id, final Customer customer) {
-        log.info("Update customer: ID={}, email={}", id, customer.getEmail());
-        Customer old = getById(id);
-        userService.update(id, customer);
+    public CustomerProfile update(final UUID id, final CustomerProfile customer) {
+        log.info("Update customer: ID={}", id);
+        CustomerProfile old = getById(id);
+        profileService.updatePersonalData(old, customer);
         log.debug("Customer updated with ID={}", id);
         return old;
     }
@@ -115,9 +105,9 @@ public class CustomerService {
      * @return the updated customer
      */
     @Transactional
-    public Customer updateProfile(final UUID id, final Customer changes) {
-        Customer customer = getById(id);
-        userService.updateProfile(id, changes);
+    public CustomerProfile updateProfile(final UUID id, final CustomerProfile changes) {
+        CustomerProfile customer = getById(id);
+        profileService.updatePersonalData(customer, changes);
         return customer;
     }
 }

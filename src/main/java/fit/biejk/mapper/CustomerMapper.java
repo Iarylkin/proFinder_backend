@@ -1,75 +1,86 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.CustomerDto;
-import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.dto.CustomerPublicDto;
-import fit.biejk.entity.Customer;
+import fit.biejk.dto.ProfileUpdateRequest;
+import fit.biejk.entity.CustomerProfile;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
 
 /**
- * MapStruct mapper for converting between {@link Customer}
+ * MapStruct mapper for converting between {@link CustomerProfile}
  * entities and {@link CustomerDto} data transfer objects.
+ * <p>
+ * The personal data belongs to the profile; the email and the creation time are read from its user.
+ * </p>
  */
 @Mapper(componentModel = "jakarta")
 public interface CustomerMapper {
 
     /**
-     * Converts a Customer entity to its corresponding DTO.
+     * Converts a customer profile to its corresponding DTO.
      *
-     * @param entity the Customer entity
+     * @param entity the customer profile
      * @return the corresponding CustomerDto
      */
-    CustomerDto toDto(Customer entity);
+    @Mapping(target = "email", source = "user.email")
+    @Mapping(target = "createAt", source = "user.createAt")
+    CustomerDto toDto(CustomerProfile entity);
 
     /**
-     * Converts a Customer entity to its public DTO (without contact data).
+     * Converts a customer profile to its public DTO (without contact data).
      *
-     * @param entity the Customer entity
+     * @param entity the customer profile
      * @return the corresponding CustomerPublicDto
      */
-    CustomerPublicDto toPublicDto(Customer entity);
+    @Mapping(target = "createAt", source = "user.createAt")
+    CustomerPublicDto toPublicDto(CustomerProfile entity);
 
     /**
-     * Converts a Customer DTO to its corresponding entity.
+     * Converts a CustomerDto to a customer profile.
      *
      * @param dto the CustomerDto
-     * @return the corresponding Customer entity
+     * @return the corresponding customer profile
      */
-    Customer toEntity(CustomerDto dto);
-
-    /**
-     * Converts a list of Customer entities to a list of DTOs.
-     *
-     * @param entitiyList list of Customer entities
-     * @return list of CustomerDto objects
-     */
-    List<CustomerDto> toDtoList(List<Customer> entitiyList);
-
-    /**
-     * Converts a list of Customer DTOs to a list of entities.
-     *
-     * @param dtoList list of CustomerDto objects
-     * @return list of Customer entities
-     */
-    List<Customer> toEntityList(List<CustomerDto> dtoList);
-
-    /**
-     * Converts a profile update request to a Customer that holds only the requested changes.
-     * Fields that were not sent stay {@code null}; the service copies only the non-null ones.
-     *
-     * @param request the profile update request
-     * @return a Customer carrying the requested changes
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "email", ignore = true)
-    @Mapping(target = "password", ignore = true)
-    @Mapping(target = "role", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
-    @Mapping(target = "createAt", ignore = true)
     @Mapping(target = "orders", ignore = true)
     @Mapping(target = "reviews", ignore = true)
-    Customer toEntity(ProfileUpdateRequest request);
+    CustomerProfile toEntity(CustomerDto dto);
+
+    /**
+     * Converts a list of customer profiles to a list of DTOs.
+     *
+     * @param entitiyList the customer profiles
+     * @return the corresponding DTOs
+     */
+    List<CustomerDto> toDtoList(List<CustomerProfile> entitiyList);
+
+    /**
+     * Converts a list of DTOs to a list of customer profiles.
+     *
+     * @param dtoList the DTOs
+     * @return the corresponding customer profiles
+     */
+    List<CustomerProfile> toEntityList(List<CustomerDto> dtoList);
+
+    /**
+     * Converts a profile update request to a customer profile that holds only the requested changes.
+     * <p>
+     * Every field the request does not carry stays {@code null}.
+     * </p>
+     *
+     * @param request the profile update request
+     * @return a customer profile with the requested changes
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "avatarKey", ignore = true)
+    @Mapping(target = "orders", ignore = true)
+    @Mapping(target = "reviews", ignore = true)
+    CustomerProfile toEntity(ProfileUpdateRequest request);
 }

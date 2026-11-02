@@ -1,6 +1,6 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.entity.Category;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -25,11 +25,13 @@ class ProfessionalServiceTest {
     private ProfessionalSearchService searchService;
     private UserService userService;
     private ProfessionalService service;
-    private Professional professional;
+    private ProfileService profileService;
+    private ProfessionalProfile professional;
 
     @BeforeEach
     void setUp() {
         ProfessionalRepository repository = mock(ProfessionalRepository.class);
+        profileService = mock(ProfileService.class);
         userService = mock(UserService.class);
         searchService = mock(ProfessionalSearchService.class);
         service = new ProfessionalService(
@@ -39,9 +41,10 @@ class ProfessionalServiceTest {
                 mock(ProfessionalSearchMapper.class),
                 mock(ReviewService.class),
                 mock(AuthService.class),
-                mock(CustomerService.class));
+                mock(CustomerService.class),
+                profileService);
 
-        professional = new Professional();
+        professional = new ProfessionalProfile();
         professional.setId(PROFESSIONAL_ID);
         professional.setDescription("Old description");
         professional.setCategories(List.of());
@@ -50,15 +53,15 @@ class ProfessionalServiceTest {
 
     @Test
     void updateProfileChangesOnlyTheSentFields() {
-        Professional changes = new Professional();
+        ProfessionalProfile changes = new ProfessionalProfile();
         changes.setDescription("New description");
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
+        ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertSame(professional, result);
         assertEquals("New description", result.getDescription());
         assertEquals(List.of(), result.getCategories());
-        verify(userService).updateProfile(PROFESSIONAL_ID, changes);
+        verify(profileService).updatePersonalData(professional, changes);
         verify(searchService).save(any());
     }
 
@@ -66,10 +69,10 @@ class ProfessionalServiceTest {
     void updateProfileReplacesTheOfferedServices() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
-        Professional changes = new Professional();
+        ProfessionalProfile changes = new ProfessionalProfile();
         changes.setCategories(List.of(plumbing));
 
-        Professional result = service.updateProfile(PROFESSIONAL_ID, changes);
+        ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
 
         assertEquals(List.of(plumbing), result.getCategories());
         assertEquals("Old description", result.getDescription());

@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Base entity representing a system user.
  * <p>
- * This class is extended by more specific user types, such as {@link Customer} and {@link Professional}.
+ * The data of a role lives in a separate profile ({@link CustomerProfile} or {@link ProfessionalProfile}).
  * It stores common attributes such as contact details, role, and avatar reference.
  * </p>
  */
@@ -21,18 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
 public class User extends BaseEntity {
-
-    /**
-     * Maximum length for firstName and lastName fields.
-     */
-    public static final int NAME_MAX_LENGTH = 50;
-
-    /**
-     * Maximum length for phoneNumber field.
-     */
-    public static final int PHONE_MAX_LENGTH = 20;
 
     /**
      * User's email address. Must be unique.
@@ -48,31 +37,6 @@ public class User extends BaseEntity {
     private String password;
 
     /**
-     * User's first name.
-     */
-    @Column(name = "first_name", length = NAME_MAX_LENGTH)
-    private String firstName;
-
-    /**
-     * User's last name.
-     */
-    @Column(name = "last_name", length = NAME_MAX_LENGTH)
-    private String lastName;
-
-    /**
-     * User's phone number.
-     */
-    @Column(name = "phone_number", length = PHONE_MAX_LENGTH)
-    private String phoneNumber;
-
-    /**
-     * User's geographical location.
-     */
-    @ManyToOne
-    @JoinColumn(name = "location_id", nullable = false)
-    private Location location;
-
-    /**
      * Role assigned to the user (e.g., CUSTOMER, PROFESSIONAL).
      */
     @Column(name = "role")
@@ -84,12 +48,6 @@ public class User extends BaseEntity {
      */
     @Column(name = "createAt", nullable = false, updatable = false)
     private final LocalDateTime createAt = LocalDateTime.now();
-
-    /**
-     * Key of the user's avatar stored in object storage (e.g. MinIO/S3).
-     */
-    @Column(name = "avatar_key")
-    private String avatarKey;
 
     /**
      * List of chats initiated by the user.
@@ -104,4 +62,11 @@ public class User extends BaseEntity {
     @OneToMany(mappedBy = "user2", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
     private List<Chat> receivedChats;
+
+    /**
+     * Profile of the user: a customer or a professional profile, by role. Removed together with the user.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @JsonbTransient
+    private Profile profile;
 }

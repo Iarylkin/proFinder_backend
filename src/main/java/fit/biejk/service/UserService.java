@@ -1,6 +1,5 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Location;
 import fit.biejk.entity.User;
 import fit.biejk.repository.UserRepository;
 import fit.biejk.utilits.CryptoUtils;
@@ -31,13 +30,24 @@ public class UserService {
     private final UserRepository userRepository;
 
 
-    /**
-     * Service for managing locations.
-     */
-    private final LocationService locationService;
-
     /** Service for sending user notifications via email. */
     private final MailService mailService;
+
+    /**
+     * Creates a new user.
+     *
+     * @param user the user to create
+     * @return the created user
+     * @throws IllegalArgumentException if the email is already registered
+     */
+    @Transactional
+    public User create(final User user) {
+        log.info("Create user: {}", user.getEmail());
+        checkUniqueEmail(user.getEmail());
+        userRepository.persist(user);
+        log.debug("User created with ID={}", user.getId());
+        return user;
+    }
 
     /**
      * Checks if the given email is unique.
@@ -115,33 +125,6 @@ public class UserService {
         }
         log.info("User {} exists", id);
         return true;
-    }
-
-    /**
-     * Updates the user data by ID.
-     *
-     * @param userId   ID of the user
-     * @param newUser  updated user data
-     * @return updated user
-     * @throws NotFoundException if user is not found
-     */
-    @Transactional
-    public User update(final UUID userId, final User newUser) {
-        log.info("Update user: userId={}, newEmail={}", userId, newUser.getEmail());
-        User existingUser = userRepository.findById(userId);
-        if (existingUser == null) {
-            log.error("User with ID={} not found", userId);
-            throw new NotFoundException("User with id " + userId + " not found");
-        }
-        existingUser.setPhoneNumber(newUser.getPhoneNumber());
-        if (newUser.getLocation() != null) {
-            Location location = locationService.getById(newUser.getLocation().getId());
-            existingUser.setLocation(location);
-        }
-        existingUser.setFirstName(newUser.getFirstName());
-        existingUser.setLastName(newUser.getLastName());
-        log.debug("User updated with ID={}", existingUser.getId());
-        return existingUser;
     }
 
     /**
@@ -246,31 +229,4 @@ public class UserService {
         return user;
     }
 
-    /**
-     * Partially updates the common profile fields of a user: only the non-null fields of
-     * {@code changes} are applied.
-     *
-     * @param userId  ID of the user
-     * @param changes a user holding only the requested changes
-     * @return the updated user
-     * @throws NotFoundException if the user does not exist
-     */
-    public User updateProfile(final UUID userId, final User changes) {
-        log.info("Update profile: userId={}", userId);
-        User user = getById(userId);
-        if (changes.getFirstName() != null) {
-            user.setFirstName(changes.getFirstName());
-        }
-        if (changes.getLastName() != null) {
-            user.setLastName(changes.getLastName());
-        }
-        if (changes.getPhoneNumber() != null) {
-            user.setPhoneNumber(changes.getPhoneNumber());
-        }
-        if (changes.getLocation() != null) {
-            user.setLocation(locationService.getById(changes.getLocation().getId()));
-        }
-        log.debug("Profile updated for userId={}", userId);
-        return user;
-    }
 }

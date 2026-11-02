@@ -1,8 +1,8 @@
 package fit.biejk.repository;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Review;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -23,7 +23,7 @@ public class ReviewRepository implements PanacheRepositoryBase<Review, UUID> {
      * @param size       number of reviews per page
      * @return list of reviews associated with the professional
      */
-    public List<Review> findByProfessional(final Professional professional, final int page, final int size) {
+    public List<Review> findByProfessional(final ProfessionalProfile professional, final int page, final int size) {
         return find("professional", professional)
                 .page(page - 1, size)
                 .list();
@@ -37,7 +37,7 @@ public class ReviewRepository implements PanacheRepositoryBase<Review, UUID> {
      * @param size   number of reviews per page
      * @return list of reviews created by the customer
      */
-    public List<Review> findByCustomer(final Customer customer, final int page, final int size) {
+    public List<Review> findByCustomer(final CustomerProfile customer, final int page, final int size) {
         return find("customer", customer)
                 .page(page - 1, size)
                 .list();

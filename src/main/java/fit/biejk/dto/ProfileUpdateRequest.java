@@ -1,19 +1,16 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
-import fit.biejk.entity.Category;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 
-import java.util.List;
-
 /**
  * Request body for a partial update of the current user's profile.
  * <p>
- * Every field is optional: a missing or {@code null} field keeps its current value.
- * {@link #description} and {@link #categories} belong to professionals only.
+ * The fields are the same for every role. Every field is optional: a missing or {@code null} field keeps its
+ * current value.
  * </p>
  */
 @Data
@@ -43,14 +40,4 @@ public class ProfileUpdateRequest {
      * New location.
      */
     private Location location;
-
-    /**
-     * New description (professionals only).
-     */
-    private String description;
-
-    /**
-     * New list of categories (professionals only).
-     */
-    private List<Category> categories;
 }

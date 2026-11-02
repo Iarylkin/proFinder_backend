@@ -1,7 +1,8 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.ProfessionalPublicDto;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
+import fit.biejk.entity.User;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -18,8 +19,10 @@ class ProfessionalPublicMappingTest {
 
     @Test
     void publicDtoKeepsPhoneButHasNoEmail() {
-        Professional professional = new Professional();
-        professional.setEmail(EMAIL);
+        User user = new User();
+        user.setEmail(EMAIL);
+        ProfessionalProfile professional = new ProfessionalProfile();
+        professional.setUser(user);
         professional.setPhoneNumber(PHONE);
 
         ProfessionalPublicDto dto = mapper.toPublicDto(professional);

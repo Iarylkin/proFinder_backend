@@ -1,6 +1,6 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderResponse;
 import fit.biejk.entity.OrderStatus;
@@ -53,7 +53,7 @@ class OrderResponseServiceTest {
                 mock(OrderSearchMapper.class),
                 responseRepository);
 
-        Customer customer = new Customer();
+        CustomerProfile customer = new CustomerProfile();
         customer.setId(CUSTOMER_ID);
 
         order = new Order();

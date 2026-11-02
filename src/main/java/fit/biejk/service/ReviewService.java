@@ -1,8 +1,8 @@
 package fit.biejk.service;
 
-import fit.biejk.entity.Customer;
+import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Review;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.repository.ReviewRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -65,7 +65,7 @@ public class ReviewService {
      */
     public List<Review> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Fetching reviews for professionalId={}", professionalId);
-        Professional professional = professionalService.getById(professionalId);
+        ProfessionalProfile professional = professionalService.getById(professionalId);
         List<Review> reviews = reviewRepository.findByProfessional(professional, page, size);
         log.debug("Found {} reviews for professionalId={}", reviews.size(), professionalId);
         return reviews;
@@ -81,7 +81,7 @@ public class ReviewService {
      */
     public List<Review> getByCustomerId(final UUID customerId, final int page, final int size) {
         log.info("Fetching reviews by customerId={}", customerId);
-        Customer customer = customerService.getById(customerId);
+        CustomerProfile customer = customerService.getById(customerId);
         List<Review> reviews = reviewRepository.findByCustomer(customer, page, size);
         log.debug("Found {} reviews by customerId={}", reviews.size(), customerId);
         return reviews;

@@ -5,6 +5,7 @@ import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service class for managing {@link Professional} entities.
+ * Service class for managing {@link ProfessionalProfile} entities.
  * <p>
  * Handles creation, retrieval, updating, and deletion of professionals.
  * Delegates common user-related logic to {@link UserService}.
@@ -55,24 +56,21 @@ public class ProfessionalService {
     /** Service for customer management. */
     private final CustomerService customerService;
 
+    /** Service for the profiles of the users. */
+    private final ProfileService profileService;
+
 
     /**
-     * Creates and persists a new professional.
-     * Performs email uniqueness check before creation.
+     * Puts a newly created professional profile into the search index.
+     * <p>
+     * Called for the profiles of the professional role only: customer profiles are not indexed.
+     * </p>
      *
-     * @param professional professional to be created
-     * @return created professional
+     * @param professional the profile that was just created
      */
-    @Transactional
-    public Professional create(final Professional professional) {
-        log.info("Create professional: {}", professional.getEmail());
-        userService.checkUniqueEmail(professional.getEmail());
-        professionalRepository.persist(professional);
-
+    void indexCreated(@Observes final ProfessionalProfile professional) {
+        log.info("Index new professional profile: ID={}", professional.getId());
         professionalSearchService.save(professionalSearchMapper.toDto(professional));
-
-        log.debug("Professional created with ID={}", professional.getId());
-        return professional;
     }
 
     /**
@@ -82,9 +80,9 @@ public class ProfessionalService {
      * @param size number of professionals per page
      * @return list of all professionals
      */
-    public List<Professional> getAll(final int page, final int size) {
+    public List<ProfessionalProfile> getAll(final int page, final int size) {
         log.info("Get all professionals");
-        List<Professional> professionals = professionalRepository.findAll().page(page - 1, size).list();
+        List<ProfessionalProfile> professionals = professionalRepository.findAll().page(page - 1, size).list();
         log.debug("Found {} professionals", professionals.size());
         return professionals;
     }
@@ -96,9 +94,9 @@ public class ProfessionalService {
      * @return found professional
      * @throws NotFoundException if professional is not found
      */
-    public Professional getById(final UUID id) {
+    public ProfessionalProfile getById(final UUID id) {
         log.info("Get professional by ID={}", id);
-        Professional result = professionalRepository.findById(id);
+        ProfessionalProfile result = professionalRepository.findById(id);
         if (result == null) {
             log.error("Professional with ID={} not found", id);
             throw new NotFoundException("Professional with id " + id + " not found");
@@ -115,10 +113,10 @@ public class ProfessionalService {
      * @return updated professional
      */
     @Transactional
-    public Professional update(final UUID id, final Professional professional) {
-        log.info("Update professional: ID={}, email={}", id, professional.getEmail());
-        Professional old = getById(id);
-        userService.update(id, professional);
+    public ProfessionalProfile update(final UUID id, final ProfessionalProfile professional) {
+        log.info("Update professional: ID={}", id);
+        ProfessionalProfile old = getById(id);
+        profileService.updatePersonalData(old, professional);
         old.setDescription(professional.getDescription());
         professionalRepository.flush();
 
@@ -157,7 +155,7 @@ public class ProfessionalService {
      */
     @Transactional
     public void computeAverageRating(final UUID professionalId) {
-        Professional professional = getById(professionalId);
+        ProfessionalProfile professional = getById(professionalId);
         List<Review> reviews = professional.getReviews();
 
         if (reviews == null || reviews.isEmpty()) {
@@ -192,8 +190,8 @@ public class ProfessionalService {
     public Review review(final UUID professionalId, final Review review) {
 
         UUID customerId = authService.getCurrentUserId();
-        Customer customer = customerService.getById(customerId);
-        Professional professional = getById(professionalId);
+        CustomerProfile customer = customerService.getById(customerId);
+        ProfessionalProfile professional = getById(professionalId);
 
         review.setCustomer(customer);
         review.setProfessional(professional);
@@ -210,10 +208,10 @@ public class ProfessionalService {
      * @return the updated professional
      */
     @Transactional
-    public Professional updateProfile(final UUID id, final Professional changes) {
+    public ProfessionalProfile updateProfile(final UUID id, final ProfessionalProfile changes) {
         log.info("Update professional profile: ID={}", id);
-        Professional professional = getById(id);
-        userService.updateProfile(id, changes);
+        ProfessionalProfile professional = getById(id);
+        profileService.updatePersonalData(professional, changes);
         if (changes.getDescription() != null) {
             professional.setDescription(changes.getDescription());
         }

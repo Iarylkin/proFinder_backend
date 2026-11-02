@@ -1,9 +1,10 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.ProfessionalUpdateRequest;
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.Category;
-import fit.biejk.entity.Customer;
-import fit.biejk.entity.Professional;
+import fit.biejk.entity.CustomerProfile;
+import fit.biejk.entity.ProfessionalProfile;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -22,7 +23,7 @@ class ProfileMappingTest {
         ProfileUpdateRequest request = new ProfileUpdateRequest();
         request.setPhoneNumber("222222222");
 
-        Customer changes = customerMapper.toEntity(request);
+        CustomerProfile changes = customerMapper.toEntity(request);
 
         assertEquals("222222222", changes.getPhoneNumber());
         assertNull(changes.getFirstName());
@@ -34,11 +35,11 @@ class ProfileMappingTest {
     void professionalChangesCarryDescriptionAndCategories() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
         request.setDescription("I fix pipes");
         request.setCategories(List.of(plumbing));
 
-        Professional changes = professionalMapper.toEntity(request);
+        ProfessionalProfile changes = professionalMapper.toEntity(request);
 
         assertEquals("I fix pipes", changes.getDescription());
         assertEquals(List.of(plumbing), changes.getCategories());

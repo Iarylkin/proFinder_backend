@@ -1,7 +1,7 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.8
-- **Date:** 2026-10-28
+- **Version:** 1.9
+- **Date:** 2026-10-31
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
 
@@ -65,6 +65,7 @@ Source: [4 - Business logic.md § Authentication & Registration](4%20-%20Busines
 erDiagram
     users ||--o| professional_profiles : "1:1"
     users ||--o| customer_profiles : "1:1"
+    users ||--o{ linked_identities : "signs in via"
     users ||--o{ refresh_tokens : issues
     users ||--o{ device_tokens : registers
     users ||--o{ email_verification_tokens : "verifies via"
@@ -77,19 +78,16 @@ erDiagram
 #### `users`
 ---
 
+`users` holds only what is needed to authenticate and the state of the account. Everything a person edits about themselves (name, phone, bio, avatar) lives in the profile of the role.
+
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | id | uuid | PK |
-| email | citext | UNIQUE (case-insensitive by type), normalized |
-| password_hash | string | nullable — Google-only users |
-| google_id | string | UNIQUE, nullable — strict 1:1 link |
-| role | user_role | nullable — `NULL` only for a Google sign-up that has not chosen a role yet; set once via `POST /auth/role`, then immutable |
+| email | citext | UNIQUE (case-insensitive by type), normalized; **required and verified** for every account, however it signs in |
+| password_hash | string | nullable — accounts that sign in only through a provider |
+| role | user_role | NOT NULL; set when the account is created, then immutable |
 | status | account_status | NOT NULL, DEFAULT `PENDING_VERIFICATION` |
 | moderator_level | moderator_level | nullable — only for `role = MODERATOR` |
-| display_name | string(50) | NOT NULL; **2–50 chars**, letters/digits/marks/spaces/`.` `'` `-`, no URLs |
-| phone | string(20) | nullable; E.164 format |
-| bio | text(2000) | nullable; ≤ 2000 chars |
-| avatar_file_id | uuid | FK → `files.id`, nullable |
 | suspension_end_date | timestamp | nullable |
 | ban_reason | text | nullable |
 | deleted_at | timestamp | nullable — soft delete / PII scrub marker |
@@ -97,12 +95,33 @@ erDiagram
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
+#### `linked_identities`
+---
+
+The ways an account can sign in through a provider (Google first). An account can have one identity per provider.
+
+| Column | Type | Constraints / Notes |
+|---|---|---|
+| id | uuid | PK |
+| user_id | uuid | FK → `users.id` |
+| provider | string | NOT NULL — `GOOGLE` in MVP |
+| subject | string | NOT NULL — the id of the person at the provider (`sub`) |
+| claims | jsonb | NOT NULL — what the provider reported (name, picture, email, locale…); **no access, refresh or id tokens**; refreshed on every sign-in |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+**Constraints:** `UNIQUE (provider, subject)` (one provider identity belongs to one account) and `UNIQUE (user_id, provider)`.
+
 #### `professional_profiles`
 ---
 
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | user_id | uuid | PK, FK → `users.id` |
+| display_name | string(50) | NOT NULL; **2–50 chars**, letters/digits/marks/spaces/`.` `'` `-`, no URLs |
+| phone | string(20) | nullable; E.164 format |
+| bio | text(2000) | nullable; ≤ 2000 chars |
+| avatar_file_id | uuid | FK → `files.id`, nullable |
 | profile_status | profile_status | NOT NULL, DEFAULT `INCOMPLETE` |
 | years_experience | int | nullable; **CHECK (years_experience BETWEEN 0 AND 70)**; no `date_of_birth` field in MVP |
 | hourly_rate | numeric(10,2) | nullable, USD; **CHECK (hourly_rate >= 0 AND hourly_rate <= 100000)** |
@@ -122,6 +141,10 @@ erDiagram
 | Column | Type | Constraints / Notes |
 |---|---|---|
 | user_id | uuid | PK, FK → `users.id` |
+| display_name | string(50) | NOT NULL; **2–50 chars**, letters/digits/marks/spaces/`.` `'` `-`, no URLs |
+| phone | string(20) | nullable; E.164 format |
+| bio | text(2000) | nullable; ≤ 2000 chars |
+| avatar_file_id | uuid | FK → `files.id`, nullable |
 | city | string(100) | nullable; ≤ 100 chars |
 | preferred_category_ids | jsonb | nullable — frontend hint only, no backend logic depends on it |
 | reliability_rating_avg | numeric(3,2) | denormalized, DEFAULT 0 |
@@ -201,8 +224,10 @@ Also used for the Google-only "set a password" flow. At most one active row per 
 
 **Constraints worth calling out:**
 - `professional_categories` / `professional_cities` must have **≥1 row per professional once `profile_status = ACTIVE`** — enforced at the application layer (the "replace, don't clear to zero" rule from [5 - State Machines.md § Professional Profile](5%20-%20State%20Machines.md)).
-- `users.role` is `NULL` only between a first Google login and `POST /auth/role`; once set it is immutable in MVP (app-layer check, not a DB constraint — support-only change per FR-Auth-3). Email registration always sets it. While `role` is `NULL` the account gets a limited `temp_token` and every other endpoint returns `ROLE_SELECTION_REQUIRED`.
-- `users.display_name` stays `NOT NULL`: email registration sends it, a Google sign-up takes it from the Google profile name, cleaned to the format in [13 - Validation Rules.md](13%20-%20Validation%20Rules.md) (fallback: the email local-part).
+- `users.role` is `NOT NULL`: it is chosen before registration (in the registration request, or in the signed `state` of a provider sign-in) and is immutable in MVP (app-layer check, not a DB constraint — support-only change per FR-Auth-3). There is no state of an account without a role.
+- An account has exactly one profile, of the type of its role. The profile is created in the same transaction as the account, and no endpoint creates a profile later. The two profile tables are separate, so the database cannot forbid a user from having a row in both: the rule is kept by the application.
+- `display_name` is `NOT NULL` in both profile tables: registration sends it, a provider sign-up takes it from the provider profile name (kept in `linked_identities.claims`), cleaned to the format in [13 - Validation Rules.md](13%20-%20Validation%20Rules.md) (fallback: the email local-part).
+- Every account needs a verified email: a provider that returns no email, or an unverified one, is rejected. Code treats the person as `users.id`, never as the email, so that the email can become optional later.
 - `users.moderator_level` is null for everyone except `role = MODERATOR`; `SENIOR` is the "Admin" tier decided in [A3](Documentation%20Roadmap.md).
 
 
@@ -621,7 +646,7 @@ One PostgreSQL instance, one schema per service ([3 - System Design.md § Postgr
 | `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
 | `moderation` | the rules and decision log tables (Phase 2) |
 
-Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The `users` columns that are profile data (`display_name`, `phone`, `bio`, `avatar_file_id`) and the `users` / profile split are settled with the account-and-profiles change in roadmap version 1.4.0 ([16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
+Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The personal data (`display_name`, `phone`, `bio`, `avatar_file_id`) lives in the profiles, which stay in Core; `users` and `linked_identities` belong to Auth (decided in roadmap version 1.4.0, [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
 
 
 ## Foreign Keys & ON DELETE
@@ -656,6 +681,7 @@ Everything else that references `users` (`orders.customer_id`, `responses.profes
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-10-31 | **Account vs profile (decision D-1.5):** `users` keeps only authentication and account state; `display_name`, `phone`, `bio`, `avatar_file_id` move to both profile tables; new table `linked_identities` (several providers per account, raw `claims`) replaces `users.google_id`; `users.role` is `NOT NULL` (no `NULL` state, no `temp_token`); an account has exactly one profile; every account needs a verified email. |
 | 1.8 | 2026-10-28 | **`version`:** type `bigint` instead of `int`, and present on every entity table, because the code declares `id` (UUID) and `version` in one base class (`BaseEntity`) that all entities extend. |
 | 1.7 | 2026-10-28 | **Naming:** table `conversations` → `chats`, `conversation_id` → `chat_id`. |
 | 1.6 | 2026-10-27 | **D-1.4:** `citext` for `users.email`, `categories.name`, `professional_cities.city`; `CHECK`s for `budget_min <= budget_max`, `reviewer_id <> reviewee_id`, `blocker_id <> blocked_id`; partial unique index on live reviews (respects `deleted_at`); new `professional_profiles.last_active_at`; new § Foreign Keys & ON DELETE (FKs only inside a schema, `RESTRICT` by default, `CASCADE` for tokens and join rows); `closed_reason` values `UPPER_SNAKE_CASE`. |
