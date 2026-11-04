@@ -2,11 +2,6 @@ package fit.biejk.dto;
 
 import fit.biejk.entity.Category;
 import fit.biejk.entity.Location;
-import fit.biejk.validation.Limits;
-import fit.biejk.validation.NoControlChars;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,16 +23,6 @@ import java.util.UUID;
 public class ProfessionalDto {
 
     /**
-     * Maximum allowed length for firstName and lastName.
-     */
-    public static final int NAME_MAX_LENGTH = 50;
-
-    /**
-     * Maximum allowed length for phoneNumber.
-     */
-    public static final int PHONE_MAX_LENGTH = 20;
-
-    /**
      * Unique identifier of the professional.
      */
     private UUID id;
@@ -53,30 +38,23 @@ public class ProfessionalDto {
     private double averageRating;
 
     /**
-     * Professional's email address (must be valid format).
+     * Professional's email address.
      */
-    @Email
     private String email;
 
     /**
      * First name of the professional.
      */
-    @Size(max = NAME_MAX_LENGTH)
-    @Pattern(regexp = Limits.NAME_PATTERN)
     private String firstName;
 
     /**
      * Last name of the professional.
      */
-    @Size(max = NAME_MAX_LENGTH)
-    @Pattern(regexp = Limits.NAME_PATTERN)
     private String lastName;
 
     /**
      * Phone number of the professional.
      */
-    @Size(max = PHONE_MAX_LENGTH)
-    @Pattern(regexp = Limits.PHONE_PATTERN)
     private String phoneNumber;
 
     /**
@@ -97,7 +75,5 @@ public class ProfessionalDto {
     /**
      * Detailed description of the professional's expertise.
      */
-    @Size(max = Limits.BIO_MAX_LENGTH)
-    @NoControlChars(multiline = true)
     private String description;
 }

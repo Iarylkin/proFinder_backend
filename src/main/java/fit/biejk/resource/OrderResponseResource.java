@@ -29,7 +29,7 @@ import java.util.UUID;
 public class OrderResponseResource {
 
     /**
-     * Service responsible for handling business logic related to order responses.
+     * Service responsible for handling business logic related to responses.
      */
     private final OrderResponseService orderResponseService;
 

@@ -1,5 +1,6 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.OrderCreateRequest;
 import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderStatus;
@@ -13,6 +14,25 @@ class OrderMapperTest {
     private static final int PRICE = 250;
 
     private final OrderMapper mapper = new OrderMapperImpl();
+
+    @Test
+    void createRequestBecomesANewOrderWithoutTheFieldsOfTheServer() {
+        OrderCreateRequest request = new OrderCreateRequest();
+        request.setTitle("New title");
+        request.setDescription("New description");
+        request.setPrice(PRICE);
+
+        Order order = mapper.toEntity(request);
+
+        assertEquals("New title", order.getTitle());
+        assertEquals("New description", order.getDescription());
+        assertEquals(PRICE, order.getPrice());
+        assertNull(order.getId());
+        assertNull(order.getVersion());
+        assertNull(order.getStatus());
+        assertNull(order.getCustomer());
+        assertNull(order.getLocation());
+    }
 
     @Test
     void updateRequestKeepsUnsentFieldsNull() {

@@ -52,7 +52,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     /**
-     * Service for managing order responses.
+     * Service for managing responses.
      */
     private final OrderResponseService orderResponseService;
 

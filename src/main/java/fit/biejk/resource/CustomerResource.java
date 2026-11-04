@@ -1,6 +1,5 @@
 package fit.biejk.resource;
 
-import fit.biejk.dto.CustomerDto;
 import fit.biejk.dto.PageRequest;
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
@@ -13,7 +12,6 @@ import fit.biejk.service.AuthService;
 import fit.biejk.service.CustomerService;
 import fit.biejk.service.OrderService;
 import fit.biejk.service.ReviewService;
-import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -66,25 +64,6 @@ public class CustomerResource {
     private final ReviewService reviewService;
 
     /**
-     * Retrieves all customers.
-     * Currently disabled by @DenyAll: customer profiles are not public.
-     *
-     * @param pagination the pagination parameters (page and size)
-     * @return list of all customers
-     */
-    @GET
-    @DenyAll
-    public Response getCustomers(@BeanParam final PageRequest pagination) {
-        log.info("getAll request");
-        List<CustomerProfile> result = customerService.getAll(
-                pagination.getPage(),
-                pagination.getSize()
-        );
-        log.debug("Found {} customers", result.size());
-        return Response.ok(customerMapper.toDtoList(result)).build();
-    }
-
-    /**
      * Retrieves the public view of a customer by ID (no contact data).
      * Available to any authenticated user.
      *
@@ -99,42 +78,6 @@ public class CustomerResource {
         CustomerProfile result = customerService.getById(customerId);
         log.debug("Found customer with ID={}", result.getId());
         return Response.ok(customerMapper.toPublicDto(result)).build();
-    }
-
-    /**
-     * Updates a customer by ID.
-     * Currently disabled by @DenyAll.
-     *
-     * @param customerId  customer ID
-     * @param dto updated customer data
-     * @return updated customer
-     */
-    @PUT
-    @Path("/{customerId}")
-    @DenyAll
-    public Response update(@PathParam("customerId") final UUID customerId, @Valid final CustomerDto dto) {
-        log.info("update request: customerId={}, dto={}", customerId, dto);
-        CustomerProfile entity = customerMapper.toEntity(dto);
-        CustomerProfile result = customerService.update(customerId, entity);
-        log.debug("Updated customer with ID={}", result.getId());
-        return Response.ok(customerMapper.toDto(result)).build();
-    }
-
-    /**
-     * Deletes a customer by ID.
-     * Currently disabled by @DenyAll.
-     *
-     * @param customerId customer ID
-     * @return response status
-     */
-    @DELETE
-    @Path("/{customerId}")
-    @DenyAll
-    public Response delete(@PathParam("customerId") final UUID customerId) {
-        log.info("delete request: {}", customerId);
-        customerService.delete(customerId);
-        log.debug("Deleted customer with ID={}", customerId);
-        return Response.noContent().build();
     }
 
     /**

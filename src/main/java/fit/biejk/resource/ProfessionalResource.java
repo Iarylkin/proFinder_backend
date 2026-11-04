@@ -1,16 +1,14 @@
 package fit.biejk.resource;
 
 import fit.biejk.dto.PageRequest;
-import fit.biejk.dto.ReviewDto;
-import fit.biejk.dto.ProfessionalDto;
 import fit.biejk.dto.ProfessionalUpdateRequest;
+import fit.biejk.dto.ReviewCreateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
 import fit.biejk.mapper.OrderResponseMapper;
-import fit.biejk.mapper.ReviewMapper;
 import fit.biejk.mapper.ProfessionalMapper;
+import fit.biejk.mapper.ReviewMapper;
 import fit.biejk.service.*;
-import jakarta.annotation.security.DenyAll;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -35,7 +33,7 @@ import java.util.UUID;
 public class ProfessionalResource {
 
     /**
-     * Service responsible for handling business logic related to order responses.
+     * Service responsible for handling business logic related to responses.
      */
     private final OrderResponseService orderResponseService;
 
@@ -82,41 +80,6 @@ public class ProfessionalResource {
         log.info("Get professional by ID={}", professionalId);
         ProfessionalProfile result = professionalService.getById(professionalId);
         return Response.ok(professionalMapper.toPublicDto(result)).build();
-    }
-
-    /**
-     * Updates a professional by ID.
-     * Currently disabled with {@code @DenyAll}.
-     *
-     * @param professionalId  ID of the professional to update
-     * @param dto updated data
-     * @return HTTP response with updated professional
-     */
-    @PUT
-    @Path("/{professionalId}")
-    @DenyAll
-    public Response update(@PathParam("professionalId") final UUID professionalId, @Valid final ProfessionalDto dto) {
-        log.info("Update professional request: ID={}, dto={}", professionalId, dto);
-        ProfessionalProfile entity = professionalMapper.toEntity(dto);
-        ProfessionalProfile result = professionalService.update(professionalId, entity);
-        log.debug("Professional updated with ID={}", result.getId());
-        return Response.ok(professionalMapper.toDto(result)).build();
-    }
-
-    /**
-     * Deletes a professional by ID.
-     * Currently disabled with {@code @DenyAll}.
-     *
-     * @param professionalId ID of the professional to delete
-     * @return HTTP response
-     */
-    @DELETE
-    @Path("/{professionalId}")
-    @DenyAll
-    public Response delete(@PathParam("professionalId") final UUID professionalId) {
-        log.info("Delete professional request: ID={}", professionalId);
-        professionalService.delete(professionalId);
-        return Response.noContent().build();
     }
 
     /**
@@ -189,16 +152,16 @@ public class ProfessionalResource {
      * Creates a review for the given professional.
      *
      * @param professionalId professional ID
-     * @param dto review data
+     * @param request review data
      * @return HTTP 200 with saved review
      */
     @POST
     @Path("/{professionalId}/reviews")
     @RolesAllowed("CUSTOMER")
     public Response createReview(@PathParam("professionalId") final UUID professionalId,
-                                 @Valid final ReviewDto dto
+                                 @Valid final ReviewCreateRequest request
     ) {
-        Review review = reviewMapper.toEntity(dto);
+        Review review = reviewMapper.toEntity(request);
         Review result = professionalService.review(professionalId, review);
 
         return Response.status(Response.Status.CREATED).entity(reviewMapper.toDto(result)).build();

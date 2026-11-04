@@ -144,7 +144,7 @@ public class OrderResponseService {
         OrderResponse orderResponse = orderResponseRepository.findById(responseId);
         if (orderResponse == null) {
             log.error("Response with ID={} not found", responseId);
-            throw new NotFoundException("OrderResponse with ID " + responseId + " not found");
+            throw new NotFoundException("Response with ID " + responseId + " not found");
         }
 
         log.debug("Response found: ID={}, status={}", orderResponse.getId(), orderResponse.getStatus());

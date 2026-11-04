@@ -105,30 +105,6 @@ public class ProfessionalService {
     }
 
     /**
-     * Updates an existing professional.
-     * Delegates base update logic to {@link UserService}, then applies additional updates.
-     *
-     * @param id         professional ID
-     * @param professional updated professional data
-     * @return updated professional
-     */
-    @Transactional
-    public ProfessionalProfile update(final UUID id, final ProfessionalProfile professional) {
-        log.info("Update professional: ID={}", id);
-        ProfessionalProfile old = getById(id);
-        profileService.updatePersonalData(old, professional);
-        old.setDescription(professional.getDescription());
-        professionalRepository.flush();
-
-        old.getCategories().size();
-
-        professionalSearchService.save(professionalSearchMapper.toDto(old));
-
-        log.debug("Professional updated with ID={}", id);
-        return old;
-    }
-
-    /**
      * Deletes a professional by ID.
      * Delegates deletion logic to {@link UserService}.
      *

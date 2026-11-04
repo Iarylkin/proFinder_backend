@@ -28,7 +28,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderResource {
 
-    /** Service for managing order responses. */
+    /** Service for managing responses. */
     private final OrderResponseService orderResponseService;
 
     /**
@@ -70,14 +70,14 @@ public class OrderResource {
     /**
      * Creates a new order for the authenticated customer.
      *
-     * @param dto order data
+     * @param request order data
      * @return created order
      */
     @POST
     @RolesAllowed("CUSTOMER")
-    public Response create(@Valid final OrderDto dto) {
-        log.info("Create order request: {}", dto);
-        Order order = orderMapper.toEntity(dto);
+    public Response create(@Valid final OrderCreateRequest request) {
+        log.info("Create order request: {}", request);
+        Order order = orderMapper.toEntity(request);
         UUID customerId = authService.getCurrentUserId();
         CustomerProfile customer = customerService.getById(customerId);
         order.setCustomer(customer);
@@ -112,7 +112,7 @@ public class OrderResource {
      * Submits a response for an order by the authenticated professional.
      *
      * @param orderId      ID of the order to propose on
-     * @param orderResponseDto  response data
+     * @param request       response data
      * @return created response
      */
     @POST
@@ -120,9 +120,9 @@ public class OrderResource {
     @RolesAllowed("PROFESSIONAL")
     public Response respond(
             @PathParam("orderId") final UUID orderId,
-            @Valid final OrderResponseDto orderResponseDto) {
-        log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
-        OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
+            @Valid final OrderResponseCreateRequest request) {
+        log.info("Create response request: orderId={}, request={}", orderId, request);
+        OrderResponse orderResponse = orderResponseMapper.toEntity(request);
         UUID professionalId = authService.getCurrentUserId();
 
         OrderResponse result = orderService.respond(orderId, professionalId, orderResponse);

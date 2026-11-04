@@ -47,35 +47,6 @@ public interface ProfessionalMapper {
     List<ProfessionalPublicDto> toPublicDtoList(List<ProfessionalProfile> entityList);
 
     /**
-     * Converts a ProfessionalDto to a professional profile.
-     *
-     * @param dto the ProfessionalDto
-     * @return the corresponding professional profile
-     */
-    @Mapping(target = "user", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "avatarKey", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
-    @Mapping(target = "reviews", ignore = true)
-    ProfessionalProfile toEntity(ProfessionalDto dto);
-
-    /**
-     * Converts a list of professional profiles to a list of DTOs.
-     *
-     * @param entitiyList the professional profiles
-     * @return the corresponding DTOs
-     */
-    List<ProfessionalDto> toDtoList(List<ProfessionalProfile> entitiyList);
-
-    /**
-     * Converts a list of DTOs to a list of professional profiles.
-     *
-     * @param dtoList the DTOs
-     * @return the corresponding professional profiles
-     */
-    List<ProfessionalProfile> toEntityList(List<ProfessionalDto> dtoList);
-
-    /**
      * Converts a professional update request to a professional profile that holds only the requested changes.
      * <p>
      * Every field the request does not carry stays {@code null}.

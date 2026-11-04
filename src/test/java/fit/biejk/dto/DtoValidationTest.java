@@ -74,8 +74,8 @@ class DtoValidationTest {
         return request;
     }
 
-    private static OrderDto order(final String title, final String description) {
-        OrderDto dto = new OrderDto();
+    private static OrderCreateRequest order(final String title, final String description) {
+        OrderCreateRequest dto = new OrderCreateRequest();
         dto.setTitle(title);
         dto.setDescription(description);
         dto.setPrice(100);
@@ -113,7 +113,7 @@ class DtoValidationTest {
 
     @Test
     void orderDeadlineMustNotBeInThePast() {
-        OrderDto dto = order(TITLE, DESCRIPTION);
+        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
         dto.setDeadline(LocalDateTime.now().minusDays(1));
         assertEquals(Set.of("deadline"), invalidFields(dto));
 
@@ -185,7 +185,7 @@ class DtoValidationTest {
 
     @Test
     void orderPriceHasACap() {
-        OrderDto dto = order(TITLE, DESCRIPTION);
+        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
         dto.setPrice(1_000_001);
 
         assertEquals(Set.of("price"), invalidFields(dto));
@@ -197,10 +197,10 @@ class DtoValidationTest {
         assertEquals(Set.of("version"), invalidFields(new ProfileUpdateRequest()));
         assertEquals(Set.of("version"), invalidFields(new ProfessionalUpdateRequest()));
 
-        OrderResponseUpdateRequest response = new OrderResponseUpdateRequest();
-        response.setStatus(OrderResponseStatus.APPROVED);
-        response.setFinalDeadline(LocalDateTime.now().plusDays(1));
-        assertEquals(Set.of("version"), invalidFields(response));
+        OrderResponseUpdateRequest orderResponse = new OrderResponseUpdateRequest();
+        orderResponse.setStatus(OrderResponseStatus.APPROVED);
+        orderResponse.setFinalDeadline(LocalDateTime.now().plusDays(1));
+        assertEquals(Set.of("version"), invalidFields(orderResponse));
     }
 
     @Test
@@ -227,7 +227,7 @@ class DtoValidationTest {
 
     @Test
     void responseDescriptionIsRequiredAndLimited() {
-        OrderResponseDto dto = new OrderResponseDto();
+        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
         dto.setPrice(100);
 
         assertEquals(Set.of("description"), invalidFields(dto));
@@ -237,8 +237,24 @@ class DtoValidationTest {
     }
 
     @Test
+    void responsePriceIsRequired() {
+        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
+        dto.setDescription("I can do it");
+
+        assertEquals(Set.of("price"), invalidFields(dto));
+    }
+
+    @Test
+    void orderPriceIsRequired() {
+        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
+        dto.setPrice(null);
+
+        assertEquals(Set.of("price"), invalidFields(dto));
+    }
+
+    @Test
     void responsePriceIsNonNegativeAndCapped() {
-        OrderResponseDto dto = new OrderResponseDto();
+        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
         dto.setDescription("I can do it");
         dto.setPrice(-1);
         assertEquals(Set.of("price"), invalidFields(dto));
@@ -291,11 +307,11 @@ class DtoValidationTest {
 
     @Test
     void reviewCommentRejectsControlCharacters() {
-        ReviewDto dto = new ReviewDto();
+        ReviewCreateRequest dto = new ReviewCreateRequest();
         dto.setComment("Great work\u0000!");
         dto.setRating(5);
 
-        Set<ConstraintViolation<ReviewDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<ReviewCreateRequest>> violations = validator.validate(dto);
 
         assertEquals(1, violations.size());
         assertEquals("comment", violations.iterator().next().getPropertyPath().toString());

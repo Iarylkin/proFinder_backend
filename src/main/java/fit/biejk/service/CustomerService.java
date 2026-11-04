@@ -8,7 +8,6 @@ import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,20 +38,6 @@ public class CustomerService {
     private final ProfileService profileService;
 
     /**
-     * Retrieves a list of all customers.
-     *
-     * @param page page number for pagination
-     * @param size number of customers per page
-     * @return list of customers
-     */
-    public List<CustomerProfile> getAll(final int page, final int size) {
-        log.info("Get all customers");
-        List<CustomerProfile> result = customerRepository.findAll().page(page - 1, size).list();
-        log.debug("Found {} customers", result.size());
-        return result;
-    }
-
-    /**
      * Retrieves a customer by their ID.
      *
      * @param id ID of the customer
@@ -67,22 +52,6 @@ public class CustomerService {
             throw new NotFoundException("Customer with id " + id + " not found");
         }
         return result;
-    }
-
-    /**
-     * Updates customer data by ID.
-     *
-     * @param id     ID of the customer to update
-     * @param customer updated customer data
-     * @return the original customer before update
-     */
-    @Transactional
-    public CustomerProfile update(final UUID id, final CustomerProfile customer) {
-        log.info("Update customer: ID={}", id);
-        CustomerProfile old = getById(id);
-        profileService.updatePersonalData(old, customer);
-        log.debug("Customer updated with ID={}", id);
-        return old;
     }
 
     /**

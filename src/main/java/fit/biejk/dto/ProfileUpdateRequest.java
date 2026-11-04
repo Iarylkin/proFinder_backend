@@ -25,21 +25,21 @@ public class ProfileUpdateRequest {
     /**
      * New first name.
      */
-    @Size(max = CustomerDto.NAME_MAX_LENGTH)
+    @Size(max = Limits.NAME_MAX_LENGTH)
     @Pattern(regexp = Limits.NAME_PATTERN)
     private String firstName;
 
     /**
      * New last name.
      */
-    @Size(max = CustomerDto.NAME_MAX_LENGTH)
+    @Size(max = Limits.NAME_MAX_LENGTH)
     @Pattern(regexp = Limits.NAME_PATTERN)
     private String lastName;
 
     /**
      * New phone number.
      */
-    @Size(max = CustomerDto.PHONE_MAX_LENGTH)
+    @Size(max = Limits.PHONE_MAX_LENGTH)
     @Pattern(regexp = Limits.PHONE_PATTERN)
     private String phoneNumber;
 

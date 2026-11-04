@@ -1,5 +1,6 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.ReviewCreateRequest;
 import fit.biejk.dto.ReviewDto;
 import fit.biejk.entity.Review;
 import org.mapstruct.*;
@@ -23,18 +24,20 @@ public interface ReviewMapper {
     ReviewDto toDto(Review entity);
 
     /**
-     * Maps a {@link ReviewDto} to a {@link Review} entity.
+     * Maps a {@link ReviewCreateRequest} to a {@link Review} entity.
      * <p>
-     * Relations (customer, professional, order) should be set manually in service.
+     * Relations (customer, professional) are set manually in the service.
      * </p>
      *
-     * @param dto the review DTO
+     * @param request the request to create a review
      * @return the entity (without full relations)
      */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "professional", ignore = true)
     @Mapping(target = "createAt", ignore = true)
-    Review toEntity(ReviewDto dto);
+    Review toEntity(ReviewCreateRequest request);
 
     /**
      * Converts a list of entities to a list of DTOs.
@@ -43,12 +46,4 @@ public interface ReviewMapper {
      * @return list of DTOs
      */
     List<ReviewDto> toDtoList(List<Review> entityList);
-
-    /**
-     * Converts a list of DTOs to a list of entities (without relations).
-     *
-     * @param dtoList list of DTOs
-     * @return list of entities
-     */
-    List<Review> toEntityList(List<ReviewDto> dtoList);
 }

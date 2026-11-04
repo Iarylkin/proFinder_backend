@@ -1,8 +1,5 @@
 package fit.biejk.dto;
 
-import fit.biejk.validation.Limits;
-import fit.biejk.validation.NoControlChars;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,7 +7,8 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 /**
- * Data Transfer Object for transferring review data between client and server.
+ * Data Transfer Object with the data of a review, sent to the client. A review is created with
+ * {@link ReviewCreateRequest}.
  * <p>
  * Contains information about the review, including author, recipient, order,
  * textual comment, and numerical rating.
@@ -43,20 +41,11 @@ public class ReviewDto {
 
     /**
      * Review comment content.
-     * <p>
-     * Must not be blank and must contain between 5 and 1000 characters.
-     * </p>
      */
-    @NotBlank(message = "Comment must not be blank")
-    @Size(min = Limits.REVIEW_COMMENT_MIN_LENGTH, max = Limits.REVIEW_COMMENT_MAX_LENGTH,
-            message = "Comment must be between 5 and 1000 characters")
-    @NoControlChars(multiline = true)
     private String comment;
 
     /**
      * Rating value from 1 to 5.
      */
-    @Min(value = 1, message = "Rating must be at least 1")
-    @Max(value = 5, message = "Rating must be at most 5")
     private int rating;
 }

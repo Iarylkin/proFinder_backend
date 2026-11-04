@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -29,16 +30,6 @@ import java.util.UUID;
 public abstract class Profile extends VersionedEntity {
 
     /**
-     * Maximum length for firstName and lastName fields.
-     */
-    public static final int NAME_MAX_LENGTH = 50;
-
-    /**
-     * Maximum length for phoneNumber field.
-     */
-    public static final int PHONE_MAX_LENGTH = 20;
-
-    /**
      * Identifier of the profile, taken from the user it belongs to.
      */
     @Id
@@ -55,19 +46,19 @@ public abstract class Profile extends VersionedEntity {
     /**
      * First name of the person.
      */
-    @Column(name = "first_name", length = NAME_MAX_LENGTH)
+    @Column(name = "first_name", length = Limits.NAME_MAX_LENGTH)
     private String firstName;
 
     /**
      * Last name of the person.
      */
-    @Column(name = "last_name", length = NAME_MAX_LENGTH)
+    @Column(name = "last_name", length = Limits.NAME_MAX_LENGTH)
     private String lastName;
 
     /**
      * Phone number of the person.
      */
-    @Column(name = "phone_number", length = PHONE_MAX_LENGTH)
+    @Column(name = "phone_number", length = Limits.PHONE_MAX_LENGTH)
     private String phoneNumber;
 
     /**

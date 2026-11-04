@@ -1,12 +1,6 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.OrderResponseStatus;
-import fit.biejk.validation.Limits;
-import fit.biejk.validation.NoControlChars;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +8,8 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 /**
- * Data Transfer Object representing a response related to an order.
+ * Data Transfer Object representing a response related to an order, sent to the client. A response is created
+ * with {@link OrderResponseCreateRequest}.
  */
 @Data
 @NoArgsConstructor
@@ -42,18 +37,13 @@ public class OrderResponseDto {
     private UUID professionalId;
 
     /**
-     * Description of the response. Must not be blank.
+     * Description of the response.
      */
-    @NotBlank
-    @Size(max = Limits.RESPONSE_DESCRIPTION_MAX_LENGTH)
-    @NoControlChars(multiline = true)
     private String description;
 
     /**
-     * Proposed price. Must not be null.
+     * Proposed price.
      */
-    @Min(0)
-    @Max(Limits.PRICE_MAX)
     private int price;
 
     /**

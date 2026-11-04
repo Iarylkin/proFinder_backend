@@ -1,5 +1,6 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.OrderResponseCreateRequest;
 import fit.biejk.dto.OrderResponseDto;
 import fit.biejk.entity.OrderResponse;
 import org.mapstruct.Mapper;
@@ -15,16 +16,18 @@ import java.util.List;
 public interface OrderResponseMapper {
 
     /**
-     * Converts an OrderResponseDto to an OrderResponse entity.
-     * Ignores nested order and professional IDs during mapping.
+     * Converts the request to respond to an order to a new OrderResponse entity. The identifier, version, order,
+     * professional and status are set by the server, so they are not mapped.
      *
-     * @param orderResponseDto the DTO to convert
+     * @param request the request to convert
      * @return the mapped OrderResponse entity
      */
-    @Mapping(target = "order.id", ignore = true)
-    @Mapping(target = "professional.id", ignore = true)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
-    OrderResponse toEntity(OrderResponseDto orderResponseDto);
+    @Mapping(target = "order", ignore = true)
+    @Mapping(target = "professional", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    OrderResponse toEntity(OrderResponseCreateRequest request);
 
     /**
      * Converts an OrderResponse entity to an OrderResponseDto.
@@ -36,14 +39,6 @@ public interface OrderResponseMapper {
     @Mapping(target = "orderId", source = "order.id")
     @Mapping(target = "professionalId", source = "professional.id")
     OrderResponseDto toDto(OrderResponse orderResponse);
-
-    /**
-     * Converts a list of OrderResponseDto objects to a list of entities.
-     *
-     * @param orderResponseDtoList list of DTOs
-     * @return list of OrderResponse entities
-     */
-    List<OrderResponse> toEntityList(List<OrderResponseDto> orderResponseDtoList);
 
     /**
      * Converts a list of OrderResponse entities to a list of DTOs.

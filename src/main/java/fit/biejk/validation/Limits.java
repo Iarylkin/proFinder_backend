@@ -12,6 +12,16 @@ public final class Limits {
     public static final int EMAIL_MAX_LENGTH = 254;
 
     /**
+     * Longest first name or last name.
+     */
+    public static final int NAME_MAX_LENGTH = 50;
+
+    /**
+     * Longest phone number.
+     */
+    public static final int PHONE_MAX_LENGTH = 20;
+
+    /**
      * Shortest password that is accepted when a new one is set.
      */
     public static final int PASSWORD_MIN_LENGTH = 8;
@@ -42,7 +52,7 @@ public final class Limits {
     public static final int ORDER_DESCRIPTION_MAX_LENGTH = 5000;
 
     /**
-     * Longest description of a response to an order.
+     * Longest description of a response on an order.
      */
     public static final int RESPONSE_DESCRIPTION_MAX_LENGTH = 2000;
 

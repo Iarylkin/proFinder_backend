@@ -1,5 +1,6 @@
 package fit.biejk.mapper;
 
+import fit.biejk.dto.OrderCreateRequest;
 import fit.biejk.dto.OrderDto;
 import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Order;
@@ -16,16 +17,19 @@ import java.util.List;
 public interface OrderMapper {
 
     /**
-     * Converts an OrderDto to an Order entity.
-     * Ignores the 'customer' and 'orderResponses' fields during mapping.
+     * Converts the request to create an order to a new Order entity. The identifier, version, status, customer
+     * and location are set by the server, so they are not mapped.
      *
-     * @param orderDto the DTO to convert
+     * @param request the request to convert
      * @return the mapped Order entity
      */
-    @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "id", ignore = true)
     @Mapping(target = "version", ignore = true)
-    Order toEntity(OrderDto orderDto);
+    @Mapping(target = "customer", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "location", ignore = true)
+    @Mapping(target = "orderResponses", ignore = true)
+    Order toEntity(OrderCreateRequest request);
 
     /**
      * Converts an Order entity to an OrderDto.
@@ -44,14 +48,6 @@ public interface OrderMapper {
      * @return list of OrderDto objects
      */
     List<OrderDto> toDtoList(List<Order> entitiyList);
-
-    /**
-     * Converts a list of OrderDto objects to a list of Order entities.
-     *
-     * @param dtoList list of OrderDto objects
-     * @return list of Order entities
-     */
-    List<Order> toEntityList(List<OrderDto> dtoList);
 
     /**
      * Converts an update request to an Order that holds only the requested changes.
