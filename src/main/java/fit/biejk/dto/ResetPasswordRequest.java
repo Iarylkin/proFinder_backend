@@ -1,7 +1,9 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,12 +26,14 @@ public class ResetPasswordRequest {
      */
     @NotBlank(message = "Email must not be blank")
     @Email(message = "Invalid email format")
+    @Size(max = Limits.EMAIL_MAX_LENGTH)
     private String email;
 
     /**
      * The new password the user wants to set.
      */
     @NotBlank(message = "New password must not be blank")
+    @Size(min = Limits.PASSWORD_MIN_LENGTH, max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String newPassword;
 
@@ -37,6 +41,7 @@ public class ResetPasswordRequest {
      * Confirmation of the new password for validation.
      */
     @NotBlank(message = "Password confirmation must not be blank")
+    @Size(max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String confirmPassword;
 

@@ -1,12 +1,15 @@
 package fit.biejk.dto;
 
-import fit.biejk.entity.Location;
 import fit.biejk.entity.Category;
+import fit.biejk.entity.Location;
+import fit.biejk.validation.Limits;
+import fit.biejk.validation.NoControlChars;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,19 +56,22 @@ public class ProfessionalDto {
     /**
      * First name of the professional.
      */
-    @Length(max = NAME_MAX_LENGTH)
+    @Size(max = NAME_MAX_LENGTH)
+    @Pattern(regexp = Limits.NAME_PATTERN)
     private String firstName;
 
     /**
      * Last name of the professional.
      */
-    @Length(max = NAME_MAX_LENGTH)
+    @Size(max = NAME_MAX_LENGTH)
+    @Pattern(regexp = Limits.NAME_PATTERN)
     private String lastName;
 
     /**
      * Phone number of the professional.
      */
-    @Length(max = PHONE_MAX_LENGTH)
+    @Size(max = PHONE_MAX_LENGTH)
+    @Pattern(regexp = Limits.PHONE_PATTERN)
     private String phoneNumber;
 
     /**
@@ -86,5 +92,7 @@ public class ProfessionalDto {
     /**
      * Detailed description of the professional's expertise.
      */
+    @Size(max = Limits.BIO_MAX_LENGTH)
+    @NoControlChars(multiline = true)
     private String description;
 }

@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
 import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -58,13 +59,13 @@ public class Order extends BaseEntity {
 
 
     /** Brief title summarizing the order. */
-    @Column(name = "title")
+    @Column(name = "title", length = Limits.ORDER_TITLE_MAX_LENGTH)
     private String title;
 
     /**
      * Description provided by the customer for the order.
      */
-    @Column(name = "description")
+    @Column(name = "description", length = Limits.ORDER_DESCRIPTION_MAX_LENGTH)
     private String description;
 
     /**

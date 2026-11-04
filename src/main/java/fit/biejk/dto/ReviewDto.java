@@ -1,5 +1,7 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
+import fit.biejk.validation.NoControlChars;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -46,7 +48,9 @@ public class ReviewDto {
      * </p>
      */
     @NotBlank(message = "Comment must not be blank")
-    @Size(min = 5, max = 1000, message = "Comment must be between 5 and 1000 characters")
+    @Size(min = Limits.REVIEW_COMMENT_MIN_LENGTH, max = Limits.REVIEW_COMMENT_MAX_LENGTH,
+            message = "Comment must be between 5 and 1000 characters")
+    @NoControlChars(multiline = true)
     private String comment;
 
     /**

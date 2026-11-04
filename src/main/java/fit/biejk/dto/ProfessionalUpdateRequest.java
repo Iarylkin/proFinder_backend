@@ -1,6 +1,9 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Category;
+import fit.biejk.validation.Limits;
+import fit.biejk.validation.NoControlChars;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -22,6 +25,8 @@ public class ProfessionalUpdateRequest extends ProfileUpdateRequest {
     /**
      * New description of the services.
      */
+    @Size(max = Limits.BIO_MAX_LENGTH)
+    @NoControlChars(multiline = true)
     private String description;
 
     /**

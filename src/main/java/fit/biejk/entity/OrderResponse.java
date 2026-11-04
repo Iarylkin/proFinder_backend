@@ -1,12 +1,13 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Column;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.EnumType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,7 +39,7 @@ public class OrderResponse extends BaseEntity {
     /**
      * Description provided by the professional in the response.
      */
-    @Column(name = "description")
+    @Column(name = "description", length = Limits.RESPONSE_DESCRIPTION_MAX_LENGTH)
     private String description;
 
     /**

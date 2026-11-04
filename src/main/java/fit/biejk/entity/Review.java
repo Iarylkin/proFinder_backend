@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,7 +41,7 @@ public class Review extends BaseEntity {
     /**
      * Textual comment provided by the customer (max 1000 characters).
      */
-    @Column(name = "comment")
+    @Column(name = "comment", length = Limits.REVIEW_COMMENT_MAX_LENGTH)
     private String comment;
 
     /**

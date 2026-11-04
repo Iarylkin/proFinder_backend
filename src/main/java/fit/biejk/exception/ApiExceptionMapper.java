@@ -1,5 +1,7 @@
 package fit.biejk.exception;
 
+import jakarta.json.JsonException;
+import jakarta.json.bind.JsonbException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -22,6 +24,8 @@ import java.util.Map;
  *   a status that is not in the catalog is passed through unchanged;</li>
  *   <li>failed bean validation becomes {@code VALIDATION_ERROR} with a field to reason map;</li>
  *   <li>a failed optimistic lock becomes {@code CONFLICT};</li>
+ *   <li>a body that is not valid JSON, or has a value of the wrong type or format (for example a date that is not
+ *   ISO 8601), becomes {@code VALIDATION_ERROR};</li>
  *   <li>anything else is logged and answered with {@code INTERNAL_ERROR}; its message never reaches the client.</li>
  * </ul>
  */
@@ -32,6 +36,11 @@ public class ApiExceptionMapper {
      * Prefix of the default message that {@link WebApplicationException} makes up from the status.
      */
     private static final String DEFAULT_MESSAGE_PREFIX = "HTTP ";
+
+    /**
+     * Message for a body that cannot be read. The text of the parser is not shown: it names internal classes.
+     */
+    private static final String MALFORMED_BODY_MESSAGE = "The request body is malformed";
 
     /**
      * Maps an exception that carries its own HTTP status.
@@ -94,9 +103,32 @@ public class ApiExceptionMapper {
                 break;
             }
         }
+        if (isMalformedBody(exception)) {
+            return build(Response.status(ErrorCode.VALIDATION_ERROR.getStatus()), ErrorCode.VALIDATION_ERROR,
+                    MALFORMED_BODY_MESSAGE, null);
+        }
         log.error("Unhandled error", exception);
         return build(Response.status(ErrorCode.INTERNAL_ERROR.getStatus()), ErrorCode.INTERNAL_ERROR,
                 ErrorCode.INTERNAL_ERROR.getMessage(), null);
+    }
+
+    /**
+     * Tells whether the request body could not be read: it is not valid JSON, or a value has the wrong type or
+     * format (for example a date that is not ISO 8601). That is the mistake of the client.
+     *
+     * @param exception the exception, whose causes are searched too
+     * @return {@code true} if the body is malformed
+     */
+    private static boolean isMalformedBody(final Throwable exception) {
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause instanceof JsonbException || cause instanceof JsonException) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
+        }
+        return false;
     }
 
     private static Response build(final Response.ResponseBuilder builder, final ErrorCode code,

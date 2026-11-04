@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
 import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class User extends BaseEntity {
     /**
      * User's email address. Must be unique.
      */
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true, length = Limits.EMAIL_MAX_LENGTH)
     private String email;
 
     /**

@@ -1,6 +1,9 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.validation.Limits;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -30,6 +33,7 @@ public class OrderResponseUpdateRequest {
      * Must not be null.
      */
     @NotNull(message = "Final deadline cannot be null")
+    @FutureOrPresent
     private LocalDateTime finalDeadline;
 
     /**
@@ -37,5 +41,6 @@ public class OrderResponseUpdateRequest {
      * Must be a non-negative integer.
      */
     @Min(value = 0, message = "Final price must be non-negative")
+    @Max(Limits.PRICE_MAX)
     private int finalPrice;
 }

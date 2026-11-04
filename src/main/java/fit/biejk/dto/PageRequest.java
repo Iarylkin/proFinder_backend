@@ -1,13 +1,16 @@
 package fit.biejk.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import fit.biejk.validation.Limits;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
 import lombok.Data;
 
 /**
  * Basic DTO for handling pagination parameters in API requests.
+ * <p>
+ * Out-of-range values are not an error: a page below 1 is read as the first page and a size outside
+ * 1 - {@value Limits#PAGE_SIZE_MAX} is reduced to the nearest limit.
+ * </p>
  */
 @Data
 public class PageRequest {
@@ -17,15 +20,30 @@ public class PageRequest {
      */
     @QueryParam("page")
     @DefaultValue("1")
-    @Min(value = 1, message = "Page must be >= 1")
     private int page;
 
     /**
-     * The number of items per page. Maximum allowed value is 100.
+     * The number of items per page, 20 when the client sends none.
      */
     @QueryParam("size")
-    @DefaultValue("10")
-    @Max(value = 100, message = "Size must be <= 100")
+    @DefaultValue("20")
     private int size;
 
+    /**
+     * Returns the page number, at least 1.
+     *
+     * @return the page number
+     */
+    public int getPage() {
+        return Math.max(page, Limits.PAGE_MIN);
+    }
+
+    /**
+     * Returns the page size, between 1 and {@value Limits#PAGE_SIZE_MAX}.
+     *
+     * @return the page size
+     */
+    public int getSize() {
+        return Math.min(Math.max(size, 1), Limits.PAGE_SIZE_MAX);
+    }
 }

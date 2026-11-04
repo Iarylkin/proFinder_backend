@@ -1,5 +1,6 @@
 package fit.biejk.entity;
 
+import fit.biejk.validation.Limits;
 import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -39,7 +40,7 @@ public class ProfessionalProfile extends Profile {
     /**
      * Short description of the professional's services or qualifications.
      */
-    @Column(name = "description")
+    @Column(name = "description", length = Limits.BIO_MAX_LENGTH)
     private String description;
 
     /**

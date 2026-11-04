@@ -1,10 +1,12 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
+import fit.biejk.validation.Limits;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.validator.constraints.Length;
 
 /**
  * Request body for a partial update of the current user's profile.
@@ -21,19 +23,22 @@ public class ProfileUpdateRequest {
     /**
      * New first name.
      */
-    @Length(max = CustomerDto.NAME_MAX_LENGTH)
+    @Size(max = CustomerDto.NAME_MAX_LENGTH)
+    @Pattern(regexp = Limits.NAME_PATTERN)
     private String firstName;
 
     /**
      * New last name.
      */
-    @Length(max = CustomerDto.NAME_MAX_LENGTH)
+    @Size(max = CustomerDto.NAME_MAX_LENGTH)
+    @Pattern(regexp = Limits.NAME_PATTERN)
     private String lastName;
 
     /**
      * New phone number.
      */
-    @Length(max = CustomerDto.PHONE_MAX_LENGTH)
+    @Size(max = CustomerDto.PHONE_MAX_LENGTH)
+    @Pattern(regexp = Limits.PHONE_PATTERN)
     private String phoneNumber;
 
     /**

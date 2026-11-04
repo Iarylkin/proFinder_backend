@@ -1,5 +1,7 @@
 package fit.biejk.exception;
 
+import jakarta.json.JsonException;
+import jakarta.json.bind.JsonbException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.RollbackException;
@@ -119,6 +121,20 @@ class ApiExceptionMapperTest {
         rollback.initCause(new PersistenceException(new OptimisticLockException("stale")));
 
         assertEquals(409, mapper.map(rollback).getStatus());
+    }
+
+    @Test
+    void unreadableBodyIsAValidationErrorWithoutTheParserText() {
+        Response response = mapper.map(new JsonbException("Cannot parse 2026-13-45 as java.time.LocalDateTime"));
+
+        assertEquals(400, response.getStatus());
+        assertEquals("VALIDATION_ERROR", bodyOf(response).getCode());
+        assertEquals("The request body is malformed", bodyOf(response).getMessage());
+    }
+
+    @Test
+    void unreadableBodyInsideAnotherExceptionIsAValidationError() {
+        assertEquals(400, mapper.map(new RuntimeException(new JsonException("Unexpected character"))).getStatus());
     }
 
     @Test

@@ -1,7 +1,9 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,8 +23,9 @@ public class ChangeEmailRequest {
      * The new email address to be set for the user.
      * Must be a valid, non-blank email address.
      */
-    @Email
     @NotBlank
+    @Email
+    @Size(max = Limits.EMAIL_MAX_LENGTH)
     private String newEmail;
 
     /**
@@ -30,6 +33,7 @@ public class ChangeEmailRequest {
      * Used to verify the user's identity before changing the email.
      */
     @NotBlank
+    @Size(max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String password;
 }

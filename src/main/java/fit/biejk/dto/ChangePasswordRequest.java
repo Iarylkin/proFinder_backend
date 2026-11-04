@@ -1,6 +1,8 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +24,7 @@ public class ChangePasswordRequest {
      * Must match the password stored in the system.
      */
     @NotBlank
+    @Size(max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String oldPassword;
 
@@ -30,6 +33,7 @@ public class ChangePasswordRequest {
      * Must be different from the old password.
      */
     @NotBlank
+    @Size(min = Limits.PASSWORD_MIN_LENGTH, max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String newPassword;
 
@@ -38,6 +42,7 @@ public class ChangePasswordRequest {
      * Must match {@code newPassword}.
      */
     @NotBlank
+    @Size(max = Limits.PASSWORD_MAX_LENGTH)
     @ToString.Exclude
     private String confirmPassword;
 }
