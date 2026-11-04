@@ -1,7 +1,7 @@
 # ProFinder — Elasticsearch Mapping
 
-- **Version:** 1.4
-- **Date:** 2026-10-31
+- **Version:** 1.5
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** The two Elasticsearch indexes — `professionals` and `orders` — their field mappings, analyzers, how each document is assembled from PostgreSQL, and how the queries behind [FR-Search](2%20-%20Requirements.md) map onto them. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Elasticsearch mapping".
 
@@ -133,7 +133,7 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 ### 3.3 Result card
 ---
 
-The API returns **only** these fields to `SearchResultCardDto` ([FR-Search-10](2%20-%20Requirements.md)) — request them with `_source` filtering:
+The API returns **only** these fields to `SearchResultCardResponse` ([FR-Search-10](2%20-%20Requirements.md)) — request them with `_source` filtering:
 
 `professional_id`, `display_name`, `avatar_thumb_url`, `rating_avg` (rounded to 1 decimal for display), `review_count`, `hourly_rate`. `cities` / `available` are cheap to include if the frontend wants them. Everything else (full bio, portfolio, contacts, working hours) loads from Core API when the profile is opened.
 
@@ -297,6 +297,7 @@ sort: published_at desc
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-11-04 | **Naming:** `SearchResultCardDto` → `SearchResultCardResponse`: DTOs are named by direction, `*Request` and `*Response`, to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** `display_name`, `bio` and the avatar are read from `professional_profiles`, not from `users`. |
 | 1.3 | 2026-10-27 | **D-1.4:** `last_active_at` is read from `professional_profiles.last_active_at` (falls back to `created_at`). |
 | 1.2 | 2026-10-27 | **D-1.3:** the order document takes `city` from `orders.city`. |

@@ -69,17 +69,17 @@ docker-compose up -d                              # Start all services (PostgreS
 #### `/src/main/java/fit/biejk`
 Main application code organized by layers:
 
-- **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, OrderResponse, Chat, ChatMessage, Review, Category, Location)
+- **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
   - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at users
-  - `OrderStatus`, `OrderResponseStatus`, `UserRole` enums
+  - `OrderStatus`, `BidStatus`, `UserRole` enums. `Bid` is the response of a professional to an order (table `responses`, API `/orders/{id}/responses`, `/responses/{id}`); it is not called `OrderResponse` so the name stays free for the DTO of an order
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
   - `AuthResource` — Register (`POST /auth/register`), login (`POST /auth/login`), password recovery (`/password-recovery`)
   - `UserResource` — Avatar upload/download, email/password changes (the avatar is kept in the profile)
   - `CustomerResource`, `ProfessionalResource` — Own profile (`GET`/`PATCH /customers/me`, `/professionals/me`: the type is the address), profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
   - `ProfessionalSearchResource` — Professional search (`GET /search/professionals`)
-  - `OrderResource`, `OrderResponseResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
+  - `OrderResource`, `BidResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
   - `ChatResource` — Chat creation, the current user's chats (`GET /chats/me`) and history; WebSocket communication in `ChatSocket`
   - `LocationResource`, `CategoryResource` — Reference data (`/locations`, `/categories`)
 
@@ -88,7 +88,7 @@ Main application code organized by layers:
   - `UserService` — Account creation, email/password changes
   - `ProfileService`, `ProfileFactory` — Creates the profile of a new user by its role (and sets the default location), reads a profile by user id, applies the personal data (name, phone, location) to a profile
   - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
-  - `OrderResponseService` — Response lifecycle (create, approve; the other responses of the order are rejected)
+  - `BidService` — Response lifecycle (create, approve; the other responses of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
   - `TokenService` — JWT token generation (the current user is resolved from the `SecurityIdentity` in `AuthService`)
@@ -110,8 +110,7 @@ Main application code organized by layers:
   - `OrderIndexInitializer`, `ProfessionalIndexInitializer` — Index schema setup
 
 - **`dto/`** — Data transfer objects for API requests/responses
-  - Paired with `@Valid` validation annotations
-  - DTOs: AuthRequest/AuthResponse, OrderDto, UserDto, CustomerDto, ProfessionalDto, PageRequest, filter criteria, etc.
+  - Every class is named by its direction: `*Request` (from the client, carries the `@Valid` annotations) or `*Response` (to the client, no validation): `AuthRequest`/`AuthResponse`, `OrderCreateRequest`/`OrderUpdateRequest`/`OrderResponse`, `BidCreateRequest`/`BidUpdateRequest`/`BidResponse`, `CustomerResponse`, `ProfessionalResponse`, `PageRequest`, `OrderFilterRequest`, etc. (`AvatarData` is an internal holder, not a body)
 
 - **`minio/`** — File storage integration
   - `FileService` — Upload/download avatars to MinIO (max 5 MB, type checked by magic bytes)
@@ -165,7 +164,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
 2. Professionals browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
 3. Professional submits a response via `OrderResource.respond()` (`POST /v1/orders/{id}/responses`) → `OrderService.respond()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
-4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `OrderResponseResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
+4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `BidResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
 5. Upon acceptance, the order status becomes `COMPLETED` and the other responses are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
 6. An order is updated with `PATCH /v1/orders/{id}` (`OrderResource.update()`, only the sent fields change); `{"status": "CANCELLED"}` cancels it, any other status or an invalid transition returns `409`, a non-owner gets `403`; a customer can review a professional via `POST /v1/professionals/{id}/reviews`
 
@@ -190,7 +189,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Common Patterns & Conventions
 
 1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
-2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
+2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields. A request and a response are separate classes: `*Request` holds only what the client may send and carries the validation (`OrderCreateRequest`, `BidCreateRequest`, `ReviewCreateRequest`, `*UpdateRequest`), `*Response` is only sent to the client and has no validation. A request never carries the fields of the server (`id`, `status`, `version` on create, the owner)
 3. **Validation:** Jakarta `@Valid` on every request body; limits come from `Limits` (never a literal that could drift from the column length), free text gets `@NoControlChars`, a field of a partial update (`PATCH`) uses `@Pattern(regexp = Limits.NOT_BLANK_PATTERN)` instead of `@NotBlank` because it may be missing. A failure is `400 VALIDATION_ERROR` with a field → reason map. Pagination is not validated but clamped in `PageRequest` (page ≥ 1, size 1–100, default 20)
 4. **Exception Handling:** throw the built-in `jakarta.ws.rs` exceptions where the status is enough, an `ApiException` subclass (with its `ErrorCode`) where the client must tell the error apart from the generic one of the same status; the mapping to the response is centralized in `ApiExceptionMapper`, resources do not catch exceptions to build error responses. State-less actions that return nothing (`DELETE`, avatar upload) answer `204`
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
@@ -198,7 +197,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
 8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (account: avatar, email, password) or the resource's own `/me` (`/customers/me`, `/professionals/me`, `/chats/me`)
 9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
-10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. Every response DTO of an editable resource (`OrderDto`, `OrderResponseDto`, `CustomerDto`, `ProfessionalDto`) carries `version`, and the four `PATCH` requests that change such a resource (`/orders/{id}`, `/responses/{id}`, `/customers/me`, `/professionals/me`) must send back the version they read (`400` if missing). The service calls `VersionCheck.require(entity, version)` right after loading the entity and before changing anything; a different version is `StaleVersionException` (`409 CONFLICT`). The mappers take `version` only from a partial update (`toEntity(*UpdateRequest)`) and ignore it when something is created; Hibernate's `@Version` stays as the second line of defence for two overlapping transactions
+10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. Every response DTO of an editable resource (`OrderResponse`, `BidResponse`, `CustomerResponse`, `ProfessionalResponse`) carries `version`, and the four `PATCH` requests that change such a resource (`/orders/{id}`, `/responses/{id}`, `/customers/me`, `/professionals/me`) must send back the version they read (`400` if missing). The service calls `VersionCheck.require(entity, version)` right after loading the entity and before changing anything; a different version is `StaleVersionException` (`409 CONFLICT`). The mappers take `version` only from a partial update (`toEntity(*UpdateRequest)`) and ignore it when something is created; Hibernate's `@Version` stays as the second line of defence for two overlapping transactions
 
 ### Debugging & Development Tips
 

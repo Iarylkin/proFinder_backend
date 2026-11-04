@@ -1,7 +1,7 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.11
-- **Date:** 2026-10-31
+- **Version:** 3.12
+- **Date:** 2026-11-04
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
 
@@ -122,8 +122,8 @@ There is no "delete" action for published orders and no soft-delete/recovery mec
   "budget_max": "decimal",
   "city": "string",
   "preferred_date": "date",
-  "response_count": "integer",
-  "responses": [
+  "bid_count": "integer",
+  "bids": [
     {
       "professional_id": "uuid",
       "quote_price": "decimal",
@@ -264,14 +264,14 @@ There are no other transitions. No soft delete, no moderator deletion of orders,
 - **Message (Professional):** "New order in your category: [Category] - [Budget]"
 - **Message (Customer):** "Your order is now live to professionals"
 
-### response.created
+### bid.created
 ---
 
 - **Trigger:** Professional submits their (first) response to an ACTIVE order
 - **Recipients:** Customer
 - **Message:** "New response from [Professional Name] - Quote: $[price]"
 
-### response.edited
+### bid.edited
 ---
 
 - **Trigger:** Professional edits a response they already submitted
@@ -391,7 +391,7 @@ There are no other transitions. No soft delete, no moderator deletion of orders,
 ### notification delivery model
 ---
 
-- Every event type is delivered on **push, email, and in-app** by default; each `(user, event_type, channel)` cell can be toggled off in settings (`notification_preferences` matrix). Exceptions: `response.edited` is seeded in-app-only; `message.deleted`, `order.extended` and the `search.*` events produce no notification; `auth.*` and `account.deletion_finalized` are email-only and not user-configurable.
+- Every event type is delivered on **push, email, and in-app** by default; each `(user, event_type, channel)` cell can be toggled off in settings (`notification_preferences` matrix). Exceptions: `bid.edited` is seeded in-app-only; `message.deleted`, `order.extended` and the `search.*` events produce no notification; `auth.*` and `account.deletion_finalized` are email-only and not user-configurable.
 - **In-app:** notification center only, no toast/pop-up.
 - **Email:** real-time (no digest in MVP), multipart HTML + plain-text, branded template, per-type unsubscribe + "unsubscribe from all email" footer link. All email (including the Auth Service's `auth.*` transactional mail) is sent by the Notification Service.
 - **Push:** Firebase Cloud Messaging; each notification carries a deep-link payload `{type, entity_type, entity_id, url}`.
@@ -517,7 +517,7 @@ A permanently banned user can file an appeal against the ban decision. This is t
   "city": "string",
   "preferred_date": "date (optional)",
 
-  "responses": [
+  "bids": [
     {
       "professional_id": "uuid",
       "quote_price": "decimal",
@@ -525,7 +525,7 @@ A permanently banned user can file an appeal against the ban decision. This is t
       "created_at": "timestamp"
     }
   ],
-  "response_count": "integer",
+  "bid_count": "integer",
 
   "created_at": "timestamp",
   "published_at": "timestamp (nullable)",
@@ -1006,6 +1006,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.12 | 2026-11-04 | **Naming:** the notification events are `bid.created` and `bid.edited` and the order JSON has `bids` / `bid_count` (a professional's response to an order is a *bid* in the code, the table and the API), so one word names it everywhere. |
 | 3.11 | 2026-10-31 | **Account vs profile (D-1.5):** Google OAuth rules rewritten for several providers (`linked_identities`), the role is chosen before the redirect, a verified email is required, one account and one profile per person. |
 | 3.10 | 2026-10-28 | **Optimistic locking** applies to every entity, not only order and profile: `version` lives in the shared `BaseEntity`. |
 | 3.9 | 2026-10-28 | **Naming:** *conversation* → *chat* (the section is now *Chat Model*). |

@@ -1,7 +1,7 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.7
-- **Date:** 2026-10-28
+- **Version:** 1.8
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
 
@@ -128,8 +128,8 @@ Producer is `core-api` unless noted. "Notifies" = the human recipient of the res
 | 4 | `order.expired` | `@Scheduled` — `expires_at` reached | Notification Svc; **cascades** `search.order_reindex` (drop from index; order stays ACTIVE) | customer |
 | 5 | `order.extended` | `OrderService.extendExpiration()` | **cascades** `search.order_reindex` (re-add to index) | — |
 | 6 | `order.closed` | `OrderService.close()` (manual) **or** `autoCloseForAccountAction()` (ban/suspend/delete) | Notification Svc; **cascades** `search.order_reindex` | responders |
-| 7 | `response.created` | `OrderResponseService.submitOrEdit()` — first submit only | Notification Svc | customer |
-| 8 | `response.edited` | `OrderResponseService.submitOrEdit()` — subsequent edit | Notification Svc | customer — **in-app only** ([D1](#8-resolved-decisions)) |
+| 7 | `bid.created` | `BidService.submitOrEdit()` — first submit only | Notification Svc | customer |
+| 8 | `bid.edited` | `BidService.submitOrEdit()` — subsequent edit | Notification Svc | customer — **in-app only** ([D1](#8-resolved-decisions)) |
 | 9 | `review.posted` | `ReviewService.submitOrEdit()` — first submit, either direction | Notification Svc; **cascades** `search.professional_reindex` if reviewee is a professional (rating changed) | reviewee |
 | 10 | `review.edited` | `ReviewService.submitOrEdit()` — subsequent edit | **cascades** `search.professional_reindex` if rating changed | — (no re-notify) |
 | 11 | `review.professional_responded` | `ReviewReplyService.reply()` by the professional | Notification Svc | customer (review author) |
@@ -197,13 +197,13 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 ---
 
 ```json
-// response.created / response.edited   aggregate_type: response
+// bid.created / bid.edited   aggregate_type: bid
 {
-  "response_id": "uuid", "order_id": "uuid",
+  "bid_id": "uuid", "order_id": "uuid",
   "customer_id": "uuid",
   "professional_id": "uuid", "professional_name": "string",
   "quote_price": "number",
-  "created_at": "iso-8601"          // response.edited adds "edited_at": "iso-8601"
+  "created_at": "iso-8601"          // bid.edited adds "edited_at": "iso-8601"
 }
 ```
 
@@ -380,7 +380,7 @@ Writing this catalog exposed that [3 - System Design.md](3%20-%20System%20Design
 | I4 | file 3 shows an `email.queue` bound to `*.email` consumed by a separate **"Email Worker"**, but [file 7 § 4.3](7%20-%20Application%20Classes.md) has Notification Service sending email **inline** in its event consumers (NACK/retry/`notifications.deadletter`). Two different designs. | Drop `email.queue` and the "Email Worker". Notification Service's consumer does in-app + push + email in one handler; email-send failure alone dead-letters via the retry header. Simpler, matches file 7. |
 | I5 | file 3 has no `auth.*` routing at all — consistent with "Auth sends its own email", but [D6](#8-resolved-decisions) reversed that: Auth Service now publishes `auth.*` and Notification Service sends the mail. | Add producer **auth-service** and a new queue **`auth.notifications`** bound `auth.*` → Notification Service. Auth Service runs its own `outbox` + poller (shared PostgreSQL). |
 
-**file 4 reconcile (done, v3.5):** removed the `order.draft_created` subsection; renamed `order.response_received` → `response.created` + `response.edited`; added `message.sent` / `message.deleted` / `report.created` / `account.deletion_finalized` / `auth.*` notification descriptions; renamed the reindex events. (Message deletion was already a documented feature in file 4 § History & Retention — no new FR needed, though FR-Messaging could gain an explicit line later.)
+**file 4 reconcile (done, v3.5):** removed the `order.draft_created` subsection; renamed `order.response_received` → `bid.created` + `bid.edited`; added `message.sent` / `message.deleted` / `report.created` / `account.deletion_finalized` / `auth.*` notification descriptions; renamed the reindex events. (Message deletion was already a documented feature in file 4 § History & Retention — no new FR needed, though FR-Messaging could gain an explicit line later.)
 
 
 ## 8. Resolved decisions
@@ -390,7 +390,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | # | Decision | Resolution |
 |---|---|---|
-| D1 | Low-signal notifications (`order.draft_created`, `response.edited`) | **`order.draft_created` dropped entirely** — no event. **`response.edited` → in-app only** (push + email channels seeded `enabled: false` for this `event_type`). |
+| D1 | Low-signal notifications (`order.draft_created`, `bid.edited`) | **`order.draft_created` dropped entirely** — no event. **`bid.edited` → in-app only** (push + email channels seeded `enabled: false` for this `event_type`). |
 | D2 | Notify moderators when a report is filed | **No.** Moderators poll the shared queue as before ([file 4](4%20-%20Business%20logic.md)); `report.created` notifies only the reporter. |
 | D3 | Chat message deletion in MVP | **In scope** (and already documented in [file 4 § History & Retention](4%20-%20Business%20logic.md)). `message.deleted` is a real MVP event: user deletes their own message, the other party's client is updated over WS, any stale in-app "new message" notification is cleared. |
 | D4 | Auth Service transactional emails | **Routed through Notification Service.** Auth Service becomes a producer of `auth.verification_requested` / `auth.password_reset_requested` / `auth.password_set_requested`; Notification Service owns every email template and the SMTP send. See [I5](#7-inconsistencies-found--resolution). |
@@ -407,6 +407,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-11-04 | **Naming:** events `bid.created` and `bid.edited` (aggregate `bid`, payload `bid_id`), publisher `BidService`, to match the entity and the table. |
 | 1.7 | 2026-10-28 | `event_id` is a plain UUID (v4): ids are no longer v7 (decision 3). |
 | 1.6 | 2026-10-28 | **Naming:** `conversation_id` → `chat_id` in the message payloads; `ResponseService` → `OrderResponseService`. |
 | 1.5 | 2026-10-27 | **D-1.4:** `closed_reason` values are `MANUAL` / `ACCOUNT_ACTION`. |

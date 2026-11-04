@@ -1,7 +1,7 @@
 # ProFinder — API Specification
 
-- **Version:** 1.15
-- **Date:** 2026-10-31
+- **Version:** 1.16
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
 
@@ -42,11 +42,11 @@ Every endpoint below requires `Authorization: Bearer <JWT>` unless marked **publ
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /orders` | Customer | `OrderCreateRequestDto {category_id, title, description, budget_min?, budget_max?, city, preferred_date?}` | `201 OrderDto` (status `DRAFT`) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED` |
-| `PATCH /orders/{id}` | Customer, owner | `OrderUpdateRequestDto` (partial: any field from create, plus `status` and `expires_at`) + `version`. `status: ACTIVE` publishes a `DRAFT` order, `status: CLOSED` closes it, a later `expires_at` extends it | `200 OrderDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `ORDER_NOT_DRAFT`, `EMAIL_NOT_VERIFIED`, `ORDER_CLOSED` (editing or extending a `CLOSED` order, or closing it twice) |
+| `POST /orders` | Customer | `OrderCreateRequest {category_id, title, description, budget_min?, budget_max?, city, preferred_date?}` | `201 OrderResponse` (status `DRAFT`) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED` |
+| `PATCH /orders/{id}` | Customer, owner | `OrderUpdateRequest` (partial: any field from create, plus `status` and `expires_at`) + `version`. `status: ACTIVE` publishes a `DRAFT` order, `status: CLOSED` closes it, a later `expires_at` extends it | `200 OrderResponse` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `ORDER_NOT_DRAFT`, `EMAIL_NOT_VERIFIED`, `ORDER_CLOSED` (editing or extending a `CLOSED` order, or closing it twice) |
 | `DELETE /orders/{id}` | Customer, owner | — | `204` | `ORDER_NOT_DRAFT`, `NOT_FOUND`, `FORBIDDEN` |
-| `GET /orders/{id}` | any authenticated | — | `200 OrderDto` | `NOT_FOUND` |
-| `GET /orders` | any authenticated | Customer: `?status=` (own orders, any status). Professional: `?category_id=&city=&budget_min=&budget_max=&page=&size=` (browse `ACTIVE` in their own categories/cities) | `200 { items: OrderListItemDto[], page, size, total }` | `VALIDATION_ERROR` |
+| `GET /orders/{id}` | any authenticated | — | `200 OrderResponse` | `NOT_FOUND` |
+| `GET /orders` | any authenticated | Customer: `?status=` (own orders, any status). Professional: `?category_id=&city=&budget_min=&budget_max=&page=&size=` (browse `ACTIVE` in their own categories/cities) | `200 { items: OrderListItemResponse[], page, size, total }` | `VALIDATION_ERROR` |
 
 State changes are `PATCH`es of the order: there are no `/publish`, `/close` or `/extend` sub-resources. A status the order cannot reach from its current one returns `409`.
 
@@ -55,19 +55,19 @@ State changes are `PATCH`es of the order: there are no `/publish`, `/close` or `
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /orders/{id}/responses` | Professional, `profile_status=ACTIVE` | `OrderResponseCreateRequestDto {quote_price, message?}` | `200/201 OrderResponseDto` (upsert — 201 on first submit, 200 on edit) | `VALIDATION_ERROR`, `ORDER_CLOSED`, `ORDER_EXPIRED`, `PROFILE_INCOMPLETE`, `EMAIL_NOT_VERIFIED`, `NOT_FOUND` |
-| `GET /orders/{id}/responses` | Customer, owner | `?sort=newest\|price\|rating&page=&size=` | `200 { items: OrderResponseDto[] (incl. professional summary), page, size, total }` | `FORBIDDEN`, `NOT_FOUND` |
+| `POST /orders/{id}/bids` | Professional, `profile_status=ACTIVE` | `BidCreateRequest {quote_price, message?}` | `200/201 BidResponse` (upsert — 201 on first submit, 200 on edit) | `VALIDATION_ERROR`, `ORDER_CLOSED`, `ORDER_EXPIRED`, `PROFILE_INCOMPLETE`, `EMAIL_NOT_VERIFIED`, `NOT_FOUND` |
+| `GET /orders/{id}/bids` | Customer, owner | `?sort=newest\|price\|rating&page=&size=` | `200 { items: BidResponse[] (incl. professional summary), page, size, total }` | `FORBIDDEN`, `NOT_FOUND` |
 
 #### Reviews
 ---
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /reviews` | any authenticated | `ReviewCreateRequestDto {reviewee_id, rating, text?, photo_file_ids?[]}` | `200/201 ReviewDto` (upsert, `reviewer_role` derived from caller's own role) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED`, `NOT_FOUND` (reviewee) |
-| `PATCH /reviews/{id}` | author | `{rating?, text?}` | `200 ReviewDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
+| `POST /reviews` | any authenticated | `ReviewCreateRequest {reviewee_id, rating, text?, photo_file_ids?[]}` | `200/201 ReviewResponse` (upsert, `reviewer_role` derived from caller's own role) | `VALIDATION_ERROR`, `EMAIL_NOT_VERIFIED`, `NOT_FOUND` (reviewee) |
+| `PATCH /reviews/{id}` | author | `{rating?, text?}` | `200 ReviewResponse` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
 | `DELETE /reviews/{id}` | author or Moderator | — | `204` | `FORBIDDEN`, `NOT_FOUND` |
-| `GET /users/{id}/reviews` | **public** | `?direction=CUSTOMER\|PROFESSIONAL&page=&size=` | `200 { items: ReviewDto[], page, size, total }` | `NOT_FOUND` |
-| `POST /reviews/{id}/replies` | the reviewed professional, or the original customer replying back | `ReviewReplyCreateRequestDto {text}` | `201 ReviewReplyDto` | `VALIDATION_ERROR`, `FORBIDDEN` (review is `PROFESSIONAL`-direction — no replies allowed), `NOT_FOUND` |
+| `GET /users/{id}/reviews` | **public** | `?direction=CUSTOMER\|PROFESSIONAL&page=&size=` | `200 { items: ReviewResponse[], page, size, total }` | `NOT_FOUND` |
+| `POST /reviews/{id}/replies` | the reviewed professional, or the original customer replying back | `ReviewReplyCreateRequest {text}` | `201 ReviewReplyResponse` | `VALIDATION_ERROR`, `FORBIDDEN` (review is `PROFESSIONAL`-direction — no replies allowed), `NOT_FOUND` |
 
 #### Profiles & Categories
 ---
@@ -76,17 +76,17 @@ Each role has its own `/…/me` endpoints: the type of the profile is the addres
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /customers/me` | `CUSTOMER` | — | `200 CustomerProfileDto` | — |
-| `PATCH /customers/me` | `CUSTOMER` | `CustomerProfileUpdateRequestDto` (name, phone, city, bio…) | `200 CustomerProfileDto` | `VALIDATION_ERROR` |
-| `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalProfileDto` | — |
-| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalProfileUpdateRequestDto` (name, phone, bio, categories, cities, rate…) | `200 ProfessionalProfileDto` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
-| `GET /professionals/{id}` | **public** | — | `200 ProfessionalProfileDto` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
-| `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicDto` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
-| `GET /categories` | **public** | — | `200 CategoryDto[]` (flat list) | — |
-| `POST /categories` | Moderator, `SENIOR` | `{name}` | `201 CategoryDto` | `VALIDATION_ERROR`, `FORBIDDEN` |
-| `PATCH /categories/{id}` | Moderator, `SENIOR` | `{name}` | `200 CategoryDto` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
+| `GET /customers/me` | `CUSTOMER` | — | `200 CustomerProfileResponse` | — |
+| `PATCH /customers/me` | `CUSTOMER` | `CustomerProfileUpdateRequest` (name, phone, city, bio…) | `200 CustomerProfileResponse` | `VALIDATION_ERROR` |
+| `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalProfileResponse` | — |
+| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalProfileUpdateRequest` (name, phone, bio, categories, cities, rate…) | `200 ProfessionalProfileResponse` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
+| `GET /professionals/{id}` | **public** | — | `200 ProfessionalProfileResponse` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
+| `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicResponse` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
+| `GET /categories` | **public** | — | `200 CategoryResponse[]` (flat list) | — |
+| `POST /categories` | Moderator, `SENIOR` | `{name}` | `201 CategoryResponse` | `VALIDATION_ERROR`, `FORBIDDEN` |
+| `PATCH /categories/{id}` | Moderator, `SENIOR` | `{name}` | `200 CategoryResponse` | `VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND` |
 | `DELETE /categories/{id}` | Moderator, `SENIOR` | — | `204` | `FORBIDDEN`, `NOT_FOUND`, `CONFLICT` (still referenced by an order or a professional) |
-| `POST /users/me/portfolio` | Professional | multipart: file + `caption?` | `201 PortfolioPhotoDto` | `FILE_TOO_LARGE`, `INVALID_FILE_TYPE`, `STORAGE_UNAVAILABLE`, `VALIDATION_ERROR` |
+| `POST /users/me/portfolio` | Professional | multipart: file + `caption?` | `201 PortfolioPhotoResponse` | `FILE_TOO_LARGE`, `INVALID_FILE_TYPE`, `STORAGE_UNAVAILABLE`, `VALIDATION_ERROR` |
 | `DELETE /users/me/portfolio/{id}` | Professional, owner, or Moderator | — | `204` | `FORBIDDEN`, `NOT_FOUND` |
 
 #### Reports & Moderation
@@ -94,11 +94,11 @@ Each role has its own `/…/me` endpoints: the type of the profile is the addres
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /reports` | any authenticated | `ReportCreateRequestDto {reported_user_id, reason, description, evidence?[]}` | `201 ReportDto` | `CANNOT_REPORT_SELF`, `DUPLICATE_REPORT`, `VALIDATION_ERROR`, `NOT_FOUND` |
-| `GET /reports` | Moderator | `?status=&page=&size=` | `200 { items: ReportDto[], page, size, total }` | `FORBIDDEN` |
-| `POST /reports/{id}/decision` | Moderator | `ReportDecisionRequestDto {decision, suspension_days?, notes?}` | `200 ReportDto` | `VALIDATION_ERROR`, `MODERATION_TARGET_NOT_VERIFIED`, `NOT_FOUND`, `FORBIDDEN` |
-| `POST /ban-appeals` | the banned user | `{text?}` | `201 BanAppealDto` | `APPEAL_WINDOW_EXPIRED`, `APPEAL_ALREADY_EXISTS`, `FORBIDDEN` |
-| `POST /ban-appeals/{id}/decision` | Moderator (≠ banning moderator) | `{outcome: UPHELD\|REJECTED, notes?}` | `200 BanAppealDto` | `SAME_MODERATOR_REVIEW`, `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN` |
+| `POST /reports` | any authenticated | `ReportCreateRequest {reported_user_id, reason, description, evidence?[]}` | `201 ReportResponse` | `CANNOT_REPORT_SELF`, `DUPLICATE_REPORT`, `VALIDATION_ERROR`, `NOT_FOUND` |
+| `GET /reports` | Moderator | `?status=&page=&size=` | `200 { items: ReportResponse[], page, size, total }` | `FORBIDDEN` |
+| `POST /reports/{id}/decision` | Moderator | `ReportDecisionRequest {decision, suspension_days?, notes?}` | `200 ReportResponse` | `VALIDATION_ERROR`, `MODERATION_TARGET_NOT_VERIFIED`, `NOT_FOUND`, `FORBIDDEN` |
+| `POST /ban-appeals` | the banned user | `{text?}` | `201 BanAppealResponse` | `APPEAL_WINDOW_EXPIRED`, `APPEAL_ALREADY_EXISTS`, `FORBIDDEN` |
+| `POST /ban-appeals/{id}/decision` | Moderator (≠ banning moderator) | `{outcome: UPHELD\|REJECTED, notes?}` | `200 BanAppealResponse` | `SAME_MODERATOR_REVIEW`, `VALIDATION_ERROR`, `NOT_FOUND`, `FORBIDDEN` |
 | `POST /users/{id}/block` | any authenticated | — | `204` | `VALIDATION_ERROR` (self-block), `NOT_FOUND` |
 | `DELETE /users/{id}/block` | any authenticated | — | `204` | `NOT_FOUND` |
 
@@ -107,14 +107,14 @@ Each role has its own `/…/me` endpoints: the type of the profile is the addres
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /search/professionals` | **public** | `?q=&category_id=&city=&rating_min=&price_min=&price_max=&experience=&available=&sort=recommended\|rating\|price\|newest\|popularity&page=&size=` | `200 { items: SearchResultCardDto[], page, size, total }` | `SEARCH_UNAVAILABLE`, `VALIDATION_ERROR` |
+| `GET /search/professionals` | **public** | `?q=&category_id=&city=&rating_min=&price_min=&price_max=&experience=&available=&sort=recommended\|rating\|price\|newest\|popularity&page=&size=` | `200 { items: SearchResultCardResponse[], page, size, total }` | `SEARCH_UNAVAILABLE`, `VALIDATION_ERROR` |
 
 #### Files
 ---
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /files` | any authenticated | multipart: file + `purpose` + `attached_to_id?` | `201 FileUploadResponseDto {id, url}` | `FILE_TOO_LARGE`, `INVALID_FILE_TYPE`, `STORAGE_UNAVAILABLE`, `VALIDATION_ERROR` |
+| `POST /files` | any authenticated | multipart: file + `purpose` + `attached_to_id?` | `201 FileUploadResponse {id, url}` | `FILE_TOO_LARGE`, `INVALID_FILE_TYPE`, `STORAGE_UNAVAILABLE`, `VALIDATION_ERROR` |
 | `GET /files/{id}` | **public** for avatar/portfolio; owner/Moderator for review/report evidence | — | `302` redirect to the MinIO object URL | `NOT_FOUND`, `FORBIDDEN` |
 | `DELETE /files/{id}` | owner or Moderator | — | `204` | `FORBIDDEN`, `NOT_FOUND` |
 
@@ -149,21 +149,21 @@ Source: [7 - Application Classes.md § 2. Auth Service](7%20-%20Application%20Cl
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /auth/register` | **public** | `RegisterRequestDto {email, password, display_name, role}` | `201 {user_id, email, status: PENDING_VERIFICATION}` | `VALIDATION_ERROR`, `EMAIL_ALREADY_REGISTERED` |
-| `POST /auth/verify-email` | **public** | `VerifyEmailRequestDto {token}` | `200 {status: ACTIVE}` | `VERIFICATION_TOKEN_INVALID` |
+| `POST /auth/register` | **public** | `RegisterRequest {email, password, display_name, role}` | `201 {user_id, email, status: PENDING_VERIFICATION}` | `VALIDATION_ERROR`, `EMAIL_ALREADY_REGISTERED` |
+| `POST /auth/verify-email` | **public** | `VerifyEmailRequest {token}` | `200 {status: ACTIVE}` | `VERIFICATION_TOKEN_INVALID` |
 | `POST /auth/resend-verification` | authenticated (`PENDING_VERIFICATION` account) | — (uses JWT `sub`) | `202` (email queued) | `RESEND_TOO_SOON` |
-| `POST /auth/forgot-password` | **public** | `ForgotPasswordRequestDto {email}` | `202` — **always**, whether or not the email exists, to avoid leaking which emails are registered | `VALIDATION_ERROR` |
-| `POST /auth/reset-password` | **public** | `ResetPasswordRequestDto {token, new_password}` | `200` | `RESET_TOKEN_INVALID`, `VALIDATION_ERROR` |
+| `POST /auth/forgot-password` | **public** | `ForgotPasswordRequest {email}` | `202` — **always**, whether or not the email exists, to avoid leaking which emails are registered | `VALIDATION_ERROR` |
+| `POST /auth/reset-password` | **public** | `ResetPasswordRequest {token, new_password}` | `200` | `RESET_TOKEN_INVALID`, `VALIDATION_ERROR` |
 
 #### Login & OAuth
 ---
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /auth/login` | **public** | `LoginRequestDto {email, password}` | `200 LoginResponseDto {access_token, refresh_token, user: {id, role, status}}` — succeeds even if `SUSPENDED`/`BANNED` (they can still log in to see their status/file an appeal per [4 - Business logic.md § Report Workflow](4%20-%20Business%20logic.md#report-workflow)); logging in while `DELETED` triggers reactivation (`account.reactivated`) | `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `VALIDATION_ERROR` |
+| `POST /auth/login` | **public** | `LoginRequest {email, password}` | `200 LoginResponse {access_token, refresh_token, user: {id, role, status}}` — succeeds even if `SUSPENDED`/`BANNED` (they can still log in to see their status/file an appeal per [4 - Business logic.md § Report Workflow](4%20-%20Business%20logic.md#report-workflow)); logging in while `DELETED` triggers reactivation (`account.reactivated`) | `INVALID_CREDENTIALS`, `ACCOUNT_LOCKED`, `VALIDATION_ERROR` |
 | `GET /auth/{provider}/login` | **public** | `?role=CUSTOMER\|PROFESSIONAL` (required for a new account) | `302` to the provider; the role travels in the signed `state`. Only `google` in MVP | `VALIDATION_ERROR` |
 | `GET /auth/{provider}/link` | authenticated | — | `302` to the provider, to add another way to sign in to the current account | — |
-| `GET /auth/{provider}/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponseDto`. A new identity creates the account **and its profile** with the role from `state` (display name and avatar from the provider profile); a known identity just signs in; a new identity with a verified email that matches an existing account is linked to it; in link mode it is added to the current account | `VALIDATION_ERROR`, `ACCOUNT_NOT_FOUND`, `PROVIDER_EMAIL_REQUIRED`, `IDENTITY_ALREADY_LINKED` |
+| `GET /auth/{provider}/callback` | **public** (OAuth redirect) | `?code=&state=` | `200 LoginResponse`. A new identity creates the account **and its profile** with the role from `state` (display name and avatar from the provider profile); a known identity just signs in; a new identity with a verified email that matches an existing account is linked to it; in link mode it is added to the current account | `VALIDATION_ERROR`, `ACCOUNT_NOT_FOUND`, `PROVIDER_EMAIL_REQUIRED`, `IDENTITY_ALREADY_LINKED` |
 | `DELETE /auth/identities/{provider}` | authenticated | — | `204` | `LAST_LOGIN_METHOD` |
 
 #### Sessions & Tokens
@@ -171,7 +171,7 @@ Source: [7 - Application Classes.md § 2. Auth Service](7%20-%20Application%20Cl
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /auth/refresh` | **public** (refresh token carries the identity) | `RefreshRequestDto {refresh_token}` | `200 TokenPairResponseDto {access_token, refresh_token}` (rotation — old refresh token invalidated) | `REFRESH_TOKEN_INVALID`, `REFRESH_TOKEN_REUSED` |
+| `POST /auth/refresh` | **public** (refresh token carries the identity) | `RefreshRequest {refresh_token}` | `200 TokenPairResponse {access_token, refresh_token}` (rotation — old refresh token invalidated) | `REFRESH_TOKEN_INVALID`, `REFRESH_TOKEN_REUSED` |
 | `POST /auth/logout` | authenticated | `{refresh_token}` | `204` (revokes that one token) | — |
 | `POST /auth/logout-all` | authenticated | — | `204` (revokes every refresh token + sets the Redis denylist) | — |
 
@@ -211,7 +211,7 @@ Source: [7 - Application Classes.md § 3. Messaging Service](7%20-%20Application
 | client → server | `message.send` | `{chat_id, text}` |
 | client → server | `message.delivered` | `{message_id}` — client ack on receipt |
 | client → server | `message.read` | `{message_id}` — client ack on read |
-| server → client | `message.new` | `{message: MessageDto}` |
+| server → client | `message.new` | `{message: MessageResponse}` |
 | server → client | `message.status` | `{message_id, status: DELIVERED\|READ}` — pushed to the **sender** when the recipient acks |
 | server → client | `error` | `{code, message}` — same codes as the REST [Error Catalog](#error-catalog) |
 
@@ -220,9 +220,9 @@ Source: [7 - Application Classes.md § 3. Messaging Service](7%20-%20Application
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /chats/me` | any authenticated | `?page=&size=` | `200 { items: ChatDto[], page, size, total }` | — |
-| `GET /chats/{id}/messages` | participant (customer or professional on that chat) | `?after=&page=&size=` | `200 { items: MessageDto[], page, size, total }` | `FORBIDDEN`, `NOT_FOUND` |
-| `POST /chats/{id}/messages` | participant | `SendMessageRequestDto {text}` — HTTP fallback when WebSocket is unavailable | `201 MessageDto` | `VALIDATION_ERROR`, `USER_BLOCKED`, `FORBIDDEN`, `NOT_FOUND` |
+| `GET /chats/me` | any authenticated | `?page=&size=` | `200 { items: ChatResponse[], page, size, total }` | — |
+| `GET /chats/{id}/messages` | participant (customer or professional on that chat) | `?after=&page=&size=` | `200 { items: MessageResponse[], page, size, total }` | `FORBIDDEN`, `NOT_FOUND` |
+| `POST /chats/{id}/messages` | participant | `SendMessageRequest {text}` — HTTP fallback when WebSocket is unavailable | `201 MessageResponse` | `VALIDATION_ERROR`, `USER_BLOCKED`, `FORBIDDEN`, `NOT_FOUND` |
 | `DELETE /messages/{id}` | sender | — | `204` (hides immediately in UI; hard-deleted after the moderator-review grace period) | `FORBIDDEN`, `NOT_FOUND` |
 
 Note: `POST /chats/{id}` to create/get a chat doesn't exist as its own endpoint — a chat is implicitly `getOrCreate()`'d the first time a customer messages a professional (via `POST /chats/{id}/messages` where `{id}` is actually keyed by the `(customer_id, professional_id)` pair, or a dedicated `POST /chats {professional_id}` starter call — left as an implementation detail, not a design decision, since [4 - Business logic.md § Chat Model](4%20-%20Business%20logic.md) already settled that a chat is keyed by the pair, not an order).
@@ -246,10 +246,10 @@ Source: [7 - Application Classes.md § 4. Notification Service](7%20-%20Applicat
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /notifications` | any authenticated | `?is_read=&page=&size=` | `200 { items: NotificationDto[], page, size, total, unread_count }` | — |
+| `GET /notifications` | any authenticated | `?is_read=&page=&size=` | `200 { items: NotificationResponse[], page, size, total, unread_count }` | — |
 | `POST /notifications/mark-read` | any authenticated | `{ids: uuid[]}` | `204` | `VALIDATION_ERROR` |
 | `POST /notifications/mark-all-read` | any authenticated | — | `204` | — |
-| `GET /users/me/notification-preferences` | any authenticated | — | `200 NotificationPreferenceDto[]` (the `(event_type, channel, enabled)` matrix; missing cells default `enabled: true`) | — |
+| `GET /users/me/notification-preferences` | any authenticated | — | `200 NotificationPreferenceResponse[]` (the `(event_type, channel, enabled)` matrix; missing cells default `enabled: true`) | — |
 | `PATCH /users/me/notification-preferences` | any authenticated | `[{event_type, channel, enabled}]` | `200` (updated matrix) | `VALIDATION_ERROR` |
 
 #### Device Tokens & Push
@@ -257,7 +257,7 @@ Source: [7 - Application Classes.md § 4. Notification Service](7%20-%20Applicat
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /users/me/device-tokens` | any authenticated | `DeviceTokenRegisterDto {token, platform}` | `200/201` (upsert on `token`) | `VALIDATION_ERROR` |
+| `POST /users/me/device-tokens` | any authenticated | `DeviceTokenRegisterRequest {token, platform}` | `200/201` (upsert on `token`) | `VALIDATION_ERROR` |
 | `DELETE /users/me/device-tokens/{id}` | owner | — | `204` | `FORBIDDEN`, `NOT_FOUND` |
 
 #### Email Delivery
@@ -290,8 +290,8 @@ Internal-only — called server-to-server by Core API before storing a review/me
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /moderation/check-text` | internal (Core API only) | `ModerationCheckRequestDto {text, type, user_id}` | `200 ModerationCheckResultDto {approved, checks_passed[], score}` (<200ms) | `VALIDATION_ERROR` |
-| `POST /moderation/check-url` | internal (Core API only) | `{url}` | `200 ModerationCheckResultDto` | `VALIDATION_ERROR` |
+| `POST /moderation/check-text` | internal (Core API only) | `ModerationCheckRequest {text, type, user_id}` | `200 ModerationCheckResultResponse {approved, checks_passed[], score}` (<200ms) | `VALIDATION_ERROR` |
+| `POST /moderation/check-url` | internal (Core API only) | `{url}` | `200 ModerationCheckResultResponse` | `VALIDATION_ERROR` |
 
 #### Health (no auth, used by the load balancer)
 ---
@@ -460,6 +460,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.16 | 2026-11-04 | **Naming:** `/orders/{id}/responses` → `/orders/{id}/bids` (and `/bids/{id}`), the DTOs are named by direction (`BidCreateRequest`, `BidResponse`, `OrderResponse`, `LoginRequest`, ...) instead of `*Dto`, to match the code. |
 | 1.15 | 2026-10-31 | **Account vs profile (D-1.5):** profile endpoints are per role (`GET/PATCH /customers/me`, `GET/PATCH /professionals/me`) instead of `/users/me/profile`; provider sign-in is `GET /auth/{provider}/login\|link\|callback` with the role in the signed `state` (the account and its profile are created together), `DELETE /auth/identities/{provider}` replaces `unlink`; `POST /auth/role`, `temp_token` and `ROLE_SELECTION_REQUIRED` are removed; new codes `IDENTITY_ALREADY_LINKED`, `LAST_LOGIN_METHOD`, `PROVIDER_EMAIL_REQUIRED`, `ACCOUNT_NOT_FOUND`. |
 | 1.14 | 2026-10-28 | **Identifiers:** UUID v4 from the built-in `GenerationType.UUID` instead of v7 (decision 3 in [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)): no extra library or custom generator, and the index-locality gain of v7 is not needed at this size. |
 | 1.13 | 2026-10-28 | **Chat and own-user paths:** `GET /chats/me`, `/chats/{id}/messages`; profile, portfolio, preferences, device tokens and account deletion are under `/users/me/...`. **Orders:** publish, close and extend are one `PATCH /orders/{id}` (`status`, `expires_at`); the order DTO is `OrderDto`, the response DTOs are `OrderResponseCreateRequestDto` and `OrderResponseDto`. `RegisterRequestDto` carries `role`. |

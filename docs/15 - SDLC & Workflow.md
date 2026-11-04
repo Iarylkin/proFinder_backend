@@ -1,7 +1,7 @@
 # ProFinder — SDLC & Development Workflow
 
-- **Version:** 1.6
-- **Date:** 2026-10-26
+- **Version:** 1.7
+- **Date:** 2026-11-04
 - **Status:** Draft
 - **Purpose:** The Software Development Lifecycle for ProFinder — repository structure, development workflow, environments, CI/CD pipeline, and how Claude integrates. Partially delivers Documentation Roadmap Tier 3 (docker-compose, CI/CD, testing strategy, environments, git workflow).
 
@@ -924,7 +924,7 @@ class OrderE2ETest {
             given()
                 .auth().oauth2(professionalToken)
                 .body("{\"quote_price\":150.00,\"message\":\"I can help\"}")
-                .post("/api/v1/orders/" + orderId + "/responses")
+                .post("/api/v1/orders/" + orderId + "/bids")
                 .then().statusCode(201);
         });
     }
@@ -1249,6 +1249,7 @@ Option 2: Automatic sync (advanced)
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-04 | **Example:** the test example calls `/orders/{id}/bids`, to match the code. |
 | 1.6 | 2026-10-26 | Added `hotfix/*` and `release/x.y` branches and a Hotfix Flow subsection. Removed the command-line `git merge`/`git push` steps to `develop` and `main` (they contradict branch protection); Step 11 now describes a version bump in `pom.xml`, a release PR and tagging on `main`. |
 | 1.5 | 2026-09-23 | Updated `docs/CLAUDE.md` references to `.claude/CLAUDE.md` (6 places in §1/§2/§8) to match the actual file move done in the `44-configure-claude-code-settings` branch. Added `.claude/hooks/` (`checkstyle_on_edit.py`, `git_commit_test_gate.py`) and `.claude/skills/sync-docs/` to the §1 repository-structure tree, and added a new §8 "Automated Hooks & Skills" subsection describing what each hook enforces and what the `sync-docs` skill does. |
 | 1.4 | 2026-09-15 | Documented that `main`/`develop` branch protection is enabled on GitHub (new §4 "Branch Protection Rules" subsection): required PR, required status checks (`build`/`test`/`checkstyle`/`sonarqube`), 0 required approvals (small team, no dedicated reviewer), no admin bypass. Noted `jacoco:check` and OWASP are intentionally excluded from required checks. |
