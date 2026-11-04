@@ -196,7 +196,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
 8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (account: avatar, email, password) or the resource's own `/me` (`/customers/me`, `/professionals/me`, `/chats/me`)
 9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
-10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. `version` is checked only between concurrent transactions on the server: the DTOs do not carry it yet, so a client-sent `version` in `PATCH` (docs/8, docs/13) is planned for 1.6.0
+10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. `version` is checked only between concurrent transactions on the server: the DTOs do not carry it yet, so a client-sent `version` in `PATCH` (docs/8, docs/13) is planned for 1.5.0
 
 ### Debugging & Development Tips
 

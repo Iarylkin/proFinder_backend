@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.16
-- **Date:** 2026-11-02
+- **Version:** 1.17
+- **Date:** 2026-11-03
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -21,7 +21,7 @@
 | Working version | Every tag starts in compose, passes tests and checkstyle, and passes the smoke scenario (sign up → sign in → create order → respond → accept → chat → complete → review) |
 | Unfinished work | Hidden behind feature flags, never left half-done in a tagged build |
 | Major / minor / patch | `2.0.0` marks the architecture change (five services). Features after it are `2.x` minors. Bug fixes are patches |
-| Schema | Flyway from `1.5.0`; every version that changes the schema ships its own migration |
+| Schema | Flyway from `1.13.0`, when the modules and their ID-only relations are stable; before that dev keeps `drop-and-create` and `import.sql` (nothing is deployed). From `1.13.0` every version that changes the schema ships its own migration |
 | Docs tasks | Marked `D-…`. They belong to the milestone that needs them and do not bump the version. "Before code" means the task is closed before the first version of that milestone starts |
 | Tooling tasks | Marked `T-…`. Repository tooling, no version bump |
 
@@ -31,8 +31,8 @@
 | # | Milestone | Versions | Goal |
 |---|---|---|---|
 | M0 | Hotfixes | 1.0.1 – 1.0.4 | Close security holes and runtime bugs before any refactoring |
-| M1 | Foundation | 1.1.0 – 1.7.0 | Cross-cutting changes needed before splitting |
-| M2 | Modular monolith | 1.8.0 – 1.13.0 | Service boundaries inside one process |
+| M1 | Foundation | 1.1.0 – 1.6.0 | Cross-cutting changes needed before splitting |
+| M2 | Modular monolith | 1.7.0 – 1.13.0 | Service boundaries inside one process, then Flyway on the stable schema |
 | M3 | Safety net | 1.14.0 – 1.16.0 | Tests before splitting |
 | M4 | Events & broker | 1.17.0 – 1.20.0 | Outbox, events, RabbitMQ |
 | M5 | Service extraction | 2.0.0-rc.1 – 2.0.0 | Physical split into five services |
@@ -65,36 +65,36 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **T-0.2** | Hooks in `.claude/settings.json`: replace relative paths with absolute ones so they do not break outside the repository root. Fix `CLAUDE.md` (there is no `IN_PROGRESS` status and no `completeOrder()`) |
 | Outside versions | Rotate secrets (DB and MinIO passwords, Mailtrap, `privateKey.pem`) and move them to environment variables. Needs action from the owner |
 
-## M1 — Foundation (1.1.0 – 1.7.0)
+## M1 — Foundation (1.1.0 – 1.6.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
-| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.6.0 |
+| **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.5.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID literals |
 | **D-1.5** | **Done 2026-10-31:** `users` is authentication only (email, password, role, account state); the personal data (name, phone, city, bio, avatar) lives in the profiles; sign-in through providers is a separate table `linked_identities` (several providers, raw claims, never the tokens); the role is chosen **before** the provider redirect (signed `state`), so there is no `temp_token`, `POST /auth/role` or `NULL` role; every account needs a verified email, a provider without one is rejected; one account per email and per identity, one profile per account; profiles have per-role endpoints (`/customers/me`, `/professionals/me`). Fixed in `docs/4`, `6`, `7`, `8`, `10`, `11`, `12`, `13` |
 | **1.1.0** | **Naming, one step:** `Client → Customer` and `Specialist → Professional` everywhere in the code: entities, repositories, services, resources, mappers, DTOs (JSON fields too), search classes and index (`professionals`), tests. Roles `CUSTOMER` / `PROFESSIONAL` in the JWT and `@RolesAllowed`, order status `CUSTOMER_PENDING`. Tables `customer` / `professional` and their `*_id` columns. Paths `/v1/customers` and `/v1/professionals`. No aliases and no data migration: nothing is deployed yet (the tables are renamed again in 1.4.0) |
 | **1.2.0** | New paths, no aliases (nothing is deployed): `POST /auth/register`, `/auth/login`; `PATCH /orders/{id}` (partial update; `status: CANCELLED` replaces `:cancel`); `/orders/{id}/responses`, `GET /responses/{id}` and `PATCH /responses/{id}` with `APPROVED` (replaces `/confirm`); `GET /categories`; `GET /chats/me` (the current user's chats); `GET` and `PATCH /users/me/profile`; `GET /search/professionals`. State changes are `PATCH`es of the resource, not verb sub-resources (`/auth/*` is the exception). The role-dependent `GET /orders` is not part of this version, see 2.6.0 |
-| **1.3.0** | **UUID v4** from the built-in `GenerationType.UUID` (decided 2026-10-28, see decision 3) and `version` for optimistic locking, both in one `BaseEntity` that every entity extends. A failed lock returns `409` (`ConcurrentUpdateExceptionMapper`, folded into `ApiExceptionMapper` in 1.6.0). WebSocket path parameters cannot be `UUID`, so `ChatSocket` parses the chat id from text. *Decision 3* |
+| **1.3.0** | **UUID v4** from the built-in `GenerationType.UUID` (decided 2026-10-28, see decision 3) and `version` for optimistic locking, both in one `BaseEntity` that every entity extends. A failed lock returns `409` (`ConcurrentUpdateExceptionMapper`, folded into `ApiExceptionMapper` in 1.5.0). WebSocket path parameters cannot be `UUID`, so `ChatSocket` parses the chat id from text. *Decision 3* |
 | **1.4.0** | `User` → account (authentication only: email, password, role) + `customer_profiles` and `professional_profiles`, which hold the personal data (name, phone, city, avatar) and the data of the role (decision D-1.5); the profile is created with the account and `Profile` uses `TABLE_PER_CLASS` (two tables, one polymorphic lookup by user id); `PATCH /customers/me` and `PATCH /professionals/me` replace `/users/me/profile`, so there is no role switch in the resource; drop `JOINED` inheritance. The `CHECK`s and "Key Indexes" that `docs/6` lists for the profile tables belong to fields that do not exist yet (`years_experience`, `hourly_rate`), so they arrive with those fields in 2.5.0 |
-| **1.5.0** | **Flyway:** baseline `V1` taken from the model after 1.4.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module; `validate`. Dev data lives in `db/dev`, not `import.sql` |
-| **1.6.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **`PATCH` carries `version`** (the DTOs expose it and the request is rejected with `CONFLICT` when it differs, see `docs/8` and `docs/13`); until then only concurrent transactions on the server are protected. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
-| **1.7.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
+| **1.5.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **`PATCH` carries `version`** (the DTOs expose it and the request is rejected with `CONFLICT` when it differs, see `docs/8` and `docs/13`); until then only concurrent transactions on the server are protected. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first |
+| **1.6.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
-## M2 — Modular monolith (1.8.0 – 1.13.0)
+## M2 — Modular monolith (1.7.0 – 1.13.0)
 ---
 
 | Version / task | What we do |
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
-| **1.8.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
-| **1.9.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
-| **1.10.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
-| **1.11.0** | Notification boundary: `MailService` behind `NotificationApi` |
-| **1.12.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.13.0** | Cross-module relations replaced with IDs. ArchUnit tests forbid extra dependencies |
+| **1.7.0** | Packages `fit.biejk.{core,auth,messaging,notification,moderation}`; move classes only |
+| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
+| **1.9.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
+| **1.10.0** | Notification boundary: `MailService` behind `NotificationApi` |
+| **1.11.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
+| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies |
+| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module (possible now, because modules only reference each other by ID); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
 
 ## M3 — Safety net (1.14.0 – 1.16.0)
 ---
@@ -268,10 +268,10 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Risk | Mitigation |
 |---|---|
-| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.13.0 |
+| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.12.0 |
 | No test net during the split | M3 is entirely about the net and runs before M4 and M5 |
 | Features are slower to build in a distributed system | One compose file, cross-service E2E in rc.7, a shared `contracts` module |
-| Schemas keep changing in `2.x` | Flyway from 1.5.0, one migration per version, per-service folders ready for extraction |
+| Schemas keep changing in `2.x` | Flyway from 1.13.0 on the stable schema, one migration per version, per-service folders ready for extraction |
 | No user-facing features before `2.0.0` | M0 closes the critical holes; M1–M5 change shape only |
 | Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.17.0), Redis Pub/Sub for WS (rc.4) |
 
@@ -280,6 +280,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.17 | 2026-11-03 | Flyway moves from 1.5.0 to 1.13.0: there are no modules yet and the schema still changes (1.12.0 replaces cross-module relations with IDs), so a baseline taken now would be rewritten at once and per-module schemas are not possible before the modules exist. 1.5.0 – 1.12.0 are the old 1.6.0 – 1.13.0 shifted down by one; M3 and later keep their numbers. M1 = 1.1.0 – 1.6.0, M2 = 1.7.0 – 1.13.0. `citext` goes with Flyway to 1.13.0. |
 | 1.16 | 2026-11-02 | `citext` for `users.email` moves from 1.4.0 to 1.5.0: the extension belongs in the first Flyway migration, not in a database container init script. The `CHECK`s and indexes of the profile tables move to 2.5.0 with their fields. |
 | 1.15 | 2026-10-31 | Decision D-1.5 recorded: `users` is authentication only, personal data moves to the profiles, `linked_identities` for several providers, role chosen before the provider redirect, verified email required, one account and one profile per person. Rows 1.4.0 and 2.3.0 rewritten. |
 | 1.14 | 2026-10-28 | Decision 3 closed: ids are UUID v4 from the built-in `GenerationType.UUID`, not v7. 1.3.0 describes the shared `BaseEntity` (UUID `id` + `version`), the `409` for a failed lock and the WebSocket path parameter. 1.6.0 gets the client-sent `version` in `PATCH`, which the code does not do yet. |
