@@ -1,7 +1,7 @@
 package fit.biejk.dto;
 
-import fit.biejk.entity.Location;
 import fit.biejk.entity.Category;
+import fit.biejk.entity.Location;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,15 +11,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Public view of a professional, returned to anyone browsing professionals.
+ * Data Transfer Object representing a professional.
  * <p>
- * Unlike {@link ProfessionalDto} it does not contain the account (login) email.
+ * Used to transfer professional data between layers of the application.
+ * Contains personal information, location, rating, categories, and avatar link.
  * </p>
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProfessionalPublicDto {
+public class ProfessionalResponse {
 
     /**
      * Unique identifier of the professional.
@@ -27,9 +28,19 @@ public class ProfessionalPublicDto {
     private UUID id;
 
     /**
+     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+     */
+    private Long version;
+
+    /**
      * Average rating based on customer reviews.
      */
     private double averageRating;
+
+    /**
+     * Professional's email address.
+     */
+    private String email;
 
     /**
      * First name of the professional.

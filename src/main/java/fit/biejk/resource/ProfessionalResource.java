@@ -61,7 +61,7 @@ public class ProfessionalResource {
     /** Service for retrieving authenticated user context and identity. */
     private final AuthService authService;
 
-    /** Mapper for converting between Review and ReviewDto. */
+    /** Mapper for converting between Review and ReviewResponse. */
     private final ReviewMapper reviewMapper;
 
     /** Service for accessing customer reviews. */

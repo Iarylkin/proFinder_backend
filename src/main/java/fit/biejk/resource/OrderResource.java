@@ -179,7 +179,7 @@ public class OrderResource {
     @GET
     @PermitAll
     public Response getOrders(
-            @BeanParam final OrderFilterCriteria criteria,
+            @BeanParam final OrderFilterRequest criteria,
             @BeanParam final PageRequest pagination) {
 
         if (criteria.hasFilters()) {

@@ -22,7 +22,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDto {
+public class OrderResponse {
 
     /**
      * Unique identifier of the order.

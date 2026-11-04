@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatInputMessage {
+public class ChatMessageRequest {
 
     /**
      * The content of the message sent by the user.

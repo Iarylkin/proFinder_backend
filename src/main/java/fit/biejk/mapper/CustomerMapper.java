@@ -1,7 +1,7 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.CustomerDto;
-import fit.biejk.dto.CustomerPublicDto;
+import fit.biejk.dto.CustomerResponse;
+import fit.biejk.dto.CustomerPublicResponse;
 import fit.biejk.dto.ProfileUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
 import org.mapstruct.Mapper;
@@ -9,7 +9,7 @@ import org.mapstruct.Mapping;
 
 /**
  * MapStruct mapper for converting between {@link CustomerProfile}
- * entities and {@link CustomerDto} data transfer objects.
+ * entities and {@link CustomerResponse} data transfer objects.
  * <p>
  * The personal data belongs to the profile; the email and the creation time are read from its user.
  * </p>
@@ -21,20 +21,20 @@ public interface CustomerMapper {
      * Converts a customer profile to its corresponding DTO.
      *
      * @param entity the customer profile
-     * @return the corresponding CustomerDto
+     * @return the corresponding CustomerResponse
      */
     @Mapping(target = "email", source = "user.email")
     @Mapping(target = "createAt", source = "user.createAt")
-    CustomerDto toDto(CustomerProfile entity);
+    CustomerResponse toDto(CustomerProfile entity);
 
     /**
      * Converts a customer profile to its public DTO (without contact data).
      *
      * @param entity the customer profile
-     * @return the corresponding CustomerPublicDto
+     * @return the corresponding CustomerPublicResponse
      */
     @Mapping(target = "createAt", source = "user.createAt")
-    CustomerPublicDto toPublicDto(CustomerProfile entity);
+    CustomerPublicResponse toPublicDto(CustomerProfile entity);
 
     /**
      * Converts a profile update request to a customer profile that holds only the requested changes.

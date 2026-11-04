@@ -4,18 +4,18 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import fit.biejk.dto.ChatInputMessage;
+import fit.biejk.dto.ChatMessageRequest;
 import jakarta.websocket.Decoder;
 import lombok.SneakyThrows;
 
 /**
- * WebSocket decoder that converts incoming JSON strings into {@link ChatInputMessage} objects.
+ * WebSocket decoder that converts incoming JSON strings into {@link ChatMessageRequest} objects.
  * <p>
  * Uses a custom-configured Jackson {@link ObjectMapper} to handle Java 8 date/time types and
  * other serialization settings.
  * </p>
  */
-public class ChatMessageDecoder implements Decoder.Text<ChatInputMessage> {
+public class ChatMessageDecoder implements Decoder.Text<ChatMessageRequest> {
 
     /**
      * Configured Jackson {@link ObjectMapper} used for decoding JSON strings.
@@ -23,15 +23,15 @@ public class ChatMessageDecoder implements Decoder.Text<ChatInputMessage> {
     private final ObjectMapper jackson = ChatMessageDecoder.getJackson();
 
     /**
-     * Decodes the given JSON string into a {@link ChatInputMessage} object.
+     * Decodes the given JSON string into a {@link ChatMessageRequest} object.
      *
      * @param s the input JSON string
-     * @return the decoded {@link ChatInputMessage}
+     * @return the decoded {@link ChatMessageRequest}
      */
     @Override
     @SneakyThrows
-    public ChatInputMessage decode(final String s) {
-        return jackson.readValue(s, ChatInputMessage.class);
+    public ChatMessageRequest decode(final String s) {
+        return jackson.readValue(s, ChatMessageRequest.class);
     }
 
     /**

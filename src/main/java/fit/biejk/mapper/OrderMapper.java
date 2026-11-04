@@ -1,7 +1,7 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.OrderCreateRequest;
-import fit.biejk.dto.OrderDto;
+import fit.biejk.dto.OrderResponse;
 import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Order;
 import org.mapstruct.Mapper;
@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * MapStruct mapper for converting between {@link Order}
- * entities and {@link OrderDto} data transfer objects.
+ * entities and {@link OrderResponse} data transfer objects.
  */
 @Mapper(componentModel = "jakarta")
 public interface OrderMapper {
@@ -32,22 +32,22 @@ public interface OrderMapper {
     Order toEntity(OrderCreateRequest request);
 
     /**
-     * Converts an Order entity to an OrderDto.
+     * Converts an Order entity to an OrderResponse.
      * Maps the customer ID from the nested customer entity.
      *
      * @param order the entity to convert
-     * @return the mapped OrderDto
+     * @return the mapped OrderResponse
      */
     @Mapping(target = "customerId", source = "customer.id")
-    OrderDto toDto(Order order);
+    OrderResponse toDto(Order order);
 
     /**
-     * Converts a list of Order entities to a list of OrderDto objects.
+     * Converts a list of Order entities to a list of OrderResponse objects.
      *
      * @param entitiyList list of Order entities
-     * @return list of OrderDto objects
+     * @return list of OrderResponse objects
      */
-    List<OrderDto> toDtoList(List<Order> entitiyList);
+    List<OrderResponse> toDtoList(List<Order> entitiyList);
 
     /**
      * Converts an update request to an Order that holds only the requested changes.

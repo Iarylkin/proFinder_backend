@@ -1,27 +1,27 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.ReviewCreateRequest;
-import fit.biejk.dto.ReviewDto;
+import fit.biejk.dto.ReviewResponse;
 import fit.biejk.entity.Review;
 import org.mapstruct.*;
 
 import java.util.List;
 
 /**
- * Mapper for converting between {@link Review} entity and {@link ReviewDto}.
+ * Mapper for converting between {@link Review} entity and {@link ReviewResponse}.
  */
 @Mapper(componentModel = "jakarta", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface ReviewMapper {
 
     /**
-     * Maps a {@link Review} entity to its corresponding {@link ReviewDto}.
+     * Maps a {@link Review} entity to its corresponding {@link ReviewResponse}.
      *
      * @param entity the review entity
      * @return the corresponding DTO
      */
     @Mapping(source = "customer.id", target = "customerId")
     @Mapping(source = "professional.id", target = "professionalId")
-    ReviewDto toDto(Review entity);
+    ReviewResponse toDto(Review entity);
 
     /**
      * Maps a {@link ReviewCreateRequest} to a {@link Review} entity.
@@ -45,5 +45,5 @@ public interface ReviewMapper {
      * @param entityList list of entities
      * @return list of DTOs
      */
-    List<ReviewDto> toDtoList(List<Review> entityList);
+    List<ReviewResponse> toDtoList(List<Review> entityList);
 }

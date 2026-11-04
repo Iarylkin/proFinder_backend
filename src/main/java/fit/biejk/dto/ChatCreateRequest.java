@@ -16,7 +16,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateChatRequest {
+public class ChatCreateRequest {
 
     /**
      * The ID of the user with whom the chat will be created.

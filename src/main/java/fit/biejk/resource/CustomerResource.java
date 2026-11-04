@@ -57,7 +57,7 @@ public class CustomerResource {
      */
     private final AuthService authService;
 
-    /** Maps Review entity to ReviewDto and vice versa. */
+    /** Maps Review entity to ReviewResponse and vice versa. */
     private final ReviewMapper reviewMapper;
 
     /** Service for accessing customer reviews. */

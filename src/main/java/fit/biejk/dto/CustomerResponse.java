@@ -18,7 +18,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerDto {
+public class CustomerResponse {
 
     /**
      * Unique identifier of the customer.

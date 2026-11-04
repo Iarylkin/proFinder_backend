@@ -17,7 +17,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatOutputMessage {
+public class ChatMessageResponse {
 
     /**
      * Unique identifier of the message.

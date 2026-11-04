@@ -1,6 +1,6 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.CustomerPublicDto;
+import fit.biejk.dto.CustomerPublicResponse;
 import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.User;
 import org.junit.jupiter.api.Test;
@@ -26,12 +26,12 @@ class CustomerPublicMappingTest {
         customer.setFirstName("Ann");
         customer.setPhoneNumber(PHONE);
 
-        CustomerPublicDto dto = mapper.toPublicDto(customer);
+        CustomerPublicResponse dto = mapper.toPublicDto(customer);
 
         assertEquals("Ann", dto.getFirstName());
         assertFalse(dto.toString().contains(EMAIL));
         assertFalse(dto.toString().contains(PHONE));
-        assertFalse(Arrays.stream(CustomerPublicDto.class.getDeclaredFields())
+        assertFalse(Arrays.stream(CustomerPublicResponse.class.getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("email")
                         || field.getName().equals("phoneNumber")));
     }

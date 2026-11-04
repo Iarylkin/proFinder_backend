@@ -12,13 +12,13 @@ import java.util.UUID;
 /**
  * Public view of a customer, returned to any authenticated user who knows the customer ID.
  * <p>
- * Unlike {@link CustomerDto} it contains no contact data (email, phone number).
+ * Unlike {@link CustomerResponse} it contains no contact data (email, phone number).
  * </p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerPublicDto {
+public class CustomerPublicResponse {
 
     /**
      * Unique identifier of the customer.

@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ProfessionalFilterCriteria extends PageRequest {
+public class ProfessionalFilterRequest extends PageRequest {
 
     /**
      * Search query for professional name or description.

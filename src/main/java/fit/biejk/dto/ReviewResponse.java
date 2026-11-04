@@ -17,7 +17,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReviewDto {
+public class ReviewResponse {
 
     /**
      * Unique identifier of the review.

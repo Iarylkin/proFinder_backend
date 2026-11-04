@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class OrderFilterCriteria extends PageRequest {
+public class OrderFilterRequest extends PageRequest {
 
     /**
      * List of categories to filter orders by.
