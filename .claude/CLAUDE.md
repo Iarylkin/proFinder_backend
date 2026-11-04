@@ -56,6 +56,7 @@ docker-compose up -d                              # Start all services (PostgreS
 
 ### Tech Stack
 - **Framework:** Quarkus (Java 21) with RESTful API
+- **JSON:** Jackson (`quarkus-rest-jackson`): unknown fields are ignored, dates are ISO 8601 strings, `null` fields are written (the error `details` is `null` when there are none), a nested entity hides what is `@JsonIgnore`; the format is pinned by `JsonFormatTest`
 - **Database:** PostgreSQL with Hibernate ORM + Panache
 - **Search:** Elasticsearch 8.15 (indexed documents for Orders & Professionals)
 - **Cache:** Redis
@@ -189,8 +190,8 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Common Patterns & Conventions
 
 1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
-2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields. A request and a response are separate classes: `*Request` holds only what the client may send and carries the validation (`OrderCreateRequest`, `BidCreateRequest`, `ReviewCreateRequest`, `*UpdateRequest`), `*Response` is only sent to the client and has no validation. A request never carries the fields of the server (`id`, `status`, `version` on create, the owner)
-3. **Validation:** Jakarta `@Valid` on every request body; limits come from `Limits` (never a literal that could drift from the column length), free text gets `@NoControlChars`, a field of a partial update (`PATCH`) uses `@Pattern(regexp = Limits.NOT_BLANK_PATTERN)` instead of `@NotBlank` because it may be missing. A failure is `400 VALIDATION_ERROR` with a field → reason map. Pagination is not validated but clamped in `PageRequest` (page ≥ 1, size 1–100, default 20)
+2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonIgnore` for excluded fields. A request and a response are separate classes: `*Request` holds only what the client may send and carries the validation (`OrderCreateRequest`, `BidCreateRequest`, `ReviewCreateRequest`, `*UpdateRequest`), `*Response` is only sent to the client and has no validation. They are `record`s, so an accessor is `request.title()`, not `getTitle()`; a record that holds a secret overrides `toString` to mask it (`AuthRequest`, `ChangePasswordRequest`, `AuthResponse`, ...). `@BeanParam` objects (`PageRequest`, `OrderFilterRequest`, `ProfessionalFilterRequest`) stay classes. A request never carries the fields of the server (`id`, `status`, `version` on create, the owner)
+3. **Validation:** Jakarta `@Valid` on every request body; limits come from `Limits` (never a literal that could drift from the column length), free text gets `@NoControlChars`, a field of a partial update (`PATCH`) has no `@NotBlank` because it may be missing. A text field is cleaned in the compact constructor with `Text.clean` (trimmed, an empty text is `null`); passwords, codes and tokens are never cleaned. A failure is `400 VALIDATION_ERROR` with a field → reason map. Pagination is not validated but clamped in `PageRequest` (page ≥ 1, size 1–100, default 20)
 4. **Exception Handling:** throw the built-in `jakarta.ws.rs` exceptions where the status is enough, an `ApiException` subclass (with its `ErrorCode`) where the client must tell the error apart from the generic one of the same status; the mapping to the response is centralized in `ApiExceptionMapper`, resources do not catch exceptions to build error responses. State-less actions that return nothing (`DELETE`, avatar upload) answer `204`
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
