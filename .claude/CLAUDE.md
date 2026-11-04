@@ -120,6 +120,8 @@ Main application code organized by layers:
 
 - **`exception/`** — one error format for the whole API: `ApiExceptionMapper` turns every error into `{"error": {"code", "message", "details"}}` (`ErrorResponse`) with a code from the `ErrorCode` catalog (only the codes the code can return today; the target catalog is in `docs/8`). `ApiException` subclasses carry their own code and status (`OrderClosedException` `ORDER_CLOSED` 409, `EmailAlreadyRegisteredException` 409, `InvalidCredentialsException` 401, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`); the built-in `BadRequestException`/`ForbiddenException`/`NotFoundException`/`ClientErrorException` (and `StatusConflictException`, 409) get the generic code of their status (`VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`). Failed bean validation is `VALIDATION_ERROR` with a field → reason map in `details`, a failed optimistic lock is `CONFLICT`, anything else is `INTERNAL_ERROR` without its message. Errors raised by Quarkus security before a resource (`401`/`403` from `@RolesAllowed`) are not wrapped yet. Never throw `IllegalArgumentException` for a client mistake: it is a `500`
 
+- **`validation/`** — `Limits` (the length and range limits of the input fields from `docs/13`, used by both the DTOs and the entity column lengths, so a value that passes the validation always fits its column), `@NoControlChars` (rejects `U+0000`–`U+001F` and `U+007F`, `multiline = true` allows `\n` and `\t`)
+
 - **`utilits/`** — Shared utilities
   - `CryptoUtils` — Password hashing with BCrypt
 
@@ -189,7 +191,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 
 1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
 2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
-3. **Validation:** Use Jakarta `@Valid` annotations; validation errors return 400 Bad Request
+3. **Validation:** Jakarta `@Valid` on every request body; limits come from `Limits` (never a literal that could drift from the column length), free text gets `@NoControlChars`, a field of a partial update (`PATCH`) uses `@Pattern(regexp = Limits.NOT_BLANK_PATTERN)` instead of `@NotBlank` because it may be missing. A failure is `400 VALIDATION_ERROR` with a field → reason map. Pagination is not validated but clamped in `PageRequest` (page ≥ 1, size 1–100, default 20)
 4. **Exception Handling:** throw the built-in `jakarta.ws.rs` exceptions where the status is enough, an `ApiException` subclass (with its `ErrorCode`) where the client must tell the error apart from the generic one of the same status; the mapping to the response is centralized in `ApiExceptionMapper`, resources do not catch exceptions to build error responses. State-less actions that return nothing (`DELETE`, avatar upload) answer `204`
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
