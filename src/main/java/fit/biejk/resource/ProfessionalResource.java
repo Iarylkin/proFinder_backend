@@ -5,7 +5,7 @@ import fit.biejk.dto.ProfessionalUpdateRequest;
 import fit.biejk.dto.ReviewCreateRequest;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
-import fit.biejk.mapper.OrderResponseMapper;
+import fit.biejk.mapper.BidMapper;
 import fit.biejk.mapper.ProfessionalMapper;
 import fit.biejk.mapper.ReviewMapper;
 import fit.biejk.service.*;
@@ -33,9 +33,9 @@ import java.util.UUID;
 public class ProfessionalResource {
 
     /**
-     * Service responsible for handling business logic related to responses.
+     * Service responsible for handling business logic related to bids.
      */
-    private final OrderResponseService orderResponseService;
+    private final BidService bidService;
 
     /**
      * Service for managing order-related operations.
@@ -48,9 +48,9 @@ public class ProfessionalResource {
     private final OrderMapper orderMapper;
 
     /**
-     * Mapper for converting between OrderResponse entities and DTOs.
+     * Mapper for converting between Bid entities and DTOs.
      */
-    private final OrderResponseMapper orderResponseMapper;
+    private final BidMapper bidMapper;
 
     /** Service for handling business logic related to professionals. */
     private final ProfessionalService professionalService;
@@ -168,24 +168,24 @@ public class ProfessionalResource {
     }
 
     /**
-     * Retrieves all responses submitted by the specified professional.
+     * Retrieves all bids submitted by the specified professional.
      *
      * @param professionalId the ID of the professional
      * @param pagination   the pagination parameters (page and size)
-     * @return list of responses submitted by the professional
+     * @return list of bids submitted by the professional
      */
     @GET
-    @Path("/{professionalId}/responses")
+    @Path("/{professionalId}/bids")
     @RolesAllowed("PROFESSIONAL")
     public Response getResponses(
             @PathParam("professionalId") final UUID professionalId,
             @BeanParam final PageRequest pagination
     ) {
-        List<OrderResponse> result = orderResponseService.getByProfessionalId(
+        List<Bid> result = bidService.getByProfessionalId(
                 professionalId,
                 pagination.getPage(),
                 pagination.getSize());
-        return Response.ok(orderResponseMapper.toDtoList(result)).build();
+        return Response.ok(bidMapper.toDtoList(result)).build();
     }
 
     /**

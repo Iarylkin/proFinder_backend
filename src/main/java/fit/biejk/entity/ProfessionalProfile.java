@@ -10,7 +10,7 @@ import lombok.Setter;
 import java.util.List;
 
 /**
- * Profile of a professional: services, rating and the responses and reviews of the professional.
+ * Profile of a professional: services, rating and the bids and reviews of the professional.
  * <p>
  * The account data (email, name, location) lives in the {@link User} of the profile.
  * </p>
@@ -44,14 +44,14 @@ public class ProfessionalProfile extends Profile {
     private String description;
 
     /**
-     * List of all responses submitted by the professional to various orders.
+     * List of all bids submitted by the professional to various orders.
      * <p>
      * Ignored during JSON serialization to prevent recursion and reduce payload size.
      * </p>
      */
     @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonbTransient
-    private List<OrderResponse> orderResponses;
+    private List<Bid> bids;
 
     /**
      * List of reviews received from customers for completed orders.

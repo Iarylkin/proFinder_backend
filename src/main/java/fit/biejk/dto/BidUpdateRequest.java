@@ -1,6 +1,6 @@
 package fit.biejk.dto;
 
-import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.entity.BidStatus;
 import fit.biejk.validation.Limits;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
@@ -14,23 +14,23 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Data Transfer Object representing a status change of a response, such as its approval.
+ * Data Transfer Object representing a status change of a bid, such as its approval.
  * <p>
- * Contains the final agreed deadline and price for a given response.
+ * Contains the final agreed deadline and price for a given bid.
  * </p>
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderResponseUpdateRequest {
+public class BidUpdateRequest {
 
     /**
-     * Status to set on the response. Only {@code APPROVED} is supported.
+     * Status to set on the bid. Only {@code APPROVED} is supported.
      */
     @NotNull(message = "Status cannot be null")
-    private OrderResponseStatus status;
+    private BidStatus status;
     /**
-     * The final agreed deadline for the response.
+     * The final agreed deadline for the bid.
      * Must not be null.
      */
     @NotNull(message = "Final deadline cannot be null")
@@ -38,7 +38,7 @@ public class OrderResponseUpdateRequest {
     private LocalDateTime finalDeadline;
 
     /**
-     * The final agreed price for the response.
+     * The final agreed price for the bid.
      * Must be a non-negative integer.
      */
     @Min(value = 0, message = "Final price must be non-negative")

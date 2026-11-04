@@ -50,7 +50,7 @@ class OrderServiceTest {
                 orderSearchService,
                 mock(OrderSearchMapper.class),
                 orderRepository,
-                mock(OrderResponseService.class),
+                mock(BidService.class),
                 mock(ProfessionalService.class),
                 authService);
 
@@ -179,7 +179,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void nextStatusAllowsCancellingAnOrderWithResponses() {
+    void nextStatusAllowsCancellingAnOrderWithBids() {
         assertEquals(OrderStatus.CANCELLED,
                 OrderService.nextStatus(OrderStatus.CUSTOMER_PENDING, OrderStatus.CANCELLED));
     }

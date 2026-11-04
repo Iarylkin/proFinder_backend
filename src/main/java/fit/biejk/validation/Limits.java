@@ -52,9 +52,9 @@ public final class Limits {
     public static final int ORDER_DESCRIPTION_MAX_LENGTH = 5000;
 
     /**
-     * Longest description of a response on an order.
+     * Longest description of a bid on an order.
      */
-    public static final int RESPONSE_DESCRIPTION_MAX_LENGTH = 2000;
+    public static final int BID_DESCRIPTION_MAX_LENGTH = 2000;
 
     /**
      * Longest description (bio) of a professional.
@@ -72,7 +72,7 @@ public final class Limits {
     public static final int REVIEW_COMMENT_MAX_LENGTH = 1000;
 
     /**
-     * Highest price in an order or a response (a sanity cap).
+     * Highest price in an order or a bid (a sanity cap).
      */
     public static final int PRICE_MAX = 1_000_000;
 

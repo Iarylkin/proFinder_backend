@@ -1,7 +1,7 @@
 package fit.biejk.exception;
 
 /**
- * The order does not accept responses any more.
+ * The order does not accept bids any more.
  */
 public class OrderClosedException extends ApiException {
 

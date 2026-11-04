@@ -28,7 +28,7 @@ public interface OrderMapper {
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "location", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "bids", ignore = true)
     Order toEntity(OrderCreateRequest request);
 
     /**
@@ -58,7 +58,7 @@ public interface OrderMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "bids", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     Order toEntity(OrderUpdateRequest request);
 }

@@ -1,6 +1,6 @@
 package fit.biejk.dto;
 
-import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.entity.BidStatus;
 import fit.biejk.entity.UserRole;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -68,8 +68,8 @@ class DtoValidationTest {
         return request;
     }
 
-    private static OrderResponseUpdateRequest responseUpdate() {
-        OrderResponseUpdateRequest request = new OrderResponseUpdateRequest();
+    private static BidUpdateRequest responseUpdate() {
+        BidUpdateRequest request = new BidUpdateRequest();
         request.setVersion(0L);
         return request;
     }
@@ -134,8 +134,8 @@ class DtoValidationTest {
 
     @Test
     void finalDeadlineIsRequiredAndMustNotBeInThePast() {
-        OrderResponseUpdateRequest request = responseUpdate();
-        request.setStatus(OrderResponseStatus.APPROVED);
+        BidUpdateRequest request = responseUpdate();
+        request.setStatus(BidStatus.APPROVED);
         assertEquals(Set.of("finalDeadline"), invalidFields(request));
 
         request.setFinalDeadline(LocalDateTime.now().minusDays(1));
@@ -197,10 +197,10 @@ class DtoValidationTest {
         assertEquals(Set.of("version"), invalidFields(new ProfileUpdateRequest()));
         assertEquals(Set.of("version"), invalidFields(new ProfessionalUpdateRequest()));
 
-        OrderResponseUpdateRequest orderResponse = new OrderResponseUpdateRequest();
-        orderResponse.setStatus(OrderResponseStatus.APPROVED);
-        orderResponse.setFinalDeadline(LocalDateTime.now().plusDays(1));
-        assertEquals(Set.of("version"), invalidFields(orderResponse));
+        BidUpdateRequest bid = new BidUpdateRequest();
+        bid.setStatus(BidStatus.APPROVED);
+        bid.setFinalDeadline(LocalDateTime.now().plusDays(1));
+        assertEquals(Set.of("version"), invalidFields(bid));
     }
 
     @Test
@@ -227,7 +227,7 @@ class DtoValidationTest {
 
     @Test
     void responseDescriptionIsRequiredAndLimited() {
-        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
+        BidCreateRequest dto = new BidCreateRequest();
         dto.setPrice(100);
 
         assertEquals(Set.of("description"), invalidFields(dto));
@@ -238,7 +238,7 @@ class DtoValidationTest {
 
     @Test
     void responsePriceIsRequired() {
-        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
+        BidCreateRequest dto = new BidCreateRequest();
         dto.setDescription("I can do it");
 
         assertEquals(Set.of("price"), invalidFields(dto));
@@ -254,7 +254,7 @@ class DtoValidationTest {
 
     @Test
     void responsePriceIsNonNegativeAndCapped() {
-        OrderResponseCreateRequest dto = new OrderResponseCreateRequest();
+        BidCreateRequest dto = new BidCreateRequest();
         dto.setDescription("I can do it");
         dto.setPrice(-1);
         assertEquals(Set.of("price"), invalidFields(dto));

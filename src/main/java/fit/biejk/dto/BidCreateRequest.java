@@ -12,19 +12,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Request of a professional to respond to an order. The identifier, order, professional, status and version are set
- * by the server.
+ * Request of a professional to place a bid on an order. The identifier, order, professional, status and version are
+ * set by the server.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderResponseCreateRequest {
+public class BidCreateRequest {
 
     /**
-     * Description of the response. Must not be blank.
+     * Description of the bid. Must not be blank.
      */
     @NotBlank
-    @Size(max = Limits.RESPONSE_DESCRIPTION_MAX_LENGTH)
+    @Size(max = Limits.BID_DESCRIPTION_MAX_LENGTH)
     @NoControlChars(multiline = true)
     private String description;
 

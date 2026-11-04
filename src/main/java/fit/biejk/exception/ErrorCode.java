@@ -65,7 +65,7 @@ public enum ErrorCode {
             "An account with this email already exists", false),
 
     /**
-     * The order does not accept responses any more.
+     * The order does not accept bids any more.
      */
     ORDER_CLOSED(Response.Status.CONFLICT.getStatusCode(), "This order is closed", false),
 

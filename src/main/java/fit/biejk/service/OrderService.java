@@ -23,7 +23,7 @@ import java.util.UUID;
  * Service class for managing {@link Order} entities.
  * <p>
  * Handles business logic for creating, updating, cancelling, and deleting orders,
- * as well as working with related {@link OrderResponse} objects.
+ * as well as working with related {@link Bid} objects.
  * </p>
  */
 @Slf4j
@@ -52,9 +52,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     /**
-     * Service for managing responses.
+     * Service for managing bids.
      */
-    private final OrderResponseService orderResponseService;
+    private final BidService bidService;
 
     /** Service for handling business logic related to professionals. */
     private final ProfessionalService professionalService;
@@ -212,57 +212,57 @@ public class OrderService {
     }
 
     /**
-     * Adds a new response to an order.
+     * Adds a new bid to an order.
      *
      * @param orderId  ID of the order
      * @param professionalId ID of the professional
-     * @param orderResponse response entity
-     * @return created response
+     * @param bid bid entity
+     * @return created bid
      */
     @Transactional
-    public OrderResponse respond(final UUID orderId, final UUID professionalId, final OrderResponse orderResponse) {
-        log.info("Create response: orderId={}, professionalId={}", orderId, orderResponse.getProfessional().getId());
+    public Bid placeBid(final UUID orderId, final UUID professionalId, final Bid bid) {
+        log.info("Create bid: orderId={}, professionalId={}", orderId, bid.getProfessional().getId());
         Order order = getById(orderId);
-        if (!order.getStatus().acceptsResponses()) {
-            log.warn("Response rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
+        if (!order.getStatus().acceptsBids()) {
+            log.warn("Bid rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
-        if (haveProfessionalResponse(order, orderResponse)) {
-            log.error("Order response already exists for this professional. orderId={}, professionalId={}",
-                    orderId, orderResponse.getProfessional().getId());
-            throw new ClientErrorException("Order response already exists", Response.Status.CONFLICT);
+        if (haveProfessionalResponse(order, bid)) {
+            log.error("Order bid already exists for this professional. orderId={}, professionalId={}",
+                    orderId, bid.getProfessional().getId());
+            throw new ClientErrorException("Order bid already exists", Response.Status.CONFLICT);
         }
-        orderResponse.setOrder(order);
+        bid.setOrder(order);
 
         ProfessionalProfile professional = professionalService.getById(professionalId);
-        orderResponse.setProfessional(professional);
+        bid.setProfessional(professional);
 
-        orderResponseService.create(orderResponse);
-        order.getOrderResponses().add(orderResponse);
+        bidService.create(bid);
+        order.getBids().add(bid);
         order.setStatus(order.getStatus().transitionTo(OrderStatus.CUSTOMER_PENDING));
         orderRepository.persist(order);
 
         OrderSearchDto dto = orderSearchMapper.toDto(order);
         orderSearchService.save(dto);
 
-        log.debug("Response created with ID={}", orderResponse.getId());
-        return orderResponse;
+        log.debug("Response created with ID={}", bid.getId());
+        return bid;
     }
 
     /**
-     * Checks if the given professional already has a response for the order.
+     * Checks if the given professional already has a bid for the order.
      *
      * @param order    the order
-     * @param orderResponse the response to check
-     * @return true if response already exists, false otherwise
+     * @param bid the bid to check
+     * @return true if bid already exists, false otherwise
      */
-    public boolean haveProfessionalResponse(final Order order, final OrderResponse orderResponse) {
-        log.info("Check if professional response already exists: orderId={}, professionalId={}",
-                order.getId(), orderResponse.getProfessional().getId());
-        List<OrderResponse> orderResponses = order.getOrderResponses();
-        for (OrderResponse existing : orderResponses) {
-            if (existing.getProfessional().getId().equals(orderResponse.getProfessional().getId())) {
-                log.debug("Response already exists for professionalId={}", existing.getProfessional().getId());
+    public boolean haveProfessionalResponse(final Order order, final Bid bid) {
+        log.info("Check if professional bid already exists: orderId={}, professionalId={}",
+                order.getId(), bid.getProfessional().getId());
+        List<Bid> bids = order.getBids();
+        for (Bid existing : bids) {
+            if (existing.getProfessional().getId().equals(bid.getProfessional().getId())) {
+                log.debug("Bid already exists for professionalId={}", existing.getProfessional().getId());
                 return true;
             }
         }

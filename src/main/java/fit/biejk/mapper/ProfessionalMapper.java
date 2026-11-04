@@ -59,7 +59,7 @@ public interface ProfessionalMapper {
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
     @Mapping(target = "averageRating", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "bids", ignore = true)
     @Mapping(target = "reviews", ignore = true)
     ProfessionalProfile toEntity(ProfessionalUpdateRequest request);
 }

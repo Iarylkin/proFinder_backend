@@ -1,6 +1,6 @@
 package fit.biejk.dto;
 
-import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.entity.BidStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,12 +9,12 @@ import java.util.UUID;
 
 /**
  * Data Transfer Object representing a response related to an order, sent to the client. A response is created
- * with {@link OrderResponseCreateRequest}.
+ * with {@link BidCreateRequest}.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderResponseDto {
+public class BidResponse {
 
     /**
      * Unique identifier of the response.
@@ -49,5 +49,5 @@ public class OrderResponseDto {
     /**
      * Current status of the response.
      */
-    private OrderResponseStatus status;
+    private BidStatus status;
 }

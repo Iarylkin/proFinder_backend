@@ -13,33 +13,33 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Entity representing a professional's response for fulfilling an order.
+ * Entity representing a professional's bid for fulfilling an order.
  */
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "responses")
-public class OrderResponse extends BaseEntity {
+@Table(name = "bids")
+public class Bid extends BaseEntity {
 
     /**
-     * Professional who submitted the response.
+     * Professional who submitted the bid.
      */
     @ManyToOne
     @JoinColumn(name = "professional_id", nullable = false)
     private ProfessionalProfile professional;
 
     /**
-     * Order associated with this response.
+     * Order associated with this bid.
      */
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
     /**
-     * Description provided by the professional in the response.
+     * Description provided by the professional in the bid.
      */
-    @Column(name = "description", length = Limits.RESPONSE_DESCRIPTION_MAX_LENGTH)
+    @Column(name = "description", length = Limits.BID_DESCRIPTION_MAX_LENGTH)
     private String description;
 
     /**
@@ -49,9 +49,9 @@ public class OrderResponse extends BaseEntity {
     private int price;
 
     /**
-     * Current status of the response.
+     * Current status of the bid.
      */
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private OrderResponseStatus status;
+    private BidStatus status;
 }

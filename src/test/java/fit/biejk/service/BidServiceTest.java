@@ -2,12 +2,12 @@ package fit.biejk.service;
 
 import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Order;
-import fit.biejk.entity.OrderResponse;
+import fit.biejk.entity.Bid;
 import fit.biejk.entity.OrderStatus;
-import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.entity.BidStatus;
 import fit.biejk.exception.StaleVersionException;
 import fit.biejk.exception.StatusConflictException;
-import fit.biejk.repository.OrderResponseRepository;
+import fit.biejk.repository.BidRepository;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class OrderResponseServiceTest {
+class BidServiceTest {
 
     private static final UUID ORDER_ID = UUID.randomUUID();
     private static final UUID RESPONSE_ID = UUID.randomUUID();
@@ -38,17 +38,17 @@ class OrderResponseServiceTest {
     private static final int FINAL_PRICE = 300;
     private static final long VERSION = 5L;
 
-    private OrderResponseRepository responseRepository;
+    private BidRepository responseRepository;
     private AuthService authService;
-    private OrderResponseService service;
+    private BidService service;
     private Order order;
-    private OrderResponse orderResponse;
+    private Bid bid;
 
     @BeforeEach
     void setUp() {
-        responseRepository = mock(OrderResponseRepository.class);
+        responseRepository = mock(BidRepository.class);
         authService = mock(AuthService.class);
-        service = new OrderResponseService(
+        service = new BidService(
                 mock(OrderRepository.class),
                 authService,
                 mock(OrderSearchService.class),
@@ -63,48 +63,48 @@ class OrderResponseServiceTest {
         order.setCustomer(customer);
         order.setStatus(OrderStatus.CUSTOMER_PENDING);
 
-        orderResponse = new OrderResponse();
-        orderResponse.setId(RESPONSE_ID);
-        orderResponse.setOrder(order);
-        orderResponse.setStatus(OrderResponseStatus.CREATED);
-        orderResponse.setVersion(VERSION);
+        bid = new Bid();
+        bid.setId(RESPONSE_ID);
+        bid.setOrder(order);
+        bid.setStatus(BidStatus.CREATED);
+        bid.setVersion(VERSION);
 
-        when(responseRepository.findByIdOptional(RESPONSE_ID)).thenReturn(Optional.of(orderResponse));
+        when(responseRepository.findByIdOptional(RESPONSE_ID)).thenReturn(Optional.of(bid));
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
     }
 
-    private Order updateStatus(final UUID responseId, final OrderResponseStatus status) {
+    private Order updateStatus(final UUID responseId, final BidStatus status) {
         return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION);
     }
 
     @Test
     void approvingAResponseCompletesTheOrderAndRejectsTheOthers() {
-        Order result = updateStatus(RESPONSE_ID, OrderResponseStatus.APPROVED);
+        Order result = updateStatus(RESPONSE_ID, BidStatus.APPROVED);
 
         assertSame(order, result);
         assertEquals(OrderStatus.COMPLETED, order.getStatus());
         assertEquals(FINAL_PRICE, order.getPrice());
-        assertEquals(OrderResponseStatus.APPROVED, orderResponse.getStatus());
+        assertEquals(BidStatus.APPROVED, bid.getStatus());
         verify(responseRepository).rejectOthersForOrder(ORDER_ID, RESPONSE_ID);
     }
 
     @Test
     void approvingWithAStaleVersionIsRejectedAndChangesNothing() {
         assertThrows(StaleVersionException.class, () -> service.updateStatus(
-                RESPONSE_ID, OrderResponseStatus.APPROVED, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION - 1));
+                RESPONSE_ID, BidStatus.APPROVED, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION - 1));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
-        assertEquals(OrderResponseStatus.CREATED, orderResponse.getStatus());
+        assertEquals(BidStatus.CREATED, bid.getStatus());
         verify(responseRepository, never()).rejectOthersForOrder(any(), any());
     }
 
     @Test
     void anyStatusExceptApprovedIsAConflict() {
         assertThrows(StatusConflictException.class,
-                () -> updateStatus(RESPONSE_ID, OrderResponseStatus.REJECTED));
+                () -> updateStatus(RESPONSE_ID, BidStatus.REJECTED));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
-        assertEquals(OrderResponseStatus.CREATED, orderResponse.getStatus());
+        assertEquals(BidStatus.CREATED, bid.getStatus());
         verify(responseRepository, never()).rejectOthersForOrder(any(), any());
     }
 
@@ -113,7 +113,7 @@ class OrderResponseServiceTest {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
 
         assertThrows(ForbiddenException.class,
-                () -> updateStatus(RESPONSE_ID, OrderResponseStatus.APPROVED));
+                () -> updateStatus(RESPONSE_ID, BidStatus.APPROVED));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
     }
@@ -121,6 +121,6 @@ class OrderResponseServiceTest {
     @Test
     void approvingAMissingResponseIsNotFound() {
         assertThrows(NotFoundException.class,
-                () -> updateStatus(MISSING_RESPONSE_ID, OrderResponseStatus.APPROVED));
+                () -> updateStatus(MISSING_RESPONSE_ID, BidStatus.APPROVED));
     }
 }
