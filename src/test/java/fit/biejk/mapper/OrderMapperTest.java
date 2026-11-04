@@ -17,10 +17,7 @@ class OrderMapperTest {
 
     @Test
     void createRequestBecomesANewOrderWithoutTheFieldsOfTheServer() {
-        OrderCreateRequest request = new OrderCreateRequest();
-        request.setTitle("New title");
-        request.setDescription("New description");
-        request.setPrice(PRICE);
+        OrderCreateRequest request = new OrderCreateRequest(null, "New title", "New description", PRICE, null);
 
         Order order = mapper.toEntity(request);
 
@@ -36,8 +33,7 @@ class OrderMapperTest {
 
     @Test
     void updateRequestKeepsUnsentFieldsNull() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setTitle("New title");
+        OrderUpdateRequest request = new OrderUpdateRequest(null, null, null, "New title", null, null, null, 0L);
 
         Order changes = mapper.toEntity(request);
 
@@ -52,9 +48,8 @@ class OrderMapperTest {
 
     @Test
     void updateRequestCarriesPriceAndRequestedStatus() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setPrice(PRICE);
-        request.setStatus(OrderStatus.CANCELLED);
+        OrderUpdateRequest request = new OrderUpdateRequest(
+                null, OrderStatus.CANCELLED, null, null, PRICE, null, null, 0L);
 
         Order changes = mapper.toEntity(request);
 

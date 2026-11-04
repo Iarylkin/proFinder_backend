@@ -1,62 +1,30 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Data Transfer Object representing a customer.
- * <p>
- * Used to transfer customer-related data such as identity,
- * contact information, location, and avatar reference.
- * </p>
+ * Represents a customer. Used to transfer customer-related data such as identity, contact information,
+ * location, and avatar reference.
+ *
+ * @param id Unique identifier of the customer.
+ * @param version Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+ * @param email Email address of the customer.
+ * @param firstName First name of the customer.
+ * @param lastName Last name of the customer.
+ * @param phoneNumber Phone number of the customer.
+ * @param location Geographical location associated with the customer.
+ * @param createAt Timestamp of when the customer account was created.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class CustomerResponse {
-
-    /**
-     * Unique identifier of the customer.
-     */
-    private UUID id;
-
-    /**
-     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
-     */
-    private Long version;
-
-    /**
-     * Email address of the customer.
-     */
-    private String email;
-
-    /**
-     * First name of the customer.
-     */
-    private String firstName;
-
-    /**
-     * Last name of the customer.
-     */
-    private String lastName;
-
-    /**
-     * Phone number of the customer.
-     */
-    private String phoneNumber;
-
-    /**
-     * Geographical location associated with the customer.
-     */
-    private Location location;
-
-    /**
-     * Timestamp of when the customer account was created.
-     */
-    private LocalDateTime createAt;
+public record CustomerResponse(
+        UUID id,
+        Long version,
+        String email,
+        String firstName,
+        String lastName,
+        String phoneNumber,
+        Location location,
+        LocalDateTime createAt) {
 }

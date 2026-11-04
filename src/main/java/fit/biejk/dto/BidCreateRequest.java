@@ -2,37 +2,34 @@ package fit.biejk.dto;
 
 import fit.biejk.validation.Limits;
 import fit.biejk.validation.NoControlChars;
+import fit.biejk.validation.Text;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
- * Request of a professional to place a bid on an order. The identifier, order, professional, status and version are
- * set by the server.
+ * Request of a professional to place a bid on an order. The identifier, order, professional, status and
+ * version are set by the server.
+ *
+ * @param description Description of the bid. Must not be blank.
+ * @param price Price offered by the professional.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class BidCreateRequest {
+public record BidCreateRequest(
+        @NotBlank
+        @Size(max = Limits.BID_DESCRIPTION_MAX_LENGTH)
+        @NoControlChars(multiline = true)
+        String description,
+        @NotNull(message = "Price is required")
+        @Min(0)
+        @Max(Limits.PRICE_MAX)
+        Integer price) {
 
     /**
-     * Description of the bid. Must not be blank.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    @NotBlank
-    @Size(max = Limits.BID_DESCRIPTION_MAX_LENGTH)
-    @NoControlChars(multiline = true)
-    private String description;
-
-    /**
-     * Price offered by the professional.
-     */
-    @NotNull(message = "Price is required")
-    @Min(0)
-    @Max(Limits.PRICE_MAX)
-    private Integer price;
+    public BidCreateRequest {
+        description = Text.clean(description);
+    }
 }

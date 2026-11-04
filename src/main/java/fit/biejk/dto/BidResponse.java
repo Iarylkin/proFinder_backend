@@ -1,53 +1,27 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.BidStatus;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
 /**
- * Data Transfer Object representing a response related to an order, sent to the client. A response is created
- * with {@link BidCreateRequest}.
+ * Represents a response related to an order, sent to the client. A response is created with {@link
+ * BidCreateRequest}.
+ *
+ * @param id Unique identifier of the response.
+ * @param version Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+ * @param orderId Identifier of the associated order.
+ * @param professionalId Identifier of the professional making the response.
+ * @param description Description of the response.
+ * @param price Proposed price.
+ * @param status Current status of the response.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class BidResponse {
-
-    /**
-     * Unique identifier of the response.
-     */
-    private UUID id;
-
-    /**
-     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
-     */
-    private Long version;
-
-    /**
-     * Identifier of the associated order.
-     */
-    private UUID orderId;
-
-    /**
-     * Identifier of the professional making the response.
-     */
-    private UUID professionalId;
-
-    /**
-     * Description of the response.
-     */
-    private String description;
-
-    /**
-     * Proposed price.
-     */
-    private int price;
-
-    /**
-     * Current status of the response.
-     */
-    private BidStatus status;
+public record BidResponse(
+        UUID id,
+        Long version,
+        UUID orderId,
+        UUID professionalId,
+        String description,
+        int price,
+        BidStatus status) {
 }

@@ -101,12 +101,6 @@ public final class Limits {
      */
     public static final String PHONE_PATTERN = "^\\+?[0-9 ()-]*$";
 
-    /**
-     * A text that has at least one character other than white space. Unlike {@code @NotBlank} it lets a missing
-     * value pass, which is what an optional field of a partial update needs.
-     */
-    public static final String NOT_BLANK_PATTERN = "(?s).*\\S.*";
-
     private Limits() {
     }
 }

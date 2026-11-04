@@ -5,80 +5,55 @@ import fit.biejk.entity.Location;
 import fit.biejk.entity.OrderStatus;
 import fit.biejk.validation.Limits;
 import fit.biejk.validation.NoControlChars;
+import fit.biejk.validation.Text;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Request body for a partial update of an order.
- * <p>
- * Every field is optional: a missing or {@code null} field keeps its current value.
- * </p>
+ * Request body for a partial update of an order. Every field is optional: a missing or {@code null} field
+ * keeps its current value.
+ *
+ * @param categories New list of categories for the order.
+ * @param status Requested status. Only {@code CANCELLED} can be set through an order update.
+ * @param description New description of the order.
+ * @param title New title of the order.
+ * @param price New price of the order.
+ * @param deadline New deadline of the order.
+ * @param location New location of the order.
+ * @param version The version the client has seen. A different current version means someone changed the resource
+ *        since, and the request is rejected with 409.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class OrderUpdateRequest {
+public record OrderUpdateRequest(
+        List<Category> categories,
+        OrderStatus status,
+        @Size(min = Limits.ORDER_DESCRIPTION_MIN_LENGTH, max = Limits.ORDER_DESCRIPTION_MAX_LENGTH)
+        @NoControlChars(multiline = true)
+        String description,
+        @Size(min = Limits.ORDER_TITLE_MIN_LENGTH, max = Limits.ORDER_TITLE_MAX_LENGTH)
+        @NoControlChars
+        String title,
+        @Positive(message = "Price must be positive")
+        @Max(Limits.PRICE_MAX)
+        Integer price,
+        @FutureOrPresent
+        LocalDateTime deadline,
+        Location location,
+        @NotNull
+        @PositiveOrZero
+        Long version) {
 
     /**
-     * New list of categories for the order.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    private List<Category> categories;
-
-    /**
-     * Requested status. Only {@code CANCELLED} can be set through an order update.
-     */
-    private OrderStatus status;
-
-    /**
-     * New description of the order.
-     */
-    @Pattern(regexp = Limits.NOT_BLANK_PATTERN, message = "must not be blank")
-    @Size(min = Limits.ORDER_DESCRIPTION_MIN_LENGTH, max = Limits.ORDER_DESCRIPTION_MAX_LENGTH)
-    @NoControlChars(multiline = true)
-    private String description;
-
-    /**
-     * New title of the order.
-     */
-    @Pattern(regexp = Limits.NOT_BLANK_PATTERN, message = "must not be blank")
-    @Size(min = Limits.ORDER_TITLE_MIN_LENGTH, max = Limits.ORDER_TITLE_MAX_LENGTH)
-    @NoControlChars
-    private String title;
-
-    /**
-     * New price of the order.
-     */
-    @Positive(message = "Price must be positive")
-    @Max(Limits.PRICE_MAX)
-    private Integer price;
-
-    /**
-     * New deadline of the order.
-     */
-    @FutureOrPresent
-    private LocalDateTime deadline;
-
-    /**
-     * New location of the order.
-     */
-    private Location location;
-
-    /**
-     * The version the client has seen. A different current version means someone changed the resource since,
-     * and the request is rejected with 409.
-     */
-    @NotNull
-    @PositiveOrZero
-    private Long version;
+    public OrderUpdateRequest {
+        title = Text.clean(title);
+        description = Text.clean(description);
+    }
 }

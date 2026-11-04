@@ -2,78 +2,37 @@ package fit.biejk.dto;
 
 import fit.biejk.entity.Category;
 import fit.biejk.entity.Location;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Data Transfer Object representing a professional.
- * <p>
- * Used to transfer professional data between layers of the application.
- * Contains personal information, location, rating, categories, and avatar link.
- * </p>
+ * Represents a professional. Used to transfer professional data between layers of the application. Contains
+ * personal information, location, rating, categories, and avatar link.
+ *
+ * @param id Unique identifier of the professional.
+ * @param version Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+ * @param averageRating Average rating based on customer reviews.
+ * @param email Professional's email address.
+ * @param firstName First name of the professional.
+ * @param lastName Last name of the professional.
+ * @param phoneNumber Phone number of the professional.
+ * @param location Geographic location of the professional.
+ * @param createAt Timestamp of account creation.
+ * @param categories Categories the professional works in.
+ * @param description Detailed description of the professional's expertise.
  */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ProfessionalResponse {
-
-    /**
-     * Unique identifier of the professional.
-     */
-    private UUID id;
-
-    /**
-     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
-     */
-    private Long version;
-
-    /**
-     * Average rating based on customer reviews.
-     */
-    private double averageRating;
-
-    /**
-     * Professional's email address.
-     */
-    private String email;
-
-    /**
-     * First name of the professional.
-     */
-    private String firstName;
-
-    /**
-     * Last name of the professional.
-     */
-    private String lastName;
-
-    /**
-     * Phone number of the professional.
-     */
-    private String phoneNumber;
-
-    /**
-     * Geographic location of the professional.
-     */
-    private Location location;
-
-    /**
-     * Timestamp of account creation.
-     */
-    private LocalDateTime createAt;
-
-    /**
-     * Categories the professional works in.
-     */
-    private List<Category> categories;
-
-    /**
-     * Detailed description of the professional's expertise.
-     */
-    private String description;
+public record ProfessionalResponse(
+        UUID id,
+        Long version,
+        double averageRating,
+        String email,
+        String firstName,
+        String lastName,
+        String phoneNumber,
+        Location location,
+        LocalDateTime createAt,
+        List<Category> categories,
+        String description) {
 }

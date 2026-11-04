@@ -28,7 +28,7 @@ class CustomerPublicMappingTest {
 
         CustomerPublicResponse dto = mapper.toPublicDto(customer);
 
-        assertEquals("Ann", dto.getFirstName());
+        assertEquals("Ann", dto.firstName());
         assertFalse(dto.toString().contains(EMAIL));
         assertFalse(dto.toString().contains(PHONE));
         assertFalse(Arrays.stream(CustomerPublicResponse.class.getDeclaredFields())

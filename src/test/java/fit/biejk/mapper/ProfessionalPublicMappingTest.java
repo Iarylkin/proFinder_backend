@@ -27,7 +27,7 @@ class ProfessionalPublicMappingTest {
 
         ProfessionalPublicResponse dto = mapper.toPublicDto(professional);
 
-        assertEquals(PHONE, dto.getPhoneNumber());
+        assertEquals(PHONE, dto.phoneNumber());
         assertFalse(dto.toString().contains(EMAIL));
         assertFalse(Arrays.stream(ProfessionalPublicResponse.class.getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("email")));

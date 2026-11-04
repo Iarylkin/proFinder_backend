@@ -99,16 +99,8 @@ class JsonFormatTest {
 
     @Test
     void orderResponse() throws Exception {
-        OrderResponse o = new OrderResponse();
-        o.setId(A);
-        o.setVersion(2L);
-        o.setCustomerId(B);
-        o.setCategories(List.of(category()));
-        o.setStatus(OrderStatus.CREATED);
-        o.setTitle("Fix");
-        o.setPrice(PRICE);
-        o.setCreatedAt(T);
-        o.setLocation(location());
+        OrderResponse o = new OrderResponse(A, 2L, B, List.of(category()), OrderStatus.CREATED, null, "Fix", PRICE, T,
+                null, location());
 
         assertEquals(json("{\"categories\":[{\"id\":\"11111111-1111-1111-1111-111111111111\",\"name\":\"Plumbing\"}],"
                 + "\"createdAt\":\"2026-11-05T10:30:15\",\"customerId\":\"22222222-2222-2222-2222-222222222222\","
@@ -128,14 +120,7 @@ class JsonFormatTest {
 
     @Test
     void bidResponse() throws Exception {
-        BidResponse b = new BidResponse();
-        b.setId(A);
-        b.setVersion(0L);
-        b.setOrderId(B);
-        b.setProfessionalId(A);
-        b.setDescription("ok");
-        b.setPrice(5);
-        b.setStatus(BidStatus.CREATED);
+        BidResponse b = new BidResponse(A, 0L, B, A, "ok", 5, BidStatus.CREATED);
 
         assertEquals(json("{\"description\":\"ok\",\"id\":\"11111111-1111-1111-1111-111111111111\","
                 + "\"orderId\":\"22222222-2222-2222-2222-222222222222\",\"price\":5,"
@@ -145,13 +130,7 @@ class JsonFormatTest {
 
     @Test
     void customerResponse() throws Exception {
-        CustomerResponse c = new CustomerResponse();
-        c.setId(A);
-        c.setVersion(4L);
-        c.setEmail("a@b.io");
-        c.setFirstName("Ann");
-        c.setCreateAt(T);
-        c.setLocation(location());
+        CustomerResponse c = new CustomerResponse(A, 4L, "a@b.io", "Ann", null, null, location(), T);
 
         assertEquals(json("{\"createAt\":\"2026-11-05T10:30:15\",\"email\":\"a@b.io\",\"firstName\":\"Ann\","
                 + "\"id\":\"11111111-1111-1111-1111-111111111111\",\"location\":{\"id\":"
@@ -160,13 +139,8 @@ class JsonFormatTest {
 
     @Test
     void professionalResponse() throws Exception {
-        ProfessionalResponse p = new ProfessionalResponse();
-        p.setId(A);
-        p.setVersion(1L);
-        p.setAverageRating(4.5);
-        p.setEmail("p@b.io");
-        p.setCategories(List.of(category()));
-        p.setDescription("d");
+        ProfessionalResponse p = new ProfessionalResponse(A, 1L, 4.5, "p@b.io", null, null, null, null, null,
+                List.of(category()), "d");
 
         assertEquals(json("{\"averageRating\":4.5,\"categories\":[{\"id\":"
                 + "\"11111111-1111-1111-1111-111111111111\",\"name\":\"Plumbing\"}],\"description\":\"d\","
@@ -176,10 +150,7 @@ class JsonFormatTest {
 
     @Test
     void reviewAndAuthResponse() throws Exception {
-        ReviewResponse r = new ReviewResponse();
-        r.setId(A);
-        r.setComment("good");
-        r.setRating(5);
+        ReviewResponse r = new ReviewResponse(A, null, null, null, "good", 5);
 
         assertEquals(json("{\"comment\":\"good\",\"id\":\"11111111-1111-1111-1111-111111111111\",\"rating\":5}"),
                 withoutNulls(r));
@@ -201,9 +172,9 @@ class JsonFormatTest {
         OrderCreateRequest request = mapper.readValue("{\"title\":\"T\",\"description\":\"D\",\"price\":7,"
                 + "\"deadline\":\"2026-12-01T10:00:00\",\"unknown\":1}", OrderCreateRequest.class);
 
-        assertEquals("T", request.getTitle());
-        assertEquals(7, request.getPrice());
-        assertEquals(LocalDateTime.of(2026, 12, 1, 10, 0), request.getDeadline());
+        assertEquals("T", request.title());
+        assertEquals(7, request.price());
+        assertEquals(LocalDateTime.of(2026, 12, 1, 10, 0), request.deadline());
     }
 
     @Test
@@ -211,7 +182,7 @@ class JsonFormatTest {
         AuthRequest request = mapper.readValue("{\"email\":\"a@b.io\",\"password\":\"x\",\"role\":\"CUSTOMER\"}",
                 AuthRequest.class);
 
-        assertEquals(UserRole.CUSTOMER, request.getRole());
+        assertEquals(UserRole.CUSTOMER, request.role());
     }
 
     @Test
@@ -219,9 +190,9 @@ class JsonFormatTest {
         OrderUpdateRequest request = mapper.readValue("{\"version\":3,\"price\":9,\"status\":\"CANCELLED\"}",
                 OrderUpdateRequest.class);
 
-        assertEquals(3L, request.getVersion());
-        assertEquals(9, request.getPrice());
-        assertEquals(OrderStatus.CANCELLED, request.getStatus());
-        assertNull(request.getTitle());
+        assertEquals(3L, request.version());
+        assertEquals(9, request.price());
+        assertEquals(OrderStatus.CANCELLED, request.status());
+        assertNull(request.title());
     }
 }

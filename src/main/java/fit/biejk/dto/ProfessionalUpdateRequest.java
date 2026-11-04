@@ -1,36 +1,57 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.Category;
+import fit.biejk.entity.Location;
 import fit.biejk.validation.Limits;
 import fit.biejk.validation.NoControlChars;
+import fit.biejk.validation.Text;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 /**
- * Request body for a partial update of the profile of the current professional.
- * <p>
- * Besides the fields of {@link ProfileUpdateRequest} a professional can change the description and the
- * categories. Every field is optional: a missing or {@code null} field keeps its current value.
- * </p>
+ * Request body for a partial update of the profile of the current professional. Besides the fields of {@link
+ * CustomerUpdateRequest} a professional can change the description and the categories. Every field is optional:
+ * a missing or {@code null} field keeps its current value.
+ *
+ * @param firstName New first name.
+ * @param lastName New last name.
+ * @param phoneNumber New phone number.
+ * @param location New location.
+ * @param description New description of the services.
+ * @param categories New list of categories.
+ * @param version The version the client has seen. A different current version means someone changed the resource
+ *        since, and the request is rejected with 409.
  */
-@Data
-@NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class ProfessionalUpdateRequest extends ProfileUpdateRequest {
+public record ProfessionalUpdateRequest(
+        @Size(max = Limits.NAME_MAX_LENGTH)
+        @Pattern(regexp = Limits.NAME_PATTERN)
+        String firstName,
+        @Size(max = Limits.NAME_MAX_LENGTH)
+        @Pattern(regexp = Limits.NAME_PATTERN)
+        String lastName,
+        @Size(max = Limits.PHONE_MAX_LENGTH)
+        @Pattern(regexp = Limits.PHONE_PATTERN)
+        String phoneNumber,
+        Location location,
+        @Size(max = Limits.BIO_MAX_LENGTH)
+        @NoControlChars(multiline = true)
+        String description,
+        List<Category> categories,
+        @NotNull
+        @PositiveOrZero
+        Long version) {
 
     /**
-     * New description of the services.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    @Size(max = Limits.BIO_MAX_LENGTH)
-    @NoControlChars(multiline = true)
-    private String description;
-
-    /**
-     * New list of categories.
-     */
-    private List<Category> categories;
+    public ProfessionalUpdateRequest {
+        firstName = Text.clean(firstName);
+        lastName = Text.clean(lastName);
+        phoneNumber = Text.clean(phoneNumber);
+        description = Text.clean(description);
+    }
 }

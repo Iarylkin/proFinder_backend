@@ -1,29 +1,27 @@
 package fit.biejk.dto;
 
 import fit.biejk.validation.Limits;
+import fit.biejk.validation.Text;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
- * Request DTO used for initiating a password reset process.
- * <p>
- * Contains only the user's email address to which a verification code will be sent.
- * </p>
+ * Request DTO used for initiating a password reset process. Contains only the user's email address to which a
+ * verification code will be sent.
+ *
+ * @param email The email address of the user requesting password reset.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ForgotPasswordRequest {
+public record ForgotPasswordRequest(
+        @NotBlank(message = "Email must not be blank")
+        @Email(message = "Invalid email format")
+        @Size(max = Limits.EMAIL_MAX_LENGTH)
+        String email) {
 
     /**
-     * The email address of the user requesting password reset.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    @NotBlank(message = "Email must not be blank")
-    @Email(message = "Invalid email format")
-    @Size(max = Limits.EMAIL_MAX_LENGTH)
-    private String email;
+    public ForgotPasswordRequest {
+        email = Text.clean(email);
+    }
 }

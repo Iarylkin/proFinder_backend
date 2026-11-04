@@ -2,7 +2,7 @@ package fit.biejk.mapper;
 
 import fit.biejk.dto.CustomerResponse;
 import fit.biejk.dto.CustomerPublicResponse;
-import fit.biejk.dto.ProfileUpdateRequest;
+import fit.biejk.dto.CustomerUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -50,5 +50,5 @@ public interface CustomerMapper {
     @Mapping(target = "avatarKey", ignore = true)
     @Mapping(target = "orders", ignore = true)
     @Mapping(target = "reviews", ignore = true)
-    CustomerProfile toEntity(ProfileUpdateRequest request);
+    CustomerProfile toEntity(CustomerUpdateRequest request);
 }

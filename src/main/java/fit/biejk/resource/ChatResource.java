@@ -53,7 +53,7 @@ public class ChatResource {
             @Valid final ChatCreateRequest request
     ) {
         UUID userId = authService.getCurrentUserId();
-        Chat result = chatService.create(userId, request.getRecipientId());
+        Chat result = chatService.create(userId, request.recipientId());
 
 
         return Response.status(Response.Status.CREATED).entity(chatMapper.toDto(result, userId)).build();

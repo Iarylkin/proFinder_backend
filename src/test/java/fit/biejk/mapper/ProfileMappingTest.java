@@ -1,7 +1,7 @@
 package fit.biejk.mapper;
 
 import fit.biejk.dto.ProfessionalUpdateRequest;
-import fit.biejk.dto.ProfileUpdateRequest;
+import fit.biejk.dto.CustomerUpdateRequest;
 import fit.biejk.entity.Category;
 import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.ProfessionalProfile;
@@ -20,8 +20,7 @@ class ProfileMappingTest {
 
     @Test
     void customerChangesKeepUnsentFieldsNull() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setPhoneNumber("222222222");
+        CustomerUpdateRequest request = new CustomerUpdateRequest(null, null, "222222222", null, 0L);
 
         CustomerProfile changes = customerMapper.toEntity(request);
 
@@ -35,9 +34,8 @@ class ProfileMappingTest {
     void professionalChangesCarryDescriptionAndCategories() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
-        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
-        request.setDescription("I fix pipes");
-        request.setCategories(List.of(plumbing));
+        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest(
+                null, null, null, null, "I fix pipes", List.of(plumbing), 0L);
 
         ProfessionalProfile changes = professionalMapper.toEntity(request);
 

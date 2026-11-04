@@ -2,7 +2,6 @@ package fit.biejk.dto;
 
 import fit.biejk.entity.BidStatus;
 import fit.biejk.entity.UserRole;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -15,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DtoValidationTest {
@@ -24,6 +24,8 @@ class DtoValidationTest {
     private static final String TITLE = "Fix the fence";
 
     private static final String DESCRIPTION = "Replace three broken boards in the fence";
+
+    private static final int PRICE = 100;
 
     private static ValidatorFactory factory;
 
@@ -50,36 +52,36 @@ class DtoValidationTest {
         return "a".repeat(length);
     }
 
-    private static OrderUpdateRequest orderUpdate() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
-        request.setVersion(0L);
-        return request;
-    }
-
-    private static ProfileUpdateRequest profileUpdate() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
-        request.setVersion(0L);
-        return request;
-    }
-
-    private static ProfessionalUpdateRequest professionalUpdate() {
-        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
-        request.setVersion(0L);
-        return request;
-    }
-
-    private static BidUpdateRequest responseUpdate() {
-        BidUpdateRequest request = new BidUpdateRequest();
-        request.setVersion(0L);
-        return request;
-    }
-
     private static OrderCreateRequest order(final String title, final String description) {
-        OrderCreateRequest dto = new OrderCreateRequest();
-        dto.setTitle(title);
-        dto.setDescription(description);
-        dto.setPrice(100);
-        return dto;
+        return new OrderCreateRequest(null, title, description, PRICE, null);
+    }
+
+    private static OrderCreateRequest orderWith(final Integer price, final LocalDateTime deadline) {
+        return new OrderCreateRequest(null, TITLE, DESCRIPTION, price, deadline);
+    }
+
+    private static OrderUpdateRequest orderUpdate(final String title, final String description, final Long version) {
+        return new OrderUpdateRequest(null, null, description, title, null, null, null, version);
+    }
+
+    private static OrderUpdateRequest orderUpdate(final LocalDateTime deadline) {
+        return new OrderUpdateRequest(null, null, null, null, null, deadline, null, 0L);
+    }
+
+    private static CustomerUpdateRequest customer(final String firstName, final String lastName, final String phone) {
+        return new CustomerUpdateRequest(firstName, lastName, phone, null, 0L);
+    }
+
+    private static ProfessionalUpdateRequest professional(final String description) {
+        return new ProfessionalUpdateRequest(null, null, null, null, description, null, 0L);
+    }
+
+    private static BidUpdateRequest bidUpdate(final LocalDateTime finalDeadline, final Long version) {
+        return new BidUpdateRequest(BidStatus.APPROVED, finalDeadline, PRICE, version);
+    }
+
+    private static BidCreateRequest bid(final String description, final Integer price) {
+        return new BidCreateRequest(description, price);
     }
 
     @Test
@@ -113,36 +115,21 @@ class DtoValidationTest {
 
     @Test
     void orderDeadlineMustNotBeInThePast() {
-        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
-        dto.setDeadline(LocalDateTime.now().minusDays(1));
-        assertEquals(Set.of("deadline"), invalidFields(dto));
-
-        dto.setDeadline(LocalDateTime.now().plusDays(1));
-        assertTrue(invalidFields(dto).isEmpty());
-
-        dto.setDeadline(null);
-        assertTrue(invalidFields(dto).isEmpty());
+        assertEquals(Set.of("deadline"), invalidFields(orderWith(PRICE, LocalDateTime.now().minusDays(1))));
+        assertTrue(invalidFields(orderWith(PRICE, LocalDateTime.now().plusDays(1))).isEmpty());
+        assertTrue(invalidFields(orderWith(PRICE, null)).isEmpty());
     }
 
     @Test
     void partialOrderUpdateChecksTheDeadlineOnlyWhenItIsSent() {
-        OrderUpdateRequest request = orderUpdate();
-        request.setDeadline(LocalDateTime.now().minusHours(1));
-
-        assertEquals(Set.of("deadline"), invalidFields(request));
+        assertEquals(Set.of("deadline"), invalidFields(orderUpdate(LocalDateTime.now().minusHours(1))));
     }
 
     @Test
     void finalDeadlineIsRequiredAndMustNotBeInThePast() {
-        BidUpdateRequest request = responseUpdate();
-        request.setStatus(BidStatus.APPROVED);
-        assertEquals(Set.of("finalDeadline"), invalidFields(request));
-
-        request.setFinalDeadline(LocalDateTime.now().minusDays(1));
-        assertEquals(Set.of("finalDeadline"), invalidFields(request));
-
-        request.setFinalDeadline(LocalDateTime.now().plusDays(1));
-        assertTrue(invalidFields(request).isEmpty());
+        assertEquals(Set.of("finalDeadline"), invalidFields(bidUpdate(null, 0L)));
+        assertEquals(Set.of("finalDeadline"), invalidFields(bidUpdate(LocalDateTime.now().minusDays(1), 0L)));
+        assertTrue(invalidFields(bidUpdate(LocalDateTime.now().plusDays(1), 0L)).isEmpty());
     }
 
     @Test
@@ -185,135 +172,99 @@ class DtoValidationTest {
 
     @Test
     void orderPriceHasACap() {
-        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
-        dto.setPrice(1_000_001);
-
-        assertEquals(Set.of("price"), invalidFields(dto));
+        assertEquals(Set.of("price"), invalidFields(orderWith(1_000_001, null)));
     }
 
     @Test
     void everyPatchRequiresTheVersion() {
-        assertEquals(Set.of("version"), invalidFields(new OrderUpdateRequest()));
-        assertEquals(Set.of("version"), invalidFields(new ProfileUpdateRequest()));
-        assertEquals(Set.of("version"), invalidFields(new ProfessionalUpdateRequest()));
-
-        BidUpdateRequest bid = new BidUpdateRequest();
-        bid.setStatus(BidStatus.APPROVED);
-        bid.setFinalDeadline(LocalDateTime.now().plusDays(1));
-        assertEquals(Set.of("version"), invalidFields(bid));
+        assertEquals(Set.of("version"), invalidFields(orderUpdate(null, null, null)));
+        assertEquals(Set.of("version"), invalidFields(new CustomerUpdateRequest(null, null, null, null, null)));
+        assertEquals(Set.of("version"),
+                invalidFields(new ProfessionalUpdateRequest(null, null, null, null, null, null, null)));
+        assertEquals(Set.of("version"), invalidFields(bidUpdate(LocalDateTime.now().plusDays(1), null)));
     }
 
     @Test
     void versionCannotBeNegative() {
-        OrderUpdateRequest request = orderUpdate();
-        request.setVersion(-1L);
-
-        assertEquals(Set.of("version"), invalidFields(request));
+        assertEquals(Set.of("version"), invalidFields(orderUpdate(null, null, -1L)));
     }
 
     @Test
     void partialOrderUpdateMayOmitEveryField() {
-        assertTrue(invalidFields(orderUpdate()).isEmpty());
+        assertTrue(invalidFields(orderUpdate(null, null, 0L)).isEmpty());
     }
 
     @Test
-    void partialOrderUpdateRejectsABlankOrTooShortText() {
-        OrderUpdateRequest request = orderUpdate();
-        request.setTitle("      ");
-        request.setDescription("too short");
-
-        assertEquals(Set.of("title", "description"), invalidFields(request));
+    void partialOrderUpdateRejectsATooShortText() {
+        assertEquals(Set.of("title", "description"), invalidFields(orderUpdate("abc", "too short", 0L)));
     }
 
     @Test
-    void responseDescriptionIsRequiredAndLimited() {
-        BidCreateRequest dto = new BidCreateRequest();
-        dto.setPrice(100);
-
-        assertEquals(Set.of("description"), invalidFields(dto));
-
-        dto.setDescription(repeat(2001));
-        assertEquals(Set.of("description"), invalidFields(dto));
+    void bidDescriptionIsRequiredAndLimited() {
+        assertEquals(Set.of("description"), invalidFields(bid(null, PRICE)));
+        assertEquals(Set.of("description"), invalidFields(bid(repeat(2001), PRICE)));
     }
 
     @Test
-    void responsePriceIsRequired() {
-        BidCreateRequest dto = new BidCreateRequest();
-        dto.setDescription("I can do it");
-
-        assertEquals(Set.of("price"), invalidFields(dto));
+    void bidPriceIsRequired() {
+        assertEquals(Set.of("price"), invalidFields(bid("I can do it", null)));
     }
 
     @Test
     void orderPriceIsRequired() {
-        OrderCreateRequest dto = order(TITLE, DESCRIPTION);
-        dto.setPrice(null);
-
-        assertEquals(Set.of("price"), invalidFields(dto));
+        assertEquals(Set.of("price"), invalidFields(orderWith(null, null)));
     }
 
     @Test
-    void responsePriceIsNonNegativeAndCapped() {
-        BidCreateRequest dto = new BidCreateRequest();
-        dto.setDescription("I can do it");
-        dto.setPrice(-1);
-        assertEquals(Set.of("price"), invalidFields(dto));
-
-        dto.setPrice(1_000_001);
-        assertEquals(Set.of("price"), invalidFields(dto));
-
-        dto.setPrice(0);
-        assertTrue(invalidFields(dto).isEmpty());
+    void bidPriceIsNonNegativeAndCapped() {
+        assertEquals(Set.of("price"), invalidFields(bid("I can do it", -1)));
+        assertEquals(Set.of("price"), invalidFields(bid("I can do it", 1_000_001)));
+        assertTrue(invalidFields(bid("I can do it", 0)).isEmpty());
     }
 
     @Test
     void profileNamesAllowLettersOfAnyScript() {
-        ProfileUpdateRequest request = profileUpdate();
-        request.setFirstName("José");
-        request.setLastName("О'Коннор-Смит");
-
-        assertTrue(invalidFields(request).isEmpty());
+        assertTrue(invalidFields(customer("José", "О'Коннор-Смит", null)).isEmpty());
     }
 
     @Test
     void profileNamesRejectMarkupAndLongValues() {
-        ProfileUpdateRequest request = profileUpdate();
-        request.setFirstName("<script>");
-        request.setLastName(repeat(51));
-
-        assertEquals(Set.of("firstName", "lastName"), invalidFields(request));
+        assertEquals(Set.of("firstName", "lastName"), invalidFields(customer("<script>", repeat(51), null)));
     }
 
     @Test
     void phoneAllowsDigitsPlusAndSeparatorsOnly() {
-        ProfileUpdateRequest request = profileUpdate();
-        request.setPhoneNumber("+7 (999) 123-45-67");
-        assertTrue(invalidFields(request).isEmpty());
-
-        request.setPhoneNumber("call me");
-        assertEquals(Set.of("phoneNumber"), invalidFields(request));
-
-        request.setPhoneNumber("+" + "1".repeat(20));
-        assertEquals(Set.of("phoneNumber"), invalidFields(request));
+        assertTrue(invalidFields(customer(null, null, "+7 (999) 123-45-67")).isEmpty());
+        assertEquals(Set.of("phoneNumber"), invalidFields(customer(null, null, "call me")));
+        assertEquals(Set.of("phoneNumber"), invalidFields(customer(null, null, "+" + "1".repeat(20))));
     }
 
     @Test
     void professionalDescriptionIsLimited() {
-        ProfessionalUpdateRequest request = professionalUpdate();
-        request.setDescription(repeat(2001));
-
-        assertEquals(Set.of("description"), invalidFields(request));
+        assertEquals(Set.of("description"), invalidFields(professional(repeat(2001))));
     }
 
     @Test
     void reviewCommentRejectsControlCharacters() {
-        ReviewCreateRequest dto = new ReviewCreateRequest();
-        dto.setComment("Great work\u0000!");
-        dto.setRating(5);
+        assertEquals(Set.of("comment"), invalidFields(new ReviewCreateRequest("Great work\u0000!", 5)));
+    }
 
-        Set<ConstraintViolation<ReviewCreateRequest>> violations = validator.validate(dto);
+    @Test
+    void textIsTrimmedAndEmptyTextIsNoText() {
+        OrderUpdateRequest blank = orderUpdate("   ", "", 0L);
+        OrderCreateRequest padded = order("  " + TITLE + " \n", DESCRIPTION);
 
-        assertEquals(1, violations.size());
-        assertEquals("comment", violations.iterator().next().getPropertyPath().toString());
+        assertNull(blank.title());
+        assertNull(blank.description());
+        assertEquals(TITLE, padded.title());
+    }
+
+    @Test
+    void passwordsAndCodesAreNotTrimmed() {
+        ResetPasswordRequest request = new ResetPasswordRequest(" a@b.io ", " pass word ", " pass word ", " 123 ");
+
+        assertEquals("a@b.io", request.email());
+        assertEquals(" pass word ", request.newPassword());
+        assertEquals(" 123 ", request.verificationCode());
     }
 }

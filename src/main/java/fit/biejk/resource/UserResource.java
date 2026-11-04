@@ -107,9 +107,9 @@ public class UserResource {
         UUID userId = authService.getCurrentUserId();
         User updated = userService.changePassword(
                 userId,
-                request.getOldPassword(),
-                request.getNewPassword(),
-                request.getConfirmPassword()
+                request.oldPassword(),
+                request.newPassword(),
+                request.confirmPassword()
         );
         String token = tokenService.generateToken(updated);
         return Response.ok(new AuthResponse(token)).build();
@@ -128,8 +128,8 @@ public class UserResource {
         UUID userId = authService.getCurrentUserId();
         User updated = userService.changeEmail(
                 userId,
-                request.getNewEmail(),
-                request.getPassword()
+                request.newEmail(),
+                request.password()
         );
         String token = tokenService.generateToken(updated);
         return Response.ok(new AuthResponse(token)).build();

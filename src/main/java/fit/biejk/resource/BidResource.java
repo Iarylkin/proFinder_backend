@@ -79,8 +79,8 @@ public class BidResource {
                             @Valid final BidUpdateRequest request) {
 
         Order result = bidService.updateStatus(
-                bidId, request.getStatus(), request.getFinalPrice(), request.getFinalDeadline(),
-                request.getVersion());
+                bidId, request.status(), request.finalPrice(), request.finalDeadline(),
+                request.version());
         return Response.ok(orderMapper.toDto(result)).build();
     }
 }

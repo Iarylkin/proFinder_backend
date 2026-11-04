@@ -1,7 +1,7 @@
 package fit.biejk.resource;
 
 import fit.biejk.dto.PageRequest;
-import fit.biejk.dto.ProfileUpdateRequest;
+import fit.biejk.dto.CustomerUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.Review;
@@ -103,7 +103,7 @@ public class CustomerResource {
     @PATCH
     @Path("/me")
     @RolesAllowed("CUSTOMER")
-    public Response updateMe(@Valid final ProfileUpdateRequest request) {
+    public Response updateMe(@Valid final CustomerUpdateRequest request) {
         UUID id = authService.getCurrentUserId();
         log.info("Update profile for customer ID={}", id);
         CustomerProfile result = customerService.updateProfile(id, customerMapper.toEntity(request));

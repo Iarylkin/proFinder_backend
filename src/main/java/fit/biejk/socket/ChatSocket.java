@@ -144,7 +144,7 @@ public class ChatSocket {
         }
 
         try {
-            ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.getContent());
+            ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.content());
             ChatMessageResponse outputMessage = chatMessageMapper.toDto(message);
             log.info("Sending message {} in chat {}", message.getId(), chatId);
             broadcastMessage(chatId, outputMessage);
