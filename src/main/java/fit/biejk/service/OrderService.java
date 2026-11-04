@@ -9,8 +9,10 @@ import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.ClientErrorException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -167,7 +169,7 @@ public class OrderService {
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
-            throw new IllegalArgumentException();
+            throw new ForbiddenException("You are not the owner of this order");
         }
         orderRepository.delete(order);
 
@@ -226,7 +228,7 @@ public class OrderService {
         if (haveProfessionalResponse(order, orderResponse)) {
             log.error("Order response already exists for this professional. orderId={}, professionalId={}",
                     orderId, orderResponse.getProfessional().getId());
-            throw new IllegalArgumentException("Order response already exists");
+            throw new ClientErrorException("Order response already exists", Response.Status.CONFLICT);
         }
         orderResponse.setOrder(order);
 
@@ -275,13 +277,13 @@ public class OrderService {
      * @param page   page number for pagination
      * @param size   number of orders per page
      * @return list of orders belonging to the customer
-     * @throws IllegalArgumentException if the current user is not the same as the customer
+     * @throws ForbiddenException if the current user is not the same as the customer
      */
     public List<Order> getByCustomerId(final UUID userId, final int page, final int size) {
         log.info("Get orders by customerId={}", userId);
         if (!authService.isCurrentUser(userId)) {
-            log.warn("User is not logged in");
-            throw new IllegalArgumentException("User is not logged in");
+            log.warn("Orders of another customer requested: customerId={}", userId);
+            throw new ForbiddenException("You can only view your own orders");
         } // todo delete, when admin system will be created
         return orderRepository.findByCustomerId(userId, page, size);
     }
@@ -296,13 +298,13 @@ public class OrderService {
      * @param page         page number for pagination
      * @param size         number of orders per page
      * @return list of orders currently assigned to the professional
-     * @throws IllegalArgumentException if the current user is not the same as the professional
+     * @throws ForbiddenException if the current user is not the same as the professional
      */
     public List<Order> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Get orders by professionalId={}", professionalId);
         if (!authService.isCurrentUser(professionalId)) {
-            log.warn("User is not logged in");
-            throw new IllegalArgumentException("User is not logged in");
+            log.warn("Orders of another professional requested: professionalId={}", professionalId);
+            throw new ForbiddenException("You can only view your own orders");
         }
         return orderRepository.findByProfessionalId(professionalId, page, size);
     }

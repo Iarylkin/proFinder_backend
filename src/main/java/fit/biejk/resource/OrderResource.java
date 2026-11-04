@@ -217,7 +217,7 @@ public class OrderResource {
     public Response delete(@PathParam("orderId") final UUID orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
 }

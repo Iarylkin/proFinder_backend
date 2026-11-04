@@ -1,6 +1,7 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.User;
+import fit.biejk.exception.EmailAlreadyRegisteredException;
 import fit.biejk.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ class UserServiceTest {
         created.setEmail("taken@example.com");
         when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(new User()));
 
-        assertThrows(IllegalArgumentException.class, () -> service.create(created));
+        assertThrows(EmailAlreadyRegisteredException.class, () -> service.create(created));
 
         verify(userRepository, never()).persist(created);
     }

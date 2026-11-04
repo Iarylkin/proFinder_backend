@@ -116,7 +116,7 @@ public class ProfessionalResource {
     public Response delete(@PathParam("professionalId") final UUID professionalId) {
         log.info("Delete professional request: ID={}", professionalId);
         professionalService.delete(professionalId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**
@@ -162,7 +162,7 @@ public class ProfessionalResource {
         UUID id = authService.getCurrentUserId();
         log.info("Delete profile for professional ID={}", id);
         professionalService.delete(id);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**

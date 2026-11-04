@@ -1,20 +1,16 @@
 package fit.biejk.exception;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 /**
- * Thrown when an uploaded file exceeds the allowed size (HTTP 413, {@code FILE_TOO_LARGE}).
+ * The uploaded file is over the size limit.
  */
-public class FileTooLargeException extends WebApplicationException {
+public class FileTooLargeException extends ApiException {
 
-    /** Serialization version. */
     private static final long serialVersionUID = 1L;
 
     /**
-     * Creates the exception with the {@code FILE_TOO_LARGE} message and status 413.
+     * Creates the exception.
      */
     public FileTooLargeException() {
-        super("File exceeds the size limit", Response.Status.REQUEST_ENTITY_TOO_LARGE);
+        super(ErrorCode.FILE_TOO_LARGE, ErrorCode.FILE_TOO_LARGE.getMessage());
     }
 }

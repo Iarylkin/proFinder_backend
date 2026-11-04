@@ -134,7 +134,7 @@ public class CustomerResource {
         log.info("delete request: {}", customerId);
         customerService.delete(customerId);
         log.debug("Deleted customer with ID={}", customerId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**
@@ -180,7 +180,7 @@ public class CustomerResource {
         UUID id = authService.getCurrentUserId();
         customerService.delete(id);
         log.debug("Deleted profile for customer with ID={}", id);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**

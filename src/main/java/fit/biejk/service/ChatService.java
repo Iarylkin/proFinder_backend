@@ -7,6 +7,7 @@ import fit.biejk.repository.ChatMessageRepository;
 import fit.biejk.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ public class ChatService {
      * @param userId1 ID of the first user
      * @param userId2 ID of the second user
      * @return the newly created {@link Chat} entity
-     * @throws IllegalArgumentException if both user IDs are the same or chat already exists
+     * @throws BadRequestException if both user IDs are the same
      */
     @Transactional
     public Chat create(final UUID userId1, final UUID userId2) {
@@ -54,7 +55,7 @@ public class ChatService {
         UUID second = first.equals(userId1) ? userId2 : userId1;
         if (first.equals(second)) {
             log.warn("First and Second chat id {} are the same", first);
-            throw new IllegalArgumentException("first and second are the same");
+            throw new BadRequestException("You cannot start a chat with yourself");
         }
         if (existByUsersId(first, second)) {
             log.info("Chat id {} already exists", first);

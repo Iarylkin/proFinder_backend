@@ -3,6 +3,7 @@ package fit.biejk.service;
 import fit.biejk.dto.ResetPasswordRequest;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
+import fit.biejk.exception.InvalidCredentialsException;
 import fit.biejk.exception.InvalidResetCodeException;
 import fit.biejk.exception.TooManyAttemptsException;
 import fit.biejk.utilits.CryptoUtils;
@@ -124,15 +125,18 @@ public class AuthService {
      */
     public String login(final String email, final String password, final UserRole role) {
         log.info("Login: email={}, role={}", email, role);
-        User user = userService.getByEmail(email);
+        User user = userService.findByEmail(email).orElseThrow(() -> {
+            log.warn("Login failed, unknown email");
+            return new InvalidCredentialsException();
+        });
         if (!CryptoUtils.verify(password, user.getPassword())) {
-            log.error("Invalid password");
-            throw new IllegalArgumentException("Invalid password");
+            log.warn("Login failed, invalid password");
+            throw new InvalidCredentialsException();
         }
 
         if (user.getRole() != role) {
-            log.error("Invalid role: expected={}, actual={}", role, user.getRole());
-            throw new IllegalArgumentException("Invalid role");
+            log.warn("Login failed, invalid role: expected={}, actual={}", role, user.getRole());
+            throw new InvalidCredentialsException();
         }
         return tokenService.generateToken(user);
     }

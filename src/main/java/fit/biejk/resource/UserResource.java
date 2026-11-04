@@ -53,7 +53,7 @@ public class UserResource {
      * Handles avatar upload for the currently authenticated user.
      *
      * @param form the uploaded file and its metadata
-     * @return HTTP 200 if upload was successful, 413 if the file is too large,
+     * @return HTTP 204 if upload was successful, 413 if the file is too large,
      *         415 if it is not a supported image, 500 otherwise
      */
     @PATCH
@@ -66,7 +66,7 @@ public class UserResource {
 
         fileService.uploadAvatar(userId, form.getFile());
         log.debug("Avatar uploaded successfully for userId={}", userId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
     /**
@@ -78,24 +78,20 @@ public class UserResource {
      * </p>
      *
      * @param userId the ID of the user whose avatar is to be retrieved
-     * @return a {@link Response} containing the image stream with proper content type,
-     *         or an error response with status {@code 500 Internal Server Error} if retrieval fails
+     * @return a {@link Response} containing the image stream with proper content type;
+     *         {@code 404} if the user or the avatar does not exist, {@code 500} if the storage fails
+     * @throws Exception if the storage fails (answered with {@code 500})
      */
     @GET
     @Path("/{userId}/avatar")
     @Produces("image/*")
     @PermitAll
-    public Response getAvatar(@PathParam("userId") final UUID userId) {
-        try {
-            AvatarData data = fileService.getAvatar(userId);
+    public Response getAvatar(@PathParam("userId") final UUID userId) throws Exception {
+        AvatarData data = fileService.getAvatar(userId);
 
-            return Response.ok(data.stream())
-                    .type(data.contentType())
-                    .build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build();
-        }
-
+        return Response.ok(data.stream())
+                .type(data.contentType())
+                .build();
     }
 
     /**

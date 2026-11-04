@@ -205,12 +205,12 @@ public class OrderResponseService {
      * @param page         page number for pagination
      * @param size         number of responses per page
      * @return list of responses submitted by the professional
-     * @throws IllegalArgumentException if the caller is not the same as the professional
+     * @throws ForbiddenException if the caller is not the same as the professional
      */
     public List<OrderResponse> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Searching for response by professional ID={}", professionalId);
         if (!authService.isCurrentUser(professionalId)) {
-            throw new IllegalArgumentException("Professional ID " + professionalId + " not authorized");
+            throw new ForbiddenException("You can only view your own responses");
         }
         return orderResponseRepository.findByProfessionalId(professionalId, page, size);
     }
