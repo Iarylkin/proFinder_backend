@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.17
+- **Version:** 1.18
 - **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -77,11 +77,11 @@ Each role has its own `/…/me` endpoints: the type of the profile is the addres
 
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `GET /customers/me` | `CUSTOMER` | — | `200 CustomerProfileResponse` | — |
-| `PATCH /customers/me` | `CUSTOMER` | `CustomerProfileUpdateRequest` (name, phone, city, bio…) | `200 CustomerProfileResponse` | `VALIDATION_ERROR` |
-| `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalProfileResponse` | — |
-| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalProfileUpdateRequest` (name, phone, bio, categories, cities, rate…) | `200 ProfessionalProfileResponse` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED` |
-| `GET /professionals/{id}` | **public** | — | `200 ProfessionalProfileResponse` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
+| `GET /customers/me` | `CUSTOMER` | — | `200 CustomerResponse` | — |
+| `PATCH /customers/me` | `CUSTOMER` | `CustomerUpdateRequest` (name, phone, city, bio…) + `version`; an optional text field sent as `null` or `""` is cleared | `200 CustomerResponse` | `VALIDATION_ERROR`, `CONFLICT` |
+| `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalResponse` | — |
+| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalUpdateRequest` (name, phone, bio, categories, cities, rate…) + `version`; an optional text field sent as `null` or `""` is cleared | `200 ProfessionalResponse` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED`, `CONFLICT` |
+| `GET /professionals/{id}` | **public** | — | `200 ProfessionalResponse` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
 | `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicResponse` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
 | `GET /categories` | **public** | — | `200 CategoryResponse[]` (flat list) | — |
 | `POST /categories` | Moderator, `SENIOR` | `{name}` | `201 CategoryResponse` | `VALIDATION_ERROR`, `FORBIDDEN` |
@@ -325,7 +325,8 @@ Every error response uses the same shape, regardless of service:
 
 - `code` — one of the values below, stable, machine-matchable.
 - `message` — human-readable, safe to show in a UI as-is.
-- `details` — nullable; for `VALIDATION_ERROR` it's a field→reason map (see [Generic / Cross-Cutting](#generic--cross-cutting)), otherwise usually `null`.
+- `details` — nullable; for `VALIDATION_ERROR` caused by a field check it's a field→reason map (see [Generic / Cross-Cutting](#generic--cross-cutting)), otherwise `null`.
+- **Current limitation:** the `401` and `403` that Quarkus Security answers before a request reaches a resource (an invalid JWT, a role that does not fit `@RolesAllowed`) are sent **without** this body for now; every other error has it.
 
 
 ### Generic / Cross-Cutting
@@ -335,11 +336,11 @@ Apply to every service, not tied to one domain.
 
 | Code | HTTP | Message | Trigger |
 |---|---|---|---|
-| `VALIDATION_ERROR` | 400 | "Some fields are invalid" | request body fails Jakarta Bean Validation; `details` carries `{field: reason}` |
+| `VALIDATION_ERROR` | 400 | "Some fields are invalid" | request body fails Jakarta Bean Validation; `details` carries `{field: reason}`. Also used, with `details: null` and the reason in `message`, for a request that breaks a business rule (the two passwords differ, the old password is wrong, a chat with yourself) and for a body that cannot be read (not valid JSON, or a value of the wrong type or format such as a date that is not ISO 8601; message "The request body is malformed") |
 | `UNAUTHENTICATED` | 401 | "Please log in" | missing/invalid/expired JWT |
 | `FORBIDDEN` | 403 | "You don't have permission to do this" | valid token, wrong role/ownership for the action |
 | `NOT_FOUND` | 404 | "Not found" | resource id doesn't exist (or is soft-deleted and treated as gone) |
-| `CONFLICT` | 409 | "This item was modified, please refresh" | optimistic-locking failure (`version` mismatch) — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases) |
+| `CONFLICT` | 409 | "This item was modified, please refresh" | optimistic-locking failure (`version` mismatch) — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases). Also the answer, with the reason in `message`, to a request that does not fit the current state of the resource: a status change that is not allowed (for example cancelling a completed order) or a second bid of the same professional on an order. The more specific codes (`ORDER_NOT_DRAFT`, ...) come with the order lifecycle in 2.6.0 |
 | `RATE_LIMITED` | 429 | "Too many requests, try again later" | any per-IP/per-user/per-endpoint request limit from [NFR-Sec-7](2%20-%20Requirements.md) **except** the login lockout (that is `ACCOUNT_LOCKED`); response carries `Retry-After` |
 | `INTERNAL_ERROR` | 500 | "Something went wrong, please try again" | unhandled server error |
 
@@ -354,7 +355,7 @@ Apply to every service, not tied to one domain.
 | `EMAIL_NOT_VERIFIED` | 403 | "Please verify your email to do this" | `PENDING_VERIFICATION` account attempts publish/respond/message/review/appear-in-search ([4 - Business logic.md § Email Registration](4%20-%20Business%20logic.md#email-registration)) |
 | `EMAIL_ALREADY_REGISTERED` | 409 | "An account with this email already exists" | registration with a duplicate (case-insensitive) email |
 | `VERIFICATION_TOKEN_INVALID` | 400 | "This verification link is invalid or expired" | expired (>24h) or already-used verification token |
-| `RESET_TOKEN_INVALID` | 400 | "This reset link is invalid or expired" | expired (>15min) or already-used password-reset token |
+| `RESET_TOKEN_INVALID` | 400 | "The password reset code is invalid or expired" | wrong, expired or already-used password-reset code (a 6-digit code from the email; it becomes a 15-minute link in 2.2.0) |
 | `RESEND_TOO_SOON` | 429 | "Please wait before requesting another email" | resend verification faster than 1/60s or beyond 5/hour |
 | `IDENTITY_ALREADY_LINKED` | 409 | "This account is already linked to another user" | the provider identity belongs to another ProFinder account (one identity, one account) |
 | `LAST_LOGIN_METHOD` | 400 | "Add another way to sign in before removing this one" | unlinking the only remaining way to sign in (no password and no other provider) |
@@ -461,6 +462,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.18 | 2026-11-04 | **Sync with the code (1.5.0):** `CONFLICT` also answers a status change that is not allowed and a second bid; `VALIDATION_ERROR` also answers a broken business rule (`details: null`) and a body that cannot be read; the reset error is about the 6-digit code until 2.2.0; `version` on `PATCH /customers/me` and `/professionals/me`; a text field is cleared with `null` or `""`; profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse`, `ProfessionalResponse`; `401`/`403` from Quarkus Security have no error body yet. |
 | 1.17 | 2026-11-04 | **`PATCH` semantics:** a field that is not sent keeps its value, an optional text field sent as `null` or as an empty text is cleared (code: `Optional` fields read by `ClearableTextDeserializer`), a required field cannot be cleared. |
 | 1.16 | 2026-11-04 | **Naming:** `/orders/{id}/responses` → `/orders/{id}/bids` (and `/bids/{id}`), the DTOs are named by direction (`BidCreateRequest`, `BidResponse`, `OrderResponse`, `LoginRequest`, ...) instead of `*Dto`, to match the code. |
 | 1.15 | 2026-10-31 | **Account vs profile (D-1.5):** profile endpoints are per role (`GET/PATCH /customers/me`, `GET/PATCH /professionals/me`) instead of `/users/me/profile`; provider sign-in is `GET /auth/{provider}/login\|link\|callback` with the role in the signed `state` (the account and its profile are created together), `DELETE /auth/identities/{provider}` replaces `unlink`; `POST /auth/role`, `temp_token` and `ROLE_SELECTION_REQUIRED` are removed; new codes `IDENTITY_ALREADY_LINKED`, `LAST_LOGIN_METHOD`, `PROVIDER_EMAIL_REQUIRED`, `ACCOUNT_NOT_FOUND`. |

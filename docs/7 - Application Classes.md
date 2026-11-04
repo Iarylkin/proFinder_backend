@@ -1,6 +1,6 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.6
+- **Version:** 1.7
 - **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
@@ -66,7 +66,7 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ProfileController` | Controller | `GET/PATCH /customers/me`, `GET/PATCH /professionals/me`, `GET /professionals/{id}` |
 | `CategoryController` | Controller | `POST/PATCH/DELETE /categories`, `GET /categories` |
 | `PortfolioController` | Controller | `POST /users/me/portfolio`, `DELETE /users/me/portfolio/{id}` |
-| `ProfessionalProfileResponse`, `CustomerProfileResponse`, `ProfileUpdateRequest`, `CategoryResponse`, `PortfolioPhotoResponse`, `PortfolioUploadRequest` | DTO | profile/category/portfolio shapes |
+| `ProfessionalResponse`, `CustomerResponse`, `ProfileUpdateRequest`, `CategoryResponse`, `PortfolioPhotoResponse`, `PortfolioUploadRequest` | DTO | profile/category/portfolio shapes |
 
 ### 1.4 Reports & Moderation
 ---
@@ -293,6 +293,7 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-04 | **Naming:** the profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse` and `ProfessionalResponse`, to match the code (a record cannot extend a class, so the two update requests have no common parent). |
 | 1.6 | 2026-11-04 | **Naming:** the entity of a professional's response is `Bid` (`BidRepository`, `BidService`, `BidController`, table `bids`) so `OrderResponse` does not clash with the DTO of an order; DTOs are named by direction, `*Request` and `*Response`, with no `*Dto`. |
 | 1.5 | 2026-10-31 | **D-1.5:** `OAuthService` / `OAuthController` work with several providers and no role-selection step; `RoleSelectionRequestDto` removed; `ProfileController` serves per-role `/…/me` endpoints. |
 | 1.4 | 2026-10-28 | **Naming:** *conversation* → *chat* (`ChatService`, `ChatController`, `ChatDto`); the response entity is `OrderResponse` (not `Response`, which clashes with the JAX-RS type); the order DTO is `OrderDto`; own-user paths are under `/users/me`; order publish, close and extend are one `PATCH /orders/{id}`. |
