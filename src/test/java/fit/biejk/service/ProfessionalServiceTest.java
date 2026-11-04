@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,6 +75,17 @@ class ProfessionalServiceTest {
         assertEquals("Old description", professional.getDescription());
         verify(profileService, never()).updatePersonalData(any(), any());
         verify(searchService, never()).save(any());
+    }
+
+    @Test
+    void anEmptyDescriptionClearsIt() {
+        ProfessionalProfile changes = changes();
+        changes.setDescription("");
+
+        ProfessionalProfile result = service.updateProfile(PROFESSIONAL_ID, changes);
+
+        assertNull(result.getDescription());
+        verify(searchService).save(any());
     }
 
     @Test

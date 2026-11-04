@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fit.biejk.entity.BidStatus;
 import fit.biejk.entity.Category;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,6 +46,7 @@ class JsonFormatTest {
      */
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
+            .registerModule(new Jdk8Module())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
@@ -183,6 +186,29 @@ class JsonFormatTest {
                 AuthRequest.class);
 
         assertEquals(UserRole.CUSTOMER, request.role());
+    }
+
+    @Test
+    void aTextFieldCanBeKeptSetOrCleared() throws Exception {
+        CustomerUpdateRequest request = mapper.readValue(
+                "{\"version\":1,\"firstName\":\" Ann \",\"lastName\":null,\"phoneNumber\":\"  \"}",
+                CustomerUpdateRequest.class);
+
+        assertEquals(Optional.of("Ann"), request.firstName());
+        assertEquals(Optional.empty(), request.lastName());
+        assertEquals(Optional.empty(), request.phoneNumber());
+    }
+
+    @Test
+    void aTextFieldThatIsNotSentIsKept() throws Exception {
+        CustomerUpdateRequest customer = mapper.readValue("{\"version\":1}", CustomerUpdateRequest.class);
+        ProfessionalUpdateRequest professional = mapper.readValue("{\"version\":1,\"description\":null}",
+                ProfessionalUpdateRequest.class);
+
+        assertNull(customer.firstName());
+        assertNull(customer.phoneNumber());
+        assertEquals(Optional.empty(), professional.description());
+        assertNull(professional.firstName());
     }
 
     @Test

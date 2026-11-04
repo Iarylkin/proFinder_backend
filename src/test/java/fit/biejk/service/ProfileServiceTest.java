@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -87,6 +88,23 @@ class ProfileServiceTest {
         assertEquals("Anna", profile.getFirstName());
         assertEquals("Novak", profile.getLastName());
         assertSame(oldLocation, profile.getLocation());
+    }
+
+    @Test
+    void anEmptyTextClearsTheNamesAndThePhone() {
+        CustomerProfile profile = new CustomerProfile();
+        profile.setFirstName("Anna");
+        profile.setLastName("Novak");
+        profile.setPhoneNumber("111111111");
+        CustomerProfile changes = new CustomerProfile();
+        changes.setFirstName("");
+        changes.setPhoneNumber("");
+
+        service.updatePersonalData(profile, changes);
+
+        assertNull(profile.getFirstName());
+        assertNull(profile.getPhoneNumber());
+        assertEquals("Novak", profile.getLastName());
     }
 
     @Test

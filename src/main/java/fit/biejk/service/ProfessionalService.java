@@ -4,6 +4,7 @@ import fit.biejk.entity.*;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
+import fit.biejk.validation.Text;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.transaction.Transactional;
@@ -190,7 +191,7 @@ public class ProfessionalService {
         VersionCheck.require(professional, changes.getVersion());
         profileService.updatePersonalData(professional, changes);
         if (changes.getDescription() != null) {
-            professional.setDescription(changes.getDescription());
+            professional.setDescription(Text.emptyToNull(changes.getDescription()));
         }
         if (changes.getCategories() != null) {
             professional.setCategories(changes.getCategories());

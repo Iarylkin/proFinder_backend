@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * text may contain line feeds and tabs. A missing value is valid.
  */
 @Documented
-@Target({ElementType.FIELD, ElementType.PARAMETER})
+@Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.TYPE_USE})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = NoControlCharsValidator.class)
 public @interface NoControlChars {

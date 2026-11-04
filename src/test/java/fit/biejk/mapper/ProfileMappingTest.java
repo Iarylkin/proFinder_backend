@@ -8,6 +8,7 @@ import fit.biejk.entity.ProfessionalProfile;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,7 +21,7 @@ class ProfileMappingTest {
 
     @Test
     void customerChangesKeepUnsentFieldsNull() {
-        CustomerUpdateRequest request = new CustomerUpdateRequest(null, null, "222222222", null, 0L);
+        CustomerUpdateRequest request = new CustomerUpdateRequest(null, null, Optional.of("222222222"), null, 0L);
 
         CustomerProfile changes = customerMapper.toEntity(request);
 
@@ -31,11 +32,20 @@ class ProfileMappingTest {
     }
 
     @Test
+    void anEmptyTextIsCarriedToTheChangesSoTheServiceClearsTheField() {
+        CustomerProfile changes = customerMapper.toEntity(new CustomerUpdateRequest(null, Optional.empty(), Optional.empty(), null, 0L));
+
+        assertEquals("", changes.getLastName());
+        assertEquals("", changes.getPhoneNumber());
+        assertNull(changes.getFirstName());
+    }
+
+    @Test
     void professionalChangesCarryDescriptionAndCategories() {
         Category plumbing = new Category();
         plumbing.setId(UUID.randomUUID());
         ProfessionalUpdateRequest request = new ProfessionalUpdateRequest(
-                null, null, null, null, "I fix pipes", List.of(plumbing), 0L);
+                null, null, null, null, Optional.of("I fix pipes"), List.of(plumbing), 0L);
 
         ProfessionalProfile changes = professionalMapper.toEntity(request);
 

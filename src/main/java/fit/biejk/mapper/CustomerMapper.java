@@ -1,11 +1,14 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.CustomerResponse;
 import fit.biejk.dto.CustomerPublicResponse;
+import fit.biejk.dto.CustomerResponse;
 import fit.biejk.dto.CustomerUpdateRequest;
 import fit.biejk.entity.CustomerProfile;
+import fit.biejk.validation.Text;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+
+import java.util.Optional;
 
 /**
  * MapStruct mapper for converting between {@link CustomerProfile}
@@ -51,4 +54,16 @@ public interface CustomerMapper {
     @Mapping(target = "orders", ignore = true)
     @Mapping(target = "reviews", ignore = true)
     CustomerProfile toEntity(CustomerUpdateRequest request);
+
+    /**
+     * Writes a text field of a partial update into the entity that holds the changes: {@code null} (not sent) stays
+     * {@code null}, a text is the text and the empty {@link Optional} (clear the field) is the empty text, which the
+     * service reads as "clear".
+     *
+     * @param value the field of the request
+     * @return the text for the entity
+     */
+    default String toChange(final Optional<String> value) {
+        return Text.toChange(value);
+    }
 }

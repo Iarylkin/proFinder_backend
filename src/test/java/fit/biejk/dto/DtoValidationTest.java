@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,12 +69,19 @@ class DtoValidationTest {
         return new OrderUpdateRequest(null, null, null, null, null, deadline, null, 0L);
     }
 
+    /**
+     * A field of a partial update: {@code null} is a field that is not sent, otherwise the text that is sent.
+     */
+    private static Optional<String> sent(final String text) {
+        return text == null ? null : Optional.of(text);
+    }
+
     private static CustomerUpdateRequest customer(final String firstName, final String lastName, final String phone) {
-        return new CustomerUpdateRequest(firstName, lastName, phone, null, 0L);
+        return new CustomerUpdateRequest(sent(firstName), sent(lastName), sent(phone), null, 0L);
     }
 
     private static ProfessionalUpdateRequest professional(final String description) {
-        return new ProfessionalUpdateRequest(null, null, null, null, description, null, 0L);
+        return new ProfessionalUpdateRequest(null, null, null, null, sent(description), null, 0L);
     }
 
     private static BidUpdateRequest bidUpdate(final LocalDateTime finalDeadline, final Long version) {
@@ -240,6 +248,12 @@ class DtoValidationTest {
     }
 
     @Test
+    void anEmptyTextThatClearsAFieldIsValid() {
+        assertTrue(invalidFields(customer("", "", "")).isEmpty());
+        assertTrue(invalidFields(professional("")).isEmpty());
+    }
+
+    @Test
     void professionalDescriptionIsLimited() {
         assertEquals(Set.of("description"), invalidFields(professional(repeat(2001))));
     }
@@ -257,6 +271,16 @@ class DtoValidationTest {
         assertNull(blank.title());
         assertNull(blank.description());
         assertEquals(TITLE, padded.title());
+    }
+
+    @Test
+    void aTextFieldThatCanBeClearedIsEmptyWhenCleared() {
+        CustomerUpdateRequest cleared = customer("   ", "", null);
+
+        assertEquals(Optional.empty(), cleared.firstName());
+        assertEquals(Optional.empty(), cleared.lastName());
+        assertNull(cleared.phoneNumber());
+        assertEquals(Optional.of("Ann"), customer(" Ann ", null, null).firstName());
     }
 
     @Test
