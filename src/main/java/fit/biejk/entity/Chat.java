@@ -1,6 +1,6 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,34 +26,34 @@ public class Chat extends BaseEntity {
     /**
      * First participant in the chat.
      * <p>
-     * {@link JsonbTransient} is used to avoid cyclic serialization.
+     * {@link JsonIgnore} is used to avoid cyclic serialization.
      * </p>
      */
     @ManyToOne
     @JoinColumn(name = "user1_id", nullable = false)
-    @JsonbTransient
+    @JsonIgnore
     private User user1;
 
     /**
      * Second participant in the chat.
      * <p>
-     * {@link JsonbTransient} is used to avoid cyclic serialization.
+     * {@link JsonIgnore} is used to avoid cyclic serialization.
      * </p>
      */
     @ManyToOne
     @JoinColumn(name = "user2_id", nullable = false)
-    @JsonbTransient
+    @JsonIgnore
     private User user2;
 
     /**
      * List of messages exchanged in the chat.
      * <p>
      * Messages are cascaded and orphan removal is enabled.
-     * {@link JsonbTransient} prevents serialization of the entire message list by default.
+     * {@link JsonIgnore} prevents serialization of the entire message list by default.
      * </p>
      */
     @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<ChatMessage> messages;
 
     /**

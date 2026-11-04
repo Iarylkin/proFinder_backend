@@ -1,6 +1,5 @@
 package fit.biejk.exception;
 
-import jakarta.json.bind.annotation.JsonbProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -50,7 +49,6 @@ public final class ErrorResponse {
         /**
          * Field to reason for a validation error; {@code null} for the other errors.
          */
-        @JsonbProperty(nillable = true)
         private final Map<String, String> details;
     }
 }

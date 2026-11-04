@@ -1,7 +1,7 @@
 package fit.biejk.exception;
 
-import jakarta.json.JsonException;
-import jakarta.json.bind.JsonbException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -82,6 +82,20 @@ public class ApiExceptionMapper {
     }
 
     /**
+     * Maps a value of the wrong type or format in the request body (for example a date that is not ISO 8601).
+     * Quarkus has its own mapper for this exception with another body; this one takes its place, so the answer is in
+     * the common format.
+     *
+     * @param exception the value that could not be read
+     * @return {@code 400 VALIDATION_ERROR}
+     */
+    @ServerExceptionMapper
+    public Response map(final MismatchedInputException exception) {
+        return build(Response.status(ErrorCode.VALIDATION_ERROR.getStatus()), ErrorCode.VALIDATION_ERROR,
+                MALFORMED_BODY_MESSAGE, null);
+    }
+
+    /**
      * Maps any other exception: {@code CONFLICT} when an optimistic lock failed, {@code INTERNAL_ERROR} otherwise.
      * <p>
      * Hibernate raises an {@link OptimisticLockException} when a row was changed by someone else since it was read.
@@ -121,7 +135,7 @@ public class ApiExceptionMapper {
      */
     private static boolean isMalformedBody(final Throwable exception) {
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-            if (cause instanceof JsonbException || cause instanceof JsonException) {
+            if (cause instanceof JsonProcessingException) {
                 return true;
             }
             if (cause.getCause() == cause) {

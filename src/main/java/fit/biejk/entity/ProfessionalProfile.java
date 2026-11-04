@@ -1,7 +1,7 @@
 package fit.biejk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.biejk.validation.Limits;
-import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -50,7 +50,7 @@ public class ProfessionalProfile extends Profile {
      * </p>
      */
     @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<Bid> bids;
 
     /**
@@ -60,6 +60,6 @@ public class ProfessionalProfile extends Profile {
      * </p>
      */
     @OneToMany(mappedBy = "professional", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<Review> reviews;
 }

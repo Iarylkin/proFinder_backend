@@ -1,6 +1,6 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -36,7 +36,7 @@ public class Location extends BaseEntity {
      * </p>
      */
     @OneToMany(mappedBy = "location")
-    @JsonbTransient
+    @JsonIgnore
     private List<User> users;
 
     /**
@@ -47,6 +47,6 @@ public class Location extends BaseEntity {
      * </p>
      */
     @OneToMany(mappedBy = "location")
-    @JsonbTransient
+    @JsonIgnore
     private List<Order> orders;
 }

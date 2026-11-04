@@ -1,7 +1,7 @@
 package fit.biejk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.biejk.validation.Limits;
-import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,7 +34,7 @@ public class User extends BaseEntity {
      * User's password.
      */
     @Column(name = "password", nullable = false)
-    @JsonbTransient
+    @JsonIgnore
     private String password;
 
     /**
@@ -54,20 +54,20 @@ public class User extends BaseEntity {
      * List of chats initiated by the user.
      */
     @OneToMany(mappedBy = "user1", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<Chat> initiatedChats;
 
     /**
      * List of chats received by the user.
      */
     @OneToMany(mappedBy = "user2", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<Chat> receivedChats;
 
     /**
      * Profile of the user: a customer or a professional profile, by role. Removed together with the user.
      */
     @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
-    @JsonbTransient
+    @JsonIgnore
     private Profile profile;
 }

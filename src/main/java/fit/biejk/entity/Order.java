@@ -1,7 +1,7 @@
 package fit.biejk.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import fit.biejk.validation.Limits;
-import jakarta.json.bind.annotation.JsonbTransient;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -54,7 +54,7 @@ public class Order extends BaseEntity {
      * </p>
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
+    @JsonIgnore
     private List<Bid> bids;
 
 

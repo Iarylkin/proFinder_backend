@@ -1,7 +1,8 @@
 package fit.biejk.exception;
 
-import jakarta.json.JsonException;
-import jakarta.json.bind.JsonbException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceException;
 import jakarta.transaction.RollbackException;
@@ -125,7 +126,8 @@ class ApiExceptionMapperTest {
 
     @Test
     void unreadableBodyIsAValidationErrorWithoutTheParserText() {
-        Response response = mapper.map(new JsonbException("Cannot parse 2026-13-45 as java.time.LocalDateTime"));
+        Response response = mapper.map(
+                new JsonMappingException(null, "Cannot parse 2026-13-45 as java.time.LocalDateTime"));
 
         assertEquals(400, response.getStatus());
         assertEquals("VALIDATION_ERROR", bodyOf(response).getCode());
@@ -134,7 +136,17 @@ class ApiExceptionMapperTest {
 
     @Test
     void unreadableBodyInsideAnotherExceptionIsAValidationError() {
-        assertEquals(400, mapper.map(new RuntimeException(new JsonException("Unexpected character"))).getStatus());
+        assertEquals(400, mapper.map(
+                new RuntimeException(new JsonMappingException(null, "Unexpected character"))).getStatus());
+    }
+
+    @Test
+    void aValueOfTheWrongFormatHasTheCommonBodyInsteadOfTheOneOfQuarkus() {
+        Response response = mapper.map(MismatchedInputException.from((JsonParser) null, String.class, "bad date"));
+
+        assertEquals(400, response.getStatus());
+        assertEquals("VALIDATION_ERROR", bodyOf(response).getCode());
+        assertEquals("The request body is malformed", bodyOf(response).getMessage());
     }
 
     @Test
