@@ -118,7 +118,7 @@ Main application code organized by layers:
   - `FileUploadForm` — Multipart form binding
   - `ImageType` — Magic-byte detection of jpeg, png, gif, webp, heic, heif
 
-- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `StatusConflictException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; `ConcurrentUpdateExceptionMapper` answers `409` when an optimistic lock fails; there is no common error body or `ApiExceptionMapper` yet
+- **`exception/`** — one error format for the whole API: `ApiExceptionMapper` turns every error into `{"error": {"code", "message", "details"}}` (`ErrorResponse`) with a code from the `ErrorCode` catalog (only the codes the code can return today; the target catalog is in `docs/8`). `ApiException` subclasses carry their own code and status (`OrderClosedException` `ORDER_CLOSED` 409, `EmailAlreadyRegisteredException` 409, `InvalidCredentialsException` 401, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`); the built-in `BadRequestException`/`ForbiddenException`/`NotFoundException`/`ClientErrorException` (and `StatusConflictException`, 409) get the generic code of their status (`VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`). Failed bean validation is `VALIDATION_ERROR` with a field → reason map in `details`, a failed optimistic lock is `CONFLICT`, anything else is `INTERNAL_ERROR` without its message. Errors raised by Quarkus security before a resource (`401`/`403` from `@RolesAllowed`) are not wrapped yet. Never throw `IllegalArgumentException` for a client mistake: it is a `500`
 
 - **`utilits/`** — Shared utilities
   - `CryptoUtils` — Password hashing with BCrypt
@@ -190,7 +190,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
 2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
 3. **Validation:** Use Jakarta `@Valid` annotations; validation errors return 400 Bad Request
-4. **Exception Handling:** Custom exception handling (if implemented) centralized in resources
+4. **Exception Handling:** throw the built-in `jakarta.ws.rs` exceptions where the status is enough, an `ApiException` subclass (with its `ErrorCode`) where the client must tell the error apart from the generic one of the same status; the mapping to the response is centralized in `ApiExceptionMapper`, resources do not catch exceptions to build error responses. State-less actions that return nothing (`DELETE`, avatar upload) answer `204`
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
