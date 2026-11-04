@@ -78,7 +78,6 @@ public interface CustomerMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "user", ignore = true)
-    @Mapping(target = "version", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
     @Mapping(target = "orders", ignore = true)
     @Mapping(target = "reviews", ignore = true)

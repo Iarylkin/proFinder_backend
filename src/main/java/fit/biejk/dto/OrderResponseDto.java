@@ -27,6 +27,11 @@ public class OrderResponseDto {
     private UUID id;
 
     /**
+     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+     */
+    private Long version;
+
+    /**
      * Identifier of the associated order.
      */
     private UUID orderId;

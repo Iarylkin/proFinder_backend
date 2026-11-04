@@ -50,6 +50,30 @@ class DtoValidationTest {
         return "a".repeat(length);
     }
 
+    private static OrderUpdateRequest orderUpdate() {
+        OrderUpdateRequest request = new OrderUpdateRequest();
+        request.setVersion(0L);
+        return request;
+    }
+
+    private static ProfileUpdateRequest profileUpdate() {
+        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        request.setVersion(0L);
+        return request;
+    }
+
+    private static ProfessionalUpdateRequest professionalUpdate() {
+        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
+        request.setVersion(0L);
+        return request;
+    }
+
+    private static OrderResponseUpdateRequest responseUpdate() {
+        OrderResponseUpdateRequest request = new OrderResponseUpdateRequest();
+        request.setVersion(0L);
+        return request;
+    }
+
     private static OrderDto order(final String title, final String description) {
         OrderDto dto = new OrderDto();
         dto.setTitle(title);
@@ -102,7 +126,7 @@ class DtoValidationTest {
 
     @Test
     void partialOrderUpdateChecksTheDeadlineOnlyWhenItIsSent() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
+        OrderUpdateRequest request = orderUpdate();
         request.setDeadline(LocalDateTime.now().minusHours(1));
 
         assertEquals(Set.of("deadline"), invalidFields(request));
@@ -110,7 +134,7 @@ class DtoValidationTest {
 
     @Test
     void finalDeadlineIsRequiredAndMustNotBeInThePast() {
-        OrderResponseUpdateRequest request = new OrderResponseUpdateRequest();
+        OrderResponseUpdateRequest request = responseUpdate();
         request.setStatus(OrderResponseStatus.APPROVED);
         assertEquals(Set.of("finalDeadline"), invalidFields(request));
 
@@ -168,13 +192,33 @@ class DtoValidationTest {
     }
 
     @Test
+    void everyPatchRequiresTheVersion() {
+        assertEquals(Set.of("version"), invalidFields(new OrderUpdateRequest()));
+        assertEquals(Set.of("version"), invalidFields(new ProfileUpdateRequest()));
+        assertEquals(Set.of("version"), invalidFields(new ProfessionalUpdateRequest()));
+
+        OrderResponseUpdateRequest response = new OrderResponseUpdateRequest();
+        response.setStatus(OrderResponseStatus.APPROVED);
+        response.setFinalDeadline(LocalDateTime.now().plusDays(1));
+        assertEquals(Set.of("version"), invalidFields(response));
+    }
+
+    @Test
+    void versionCannotBeNegative() {
+        OrderUpdateRequest request = orderUpdate();
+        request.setVersion(-1L);
+
+        assertEquals(Set.of("version"), invalidFields(request));
+    }
+
+    @Test
     void partialOrderUpdateMayOmitEveryField() {
-        assertTrue(invalidFields(new OrderUpdateRequest()).isEmpty());
+        assertTrue(invalidFields(orderUpdate()).isEmpty());
     }
 
     @Test
     void partialOrderUpdateRejectsABlankOrTooShortText() {
-        OrderUpdateRequest request = new OrderUpdateRequest();
+        OrderUpdateRequest request = orderUpdate();
         request.setTitle("      ");
         request.setDescription("too short");
 
@@ -208,7 +252,7 @@ class DtoValidationTest {
 
     @Test
     void profileNamesAllowLettersOfAnyScript() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest request = profileUpdate();
         request.setFirstName("José");
         request.setLastName("О'Коннор-Смит");
 
@@ -217,7 +261,7 @@ class DtoValidationTest {
 
     @Test
     void profileNamesRejectMarkupAndLongValues() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest request = profileUpdate();
         request.setFirstName("<script>");
         request.setLastName(repeat(51));
 
@@ -226,7 +270,7 @@ class DtoValidationTest {
 
     @Test
     void phoneAllowsDigitsPlusAndSeparatorsOnly() {
-        ProfileUpdateRequest request = new ProfileUpdateRequest();
+        ProfileUpdateRequest request = profileUpdate();
         request.setPhoneNumber("+7 (999) 123-45-67");
         assertTrue(invalidFields(request).isEmpty());
 
@@ -239,7 +283,7 @@ class DtoValidationTest {
 
     @Test
     void professionalDescriptionIsLimited() {
-        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest();
+        ProfessionalUpdateRequest request = professionalUpdate();
         request.setDescription(repeat(2001));
 
         assertEquals(Set.of("description"), invalidFields(request));

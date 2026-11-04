@@ -2,7 +2,9 @@ package fit.biejk.dto;
 
 import fit.biejk.entity.Location;
 import fit.biejk.validation.Limits;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,4 +47,12 @@ public class ProfileUpdateRequest {
      * New location.
      */
     private Location location;
+
+    /**
+     * The version the client has seen. A different current version means someone changed the resource since,
+     * and the request is rejected with 409.
+     */
+    @NotNull
+    @PositiveOrZero
+    private Long version;
 }

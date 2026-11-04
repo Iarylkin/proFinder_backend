@@ -24,6 +24,7 @@ public interface OrderMapper {
      */
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "version", ignore = true)
     Order toEntity(OrderDto orderDto);
 
     /**

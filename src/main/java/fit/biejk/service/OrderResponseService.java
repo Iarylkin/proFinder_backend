@@ -83,14 +83,16 @@ public class OrderResponseService {
      * @param status the new status of the response, must be {@code APPROVED}
      * @param finalPrice the final agreed price of the order
      * @param finalDeadline the final agreed deadline of the order
+     * @param version the version of the response that the client has seen
      * @return the updated and persisted order
      * @throws NotFoundException if the response does not exist
      * @throws ForbiddenException if the current user is not the customer who created the order
+     * @throws fit.biejk.exception.StaleVersionException if the response was changed after the client read it
      * @throws StatusConflictException if the status is not {@code APPROVED}
      */
     @Transactional
     public Order updateStatus(final UUID responseId, final OrderResponseStatus status,
-                              final int finalPrice, final LocalDateTime finalDeadline) {
+                              final int finalPrice, final LocalDateTime finalDeadline, final Long version) {
         OrderResponse orderResponse = orderResponseRepository.findByIdOptional(responseId)
                 .orElseThrow(() -> new NotFoundException("Response not found"));
 
@@ -99,6 +101,7 @@ public class OrderResponseService {
         if (!authService.isCurrentUser(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
+        VersionCheck.require(orderResponse, version);
         if (status != OrderResponseStatus.APPROVED) {
             throw new StatusConflictException("Only the APPROVED status can be set on a response");
         }

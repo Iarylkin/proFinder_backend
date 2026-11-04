@@ -97,7 +97,7 @@ public class ApiExceptionMapper {
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
             if (cause instanceof OptimisticLockException) {
                 return build(Response.status(ErrorCode.CONFLICT.getStatus()), ErrorCode.CONFLICT,
-                        "The resource was changed by someone else, reload it and try again", null);
+                        ErrorCode.CONFLICT.getMessage(), null);
             }
             if (cause.getCause() == cause) {
                 break;

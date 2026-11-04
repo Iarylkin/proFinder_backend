@@ -7,8 +7,10 @@ import fit.biejk.validation.Limits;
 import fit.biejk.validation.NoControlChars;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -71,4 +73,12 @@ public class OrderUpdateRequest {
      * New location of the order.
      */
     private Location location;
+
+    /**
+     * The version the client has seen. A different current version means someone changed the resource since,
+     * and the request is rejected with 409.
+     */
+    @NotNull
+    @PositiveOrZero
+    private Long version;
 }

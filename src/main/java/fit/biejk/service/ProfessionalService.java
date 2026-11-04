@@ -211,6 +211,7 @@ public class ProfessionalService {
     public ProfessionalProfile updateProfile(final UUID id, final ProfessionalProfile changes) {
         log.info("Update professional profile: ID={}", id);
         ProfessionalProfile professional = getById(id);
+        VersionCheck.require(professional, changes.getVersion());
         profileService.updatePersonalData(professional, changes);
         if (changes.getDescription() != null) {
             professional.setDescription(changes.getDescription());

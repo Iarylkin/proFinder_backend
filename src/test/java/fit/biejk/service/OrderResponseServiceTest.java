@@ -5,6 +5,7 @@ import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderResponse;
 import fit.biejk.entity.OrderStatus;
 import fit.biejk.entity.OrderResponseStatus;
+import fit.biejk.exception.StaleVersionException;
 import fit.biejk.exception.StatusConflictException;
 import fit.biejk.repository.OrderResponseRepository;
 import fit.biejk.repository.OrderRepository;
@@ -35,6 +36,7 @@ class OrderResponseServiceTest {
     private static final UUID MISSING_RESPONSE_ID = UUID.randomUUID();
     private static final UUID CUSTOMER_ID = UUID.randomUUID();
     private static final int FINAL_PRICE = 300;
+    private static final long VERSION = 5L;
 
     private OrderResponseRepository responseRepository;
     private AuthService authService;
@@ -65,13 +67,14 @@ class OrderResponseServiceTest {
         orderResponse.setId(RESPONSE_ID);
         orderResponse.setOrder(order);
         orderResponse.setStatus(OrderResponseStatus.CREATED);
+        orderResponse.setVersion(VERSION);
 
         when(responseRepository.findByIdOptional(RESPONSE_ID)).thenReturn(Optional.of(orderResponse));
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
     }
 
     private Order updateStatus(final UUID responseId, final OrderResponseStatus status) {
-        return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1));
+        return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION);
     }
 
     @Test
@@ -83,6 +86,16 @@ class OrderResponseServiceTest {
         assertEquals(FINAL_PRICE, order.getPrice());
         assertEquals(OrderResponseStatus.APPROVED, orderResponse.getStatus());
         verify(responseRepository).rejectOthersForOrder(ORDER_ID, RESPONSE_ID);
+    }
+
+    @Test
+    void approvingWithAStaleVersionIsRejectedAndChangesNothing() {
+        assertThrows(StaleVersionException.class, () -> service.updateStatus(
+                RESPONSE_ID, OrderResponseStatus.APPROVED, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION - 1));
+
+        assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
+        assertEquals(OrderResponseStatus.CREATED, orderResponse.getStatus());
+        verify(responseRepository, never()).rejectOthersForOrder(any(), any());
     }
 
     @Test

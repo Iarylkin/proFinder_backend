@@ -79,7 +79,8 @@ public class OrderResponseResource {
                             @Valid final OrderResponseUpdateRequest request) {
 
         Order result = orderResponseService.updateStatus(
-                responseId, request.getStatus(), request.getFinalPrice(), request.getFinalDeadline());
+                responseId, request.getStatus(), request.getFinalPrice(), request.getFinalDeadline(),
+                request.getVersion());
         return Response.ok(orderMapper.toDto(result)).build();
     }
 }

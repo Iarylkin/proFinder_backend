@@ -23,6 +23,7 @@ public interface OrderResponseMapper {
      */
     @Mapping(target = "order.id", ignore = true)
     @Mapping(target = "professional.id", ignore = true)
+    @Mapping(target = "version", ignore = true)
     OrderResponse toEntity(OrderResponseDto orderResponseDto);
 
     /**

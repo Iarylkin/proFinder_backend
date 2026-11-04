@@ -6,6 +6,7 @@ import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -43,4 +44,12 @@ public class OrderResponseUpdateRequest {
     @Min(value = 0, message = "Final price must be non-negative")
     @Max(Limits.PRICE_MAX)
     private int finalPrice;
+
+    /**
+     * The version the client has seen. A different current version means someone changed the resource since,
+     * and the request is rejected with 409.
+     */
+    @NotNull
+    @PositiveOrZero
+    private Long version;
 }

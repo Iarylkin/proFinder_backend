@@ -107,6 +107,7 @@ public class CustomerService {
     @Transactional
     public CustomerProfile updateProfile(final UUID id, final CustomerProfile changes) {
         CustomerProfile customer = getById(id);
+        VersionCheck.require(customer, changes.getVersion());
         profileService.updatePersonalData(customer, changes);
         return customer;
     }

@@ -95,6 +95,7 @@ public class OrderService {
      * @param changes an order holding only the requested changes
      * @return the updated order
      * @throws ForbiddenException      if the current user is not the owner of the order
+     * @throws fit.biejk.exception.StaleVersionException if the order was changed after the client read it
      * @throws StatusConflictException if the requested status is not allowed
      */
     @Transactional
@@ -106,6 +107,7 @@ public class OrderService {
                     orderId, order.getCustomer().getId());
             throw new ForbiddenException("You are not the owner of this order");
         }
+        VersionCheck.require(order, changes.getVersion());
 
         order.setStatus(nextStatus(order.getStatus(), changes.getStatus()));
         if (changes.getCategories() != null) {

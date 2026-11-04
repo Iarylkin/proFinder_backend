@@ -40,6 +40,11 @@ public class CustomerDto {
     private UUID id;
 
     /**
+     * Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
+     */
+    private Long version;
+
+    /**
      * Email address of the customer, must be in a valid format.
      */
     @Email
