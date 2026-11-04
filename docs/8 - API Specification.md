@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.16
+- **Version:** 1.17
 - **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -19,6 +19,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 - **Auth:** `Authorization: Bearer <JWT>` header. Endpoints marked "public" need none.
 - **Money:** all amounts are plain `numeric`, USD, no `currency` field ([A5 decision](Documentation%20Roadmap.md)).
 - **Dates:** ISO 8601 timestamps, no per-user timezone conversion ([A5 decision](Documentation%20Roadmap.md)).
+- **Partial update (`PATCH`):** a field that is not in the body keeps its value. An optional text field (first name, last name, phone, a professional's description) sent as `null` or as an empty text is **cleared**; a required field (the title, description and price of an order) cannot be cleared. Every `PATCH` of a resource also carries its `version` (`409 CONFLICT` if it is stale).
 - **Identifiers:** every id is a **UUID** (v4, random). Generated application-side (Hibernate `GenerationType.UUID`), never DB-default, so the id exists before flush and travels in the outbox row. The built-in generator is used instead of a time-ordered v7: it needs no extra library or custom generator, and the better index locality of v7 does not matter at the expected size. The column type is `uuid` either way, so v7 can be adopted later without a schema change. A path segment that is not a UUID returns `404`.
 - **Enums are returned raw, never localized.** The API always emits the machine token — `status: "ACTIVE"`, `reason: "NO_SHOW"`, `decision: "CONTENT_REMOVED"` — and never a display string. Turning a token into human text is the **client's** job, via its own i18n bundle keyed `enum.<enum_name>.<value>` (e.g. `enum.report_reason.NO_SHOW`). MVP ships English only ([NFR-UX-4](2%20-%20Requirements.md)); adding locales later changes nothing in the API contract. This keeps responses locale-independent (so cacheable) and keeps `Accept-Language` out of the service layer. Free-text the server composes for storage — notification `title`/`body` rows — is rendered at write time from server-side templates and is a separate concern from enum values on the wire.
 - **Load balancer (decided 2026-09-05):** every service sits behind the Nginx LB from [3 - System Design.md § Nginx Gateway](3%20-%20System%20Design.md) — fixed the "not needed" contradiction in [2 - Requirements.md](2%20-%20Requirements.md) NFR-Scale-1/2. Practically, this means:
@@ -460,6 +461,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.17 | 2026-11-04 | **`PATCH` semantics:** a field that is not sent keeps its value, an optional text field sent as `null` or as an empty text is cleared (code: `Optional` fields read by `ClearableTextDeserializer`), a required field cannot be cleared. |
 | 1.16 | 2026-11-04 | **Naming:** `/orders/{id}/responses` → `/orders/{id}/bids` (and `/bids/{id}`), the DTOs are named by direction (`BidCreateRequest`, `BidResponse`, `OrderResponse`, `LoginRequest`, ...) instead of `*Dto`, to match the code. |
 | 1.15 | 2026-10-31 | **Account vs profile (D-1.5):** profile endpoints are per role (`GET/PATCH /customers/me`, `GET/PATCH /professionals/me`) instead of `/users/me/profile`; provider sign-in is `GET /auth/{provider}/login\|link\|callback` with the role in the signed `state` (the account and its profile are created together), `DELETE /auth/identities/{provider}` replaces `unlink`; `POST /auth/role`, `temp_token` and `ROLE_SELECTION_REQUIRED` are removed; new codes `IDENTITY_ALREADY_LINKED`, `LAST_LOGIN_METHOD`, `PROVIDER_EMAIL_REQUIRED`, `ACCOUNT_NOT_FOUND`. |
 | 1.14 | 2026-10-28 | **Identifiers:** UUID v4 from the built-in `GenerationType.UUID` instead of v7 (decision 3 in [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)): no extra library or custom generator, and the index-locality gain of v7 is not needed at this size. |

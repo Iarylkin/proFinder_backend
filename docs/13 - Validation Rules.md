@@ -1,7 +1,7 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.6
-- **Date:** 2026-10-31
+- **Version:** 1.7
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
@@ -20,6 +20,7 @@ Applied everywhere, not repeated per field below.
 |---|---|
 | **Trim** | All string fields are trimmed of leading/trailing whitespace before validation and storage. |
 | **Empty = null** | An empty string after trim is treated as `null` (and then fails `@NotBlank` if required). |
+| **`PATCH` fields** | A field that is not in the body is not changed. For an optional text field (first name, last name, phone, a professional's description) `null` or an empty text **clears** it; the other fields cannot be cleared. The text is checked (length, characters) only when it is not empty. |
 | **Control chars** | Reject `U+0000`–`U+001F` and `U+007F` except `\n` / `\t` inside multi-line text fields (`bio`, `description`, review `text`, message `text`, report `description`, `notes`). |
 | **UUID path/body params** | Must match the UUID format before any DB lookup; a malformed id → `400 VALIDATION_ERROR`, never `404`. |
 | **Unknown JSON fields** | Ignored (Jackson `FAIL_ON_UNKNOWN_PROPERTIES = false`) — gap ⑤. |
@@ -195,6 +196,7 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-04 | **`PATCH` fields:** a field that is not sent is not changed; `null` or an empty text clears an optional text field. Needed because "empty = null" alone could not tell "keep" from "clear". |
 | 1.6 | 2026-10-31 | **D-1.5:** `role` comes with the registration or the provider login request (no `POST /auth/role`); `display_name` is stored in the profile; callback path is `{provider}/callback`. |
 | 1.5 | 2026-10-28 | **Naming and paths:** `conversation_id` → `chat_id`, `/users/me/...`; `expires_at` replaces `additional_days` for extending an order; `role` is part of email registration. |
 | 1.4 | 2026-10-27 | **D-1.3:** order field `location` → `city`; report reason, decision, appeal outcome and notification channel values are `UPPER_SNAKE_CASE`. |
