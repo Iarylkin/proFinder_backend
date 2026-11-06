@@ -56,6 +56,7 @@ docker-compose up -d                              # Start all services (PostgreS
 
 ### Tech Stack
 - **Framework:** Quarkus (Java 21) with RESTful API
+- **JSON:** Jackson (`quarkus-rest-jackson`): unknown fields are ignored, dates are ISO 8601 strings, `null` fields are written, a nested entity hides what is `@JsonIgnore`; the format is pinned by `JsonFormatTest`
 - **Database:** PostgreSQL with Hibernate ORM + Panache
 - **Search:** Elasticsearch 8.15 (indexed documents for Orders & Professionals)
 - **Cache:** Redis
@@ -69,17 +70,17 @@ docker-compose up -d                              # Start all services (PostgreS
 #### `/src/main/java/fit/biejk`
 Main application code organized by layers:
 
-- **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, OrderResponse, Chat, ChatMessage, Review, Category, Location)
+- **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
   - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at users
-  - `OrderStatus`, `OrderResponseStatus`, `UserRole` enums
+  - `OrderStatus`, `BidStatus`, `UserRole` enums. `Bid` is the response of a professional to an order (table `responses`, API `/orders/{id}/responses`, `/responses/{id}`); it is not called `OrderResponse` so the name stays free for the DTO of an order
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
   - `AuthResource` — Register (`POST /auth/register`), login (`POST /auth/login`), password recovery (`/password-recovery`)
   - `UserResource` — Avatar upload/download, email/password changes (the avatar is kept in the profile)
   - `CustomerResource`, `ProfessionalResource` — Own profile (`GET`/`PATCH /customers/me`, `/professionals/me`: the type is the address), profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
   - `ProfessionalSearchResource` — Professional search (`GET /search/professionals`)
-  - `OrderResource`, `OrderResponseResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
+  - `OrderResource`, `BidResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
   - `ChatResource` — Chat creation, the current user's chats (`GET /chats/me`) and history; WebSocket communication in `ChatSocket`
   - `LocationResource`, `CategoryResource` — Reference data (`/locations`, `/categories`)
 
@@ -88,7 +89,7 @@ Main application code organized by layers:
   - `UserService` — Account creation, email/password changes
   - `ProfileService`, `ProfileFactory` — Creates the profile of a new user by its role (and sets the default location), reads a profile by user id, applies the personal data (name, phone, location) to a profile
   - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
-  - `OrderResponseService` — Response lifecycle (create, approve; the other responses of the order are rejected)
+  - `BidService` — Response lifecycle (create, approve; the other responses of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
   - `TokenService` — JWT token generation (the current user is resolved from the `SecurityIdentity` in `AuthService`)
@@ -110,15 +111,16 @@ Main application code organized by layers:
   - `OrderIndexInitializer`, `ProfessionalIndexInitializer` — Index schema setup
 
 - **`dto/`** — Data transfer objects for API requests/responses
-  - Paired with `@Valid` validation annotations
-  - DTOs: AuthRequest/AuthResponse, OrderDto, UserDto, CustomerDto, ProfessionalDto, PageRequest, filter criteria, etc.
+  - Every class is named by its direction: `*Request` (from the client, carries the `@Valid` annotations) or `*Response` (to the client, no validation): `AuthRequest`/`AuthResponse`, `OrderCreateRequest`/`OrderUpdateRequest`/`OrderResponse`, `BidCreateRequest`/`BidUpdateRequest`/`BidResponse`, `CustomerResponse`, `ProfessionalResponse`, `PageRequest`, `OrderFilterRequest`, etc. (`AvatarData` is an internal holder, not a body)
 
 - **`minio/`** — File storage integration
   - `FileService` — Upload/download avatars to MinIO (max 5 MB, type checked by magic bytes)
   - `FileUploadForm` — Multipart form binding
   - `ImageType` — Magic-byte detection of jpeg, png, gif, webp, heic, heif
 
-- **`exception/`** — API errors that carry their own HTTP status (`OrderClosedException` 409, `StatusConflictException` 409, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `TooManyAttemptsException` 429 + `Retry-After`). Standard `BadRequestException`/`ForbiddenException`/`NotFoundException` are used where they fit; `ConcurrentUpdateExceptionMapper` answers `409` when an optimistic lock fails; there is no common error body or `ApiExceptionMapper` yet
+- **`exception/`** — one error format for the whole API: a problem of RFC 9457 (`application/problem+json`: `type`, `title`, `status`, `detail`, `instance`, plus the extension member `code`), made by the `quarkus-resteasy-problem` library, which maps the built-in exceptions and hides the message of a server error. `ErrorCode` is the catalog (only the codes the code can return today; the target catalog is in `docs/8`): status, title, default detail, and the `type` URN. `ApiException` extends the library's `HttpProblem`; its subclasses carry their own code and status (`OrderClosedException` `ORDER_CLOSED` 409, `EmailAlreadyRegisteredException` 409, `InvalidCredentialsException` 401, `CategoryRequiredException` `CATEGORY_REQUIRED` 400, `FileTooLargeException` 413, `InvalidFileTypeException` 415, `InvalidResetCodeException` 400, `StaleVersionException` `CONFLICT` 409, `TooManyAttemptsException` 429 + `Retry-After`). `ErrorCodeProcessor` (a `ProblemPostProcessor`) gives the problems of the library (the built-in `BadRequestException`/`ForbiddenException`/`NotFoundException`/`ClientErrorException` (and `StatusConflictException`, 409) the generic code, `type` and `title` of their status (`VALIDATION_ERROR`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`), replaces the text the framework makes up (`HTTP 404 Not Found`) with the message of the code, and hides the text of the JSON parser. Failed bean validation is `VALIDATION_ERROR` with `violations` (a list of `field`, `in`, `message`); `ApiExceptionMapper` maps a failed optimistic lock to `CONFLICT`; anything else is `INTERNAL_ERROR` without its message. Never throw `IllegalArgumentException` for a client mistake: it is a `500`
+
+- **`validation/`** — `Limits` (the length and range limits of the input fields from `docs/13`, used by both the DTOs and the entity column lengths, so a value that passes the validation always fits its column), `@NoControlChars` (rejects `U+0000`–`U+001F` and `U+007F`, `multiline = true` allows `\n` and `\t`)
 
 - **`utilits/`** — Shared utilities
   - `CryptoUtils` — Password hashing with BCrypt
@@ -163,7 +165,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
 2. Professionals browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
 3. Professional submits a response via `OrderResource.respond()` (`POST /v1/orders/{id}/responses`) → `OrderService.respond()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
-4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `OrderResponseResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
+4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `BidResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
 5. Upon acceptance, the order status becomes `COMPLETED` and the other responses are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
 6. An order is updated with `PATCH /v1/orders/{id}` (`OrderResource.update()`, only the sent fields change); `{"status": "CANCELLED"}` cancels it, any other status or an invalid transition returns `409`, a non-owner gets `403`; a customer can review a professional via `POST /v1/professionals/{id}/reviews`
 
@@ -188,15 +190,15 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Common Patterns & Conventions
 
 1. **Naming:** Endpoints use snake_case resource names (e.g., `/v1/orders`, `/v1/professionals`)
-2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonbTransient` for excluded fields
-3. **Validation:** Use Jakarta `@Valid` annotations; validation errors return 400 Bad Request
-4. **Exception Handling:** Custom exception handling (if implemented) centralized in resources
+2. **DTOs:** Always use DTOs for API boundaries; entities marked with `@JsonIgnore` for excluded fields. A request and a response are separate classes: `*Request` holds only what the client may send and carries the validation (`OrderCreateRequest`, `BidCreateRequest`, `ReviewCreateRequest`, `*UpdateRequest`), `*Response` is only sent to the client and has no validation. They are `record`s, so an accessor is `request.title()`, not `getTitle()`; a record that holds a secret overrides `toString` to mask it (`AuthRequest`, `ChangePasswordRequest`, `AuthResponse`, ...). `@BeanParam` objects (`PageRequest`, `OrderFilterRequest`, `ProfessionalFilterRequest`) stay classes. A request never carries the fields of the server (`id`, `status`, `version` on create, the owner)
+3. **Validation:** Jakarta `@Valid` on every request body; limits come from `Limits` (never a literal that could drift from the column length), free text gets `@NoControlChars`, a field of a partial update (`PATCH`) has no `@NotBlank` because it may be missing. A text field is cleaned in the compact constructor with `Text.clean` (trimmed, an empty text is `null`); passwords, codes and tokens are never cleaned. A failure is `400 VALIDATION_ERROR` with `violations`. Pagination is not validated but clamped in `PageRequest` (page ≥ 1, size 1–100, default 20)
+4. **Exception Handling:** throw the built-in `jakarta.ws.rs` exceptions where the status is enough, an `ApiException` subclass (with its `ErrorCode`) where the client must tell the error apart from the generic one of the same status; the mapping to the response is centralized (the library, `ErrorCodeProcessor`, `ApiExceptionMapper`), resources do not catch exceptions to build error responses. State-less actions that return nothing (`DELETE`, avatar upload) answer `204`
 5. **Logging:** `@Slf4j` from Lombok for structured logging; never log tokens, passwords or reset codes
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
-7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
+7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). A text field of a `PATCH` is a plain `String`: not in the JSON or `null` is `null` (keep), a text replaces, an empty text clears a field that is optional (phone, a professional's description) and the service stores it as `null` (`Text.emptyToNull`). The compact constructor only strips it (`Text.strip`), so the empty text survives. A required field (names, and the title, description and price of an order) cannot be cleared: an empty name is `400 VALIDATION_ERROR` (`@Size(min = 1)`), and an empty list of categories is `400 CATEGORY_REQUIRED` (`CategoryRequiredException`, thrown by `ProfessionalService`). There is no `Optional` in a request: an explicit `null` is not told from a missing field. Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
 8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (account: avatar, email, password) or the resource's own `/me` (`/customers/me`, `/professionals/me`, `/chats/me`)
 9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
-10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. `version` is checked only between concurrent transactions on the server: the DTOs do not carry it yet, so a client-sent `version` in `PATCH` (docs/8, docs/13) is planned for 1.6.0
+10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. Every response DTO of an editable resource (`OrderResponse`, `BidResponse`, `CustomerResponse`, `ProfessionalResponse`) carries `version`, and the four `PATCH` requests that change such a resource (`/orders/{id}`, `/responses/{id}`, `/customers/me`, `/professionals/me`) must send back the version they read (`400` if missing). The service calls `VersionCheck.require(entity, version)` right after loading the entity and before changing anything; a different version is `StaleVersionException` (`409 CONFLICT`). The mappers take `version` only from a partial update (`toEntity(*UpdateRequest)`) and ignore it when something is created; Hibernate's `@Version` stays as the second line of defence for two overlapping transactions
 
 ### Debugging & Development Tips
 

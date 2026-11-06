@@ -1,44 +1,30 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.validation.constraints.Size;
 
 /**
- * DTO for requesting a password change.
+ * DTO for requesting a password change. Contains the old password, the new password, and confirmation of the
+ * new password. All fields are required.
  *
- * Contains the old password, the new password, and confirmation of the new password.
- * All fields are required.
+ * @param oldPassword The current password of the user. Must match the password stored in the system.
+ * @param newPassword The new password the user wants to set. Must be different from the old password.
+ * @param confirmPassword Confirmation of the new password. Must match {@code newPassword}.
  */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ChangePasswordRequest {
+public record ChangePasswordRequest(
+        @NotBlank
+        @Size(max = Limits.PASSWORD_MAX_LENGTH)
+        String oldPassword,
+        @NotBlank
+        @Size(min = Limits.PASSWORD_MIN_LENGTH, max = Limits.PASSWORD_MAX_LENGTH)
+        String newPassword,
+        @NotBlank
+        @Size(max = Limits.PASSWORD_MAX_LENGTH)
+        String confirmPassword) {
 
-    /**
-     * The current password of the user.
-     * Must match the password stored in the system.
-     */
-    @NotBlank
-    @ToString.Exclude
-    private String oldPassword;
-
-    /**
-     * The new password the user wants to set.
-     * Must be different from the old password.
-     */
-    @NotBlank
-    @ToString.Exclude
-    private String newPassword;
-
-    /**
-     * Confirmation of the new password.
-     * Must match {@code newPassword}.
-     */
-    @NotBlank
-    @ToString.Exclude
-    private String confirmPassword;
+    @Override
+    public String toString() {
+        return "ChangePasswordRequest[oldPassword=***, newPassword=***, confirmPassword=***]";
+    }
 }
-

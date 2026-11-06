@@ -1,7 +1,7 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.9
-- **Date:** 2026-10-31
+- **Version:** 1.10
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
 
@@ -26,7 +26,7 @@ erDiagram
     users ||--o{ refresh_tokens : issues
     users ||--o{ device_tokens : registers
     users ||--o{ orders : creates
-    users ||--o{ responses : submits
+    users ||--o{ bids : submits
     users ||--o{ reviews : "writes / receives"
     users ||--o{ review_replies : writes
     users ||--o{ chats : "customer / professional side"
@@ -43,7 +43,7 @@ erDiagram
     professional_profiles ||--o{ professional_categories : selects
     professional_profiles ||--o{ professional_cities : "works in"
 
-    orders ||--o{ responses : receives
+    orders ||--o{ bids : receives
 
     reviews ||--o{ review_replies : has
 
@@ -239,7 +239,7 @@ Source: [4 - Business logic.md § Order Lifecycle](4%20-%20Business%20logic.md#o
 ```mermaid
 erDiagram
     categories ||--o{ orders : categorizes
-    orders ||--o{ responses : receives
+    orders ||--o{ bids : receives
 ```
 
 #### `categories`
@@ -275,7 +275,7 @@ erDiagram
 | created_at | timestamp | |
 | updated_at | timestamp | |
 
-#### `responses`
+#### `bids`
 ---
 
 | Column | Type | Constraints / Notes |
@@ -290,7 +290,7 @@ erDiagram
 | updated_at | timestamp | |
 
 **Constraints:**
-- `responses`: `UNIQUE (order_id, professional_id)` — one editable response per professional per order ([FR-Responses-1](2%20-%20Requirements.md)).
+- `bids`: `UNIQUE (order_id, professional_id)` — one editable response per professional per order ([FR-Responses-1](2%20-%20Requirements.md)).
 - `categories`: flat list, **no `parent_id`** — see [A4 decision](Documentation%20Roadmap.md).
 - No `latitude`/`longitude`, no `preferred_professional_level` on `orders` — both dropped, see [A5 decision](Documentation%20Roadmap.md).
 
@@ -616,8 +616,8 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 |---|---|---|
 | `orders` | `(status, category_id, city)` | professional browse/search |
 | `orders` | `(customer_id, status)` | customer's own order list |
-| `responses` | `UNIQUE (order_id, professional_id)` | enforce one response per pair |
-| `responses` | `(order_id, created_at)` | paginated response list |
+| `bids` | `UNIQUE (order_id, professional_id)` | enforce one response per pair |
+| `bids` | `(order_id, created_at)` | paginated response list |
 | `reviews` | `UNIQUE (reviewer_id, reviewee_id) WHERE deleted_at IS NULL` | enforce one live review per pair |
 | `reviews` | `(reviewee_id, deleted_at, is_outlier)` | rating recalculation query |
 | `chats` | `UNIQUE (customer_id, professional_id)` | chat keyed by pair |
@@ -641,7 +641,7 @@ One PostgreSQL instance, one schema per service ([3 - System Design.md § Postgr
 | Schema | Tables |
 |---|---|
 | `auth` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
-| `core` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `responses`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
+| `core` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `bids`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
 | `messaging` | `chats`, `messages`, `outbox`, `processed_events` |
 | `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
 | `moderation` | the rules and decision log tables (Phase 2) |
@@ -661,9 +661,9 @@ Rows are almost never hard-deleted (soft delete, see Cross-Cutting Notes), so th
 | `refresh_tokens.user_id`, `email_verification_tokens.user_id`, `password_reset_tokens.user_id` | `users.id` (`auth`) | `CASCADE` | tokens are worthless without the account (PII scrub of a `DELETED` user) |
 | `professional_categories.professional_id`, `professional_cities.professional_id` | `professional_profiles.user_id` (`core`) | `CASCADE` | pure join rows |
 | `professional_categories.category_id` | `categories.id` | `RESTRICT` | category delete is blocked while referenced ([13 - Validation Rules.md](13%20-%20Validation%20Rules.md)) |
-| `orders.category_id`, `responses.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.chat_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
+| `orders.category_id`, `bids.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.chat_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
 
-Everything else that references `users` (`orders.customer_id`, `responses.professional_id`, `reviews.*`, `chats.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
+Everything else that references `users` (`orders.customer_id`, `bids.professional_id`, `reviews.*`, `chats.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
 
 **`citext`:** `users.email`, `categories.name` and `professional_cities.city` use the PostgreSQL `citext` type. The baseline Flyway migration of each schema that uses it runs `CREATE EXTENSION IF NOT EXISTS citext`.
 
@@ -681,6 +681,7 @@ Everything else that references `users` (`orders.customer_id`, `responses.profes
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-11-04 | **Naming:** table `responses` → `bids` (entity `Bid`): the table, the entity and the API paths use one name, and `OrderResponse` is free for the DTO of an order. Columns and constraints are unchanged. |
 | 1.9 | 2026-10-31 | **Account vs profile (decision D-1.5):** `users` keeps only authentication and account state; `display_name`, `phone`, `bio`, `avatar_file_id` move to both profile tables; new table `linked_identities` (several providers per account, raw `claims`) replaces `users.google_id`; `users.role` is `NOT NULL` (no `NULL` state, no `temp_token`); an account has exactly one profile; every account needs a verified email. |
 | 1.8 | 2026-10-28 | **`version`:** type `bigint` instead of `int`, and present on every entity table, because the code declares `id` (UUID) and `version` in one base class (`BaseEntity`) that all entities extend. |
 | 1.7 | 2026-10-28 | **Naming:** table `conversations` → `chats`, `conversation_id` → `chat_id`. |

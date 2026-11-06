@@ -3,6 +3,7 @@ package fit.biejk.service;
 import fit.biejk.dto.ResetPasswordRequest;
 import fit.biejk.entity.User;
 import fit.biejk.entity.UserRole;
+import fit.biejk.exception.InvalidCredentialsException;
 import fit.biejk.exception.InvalidResetCodeException;
 import fit.biejk.exception.TooManyAttemptsException;
 import fit.biejk.utilits.CryptoUtils;
@@ -124,15 +125,18 @@ public class AuthService {
      */
     public String login(final String email, final String password, final UserRole role) {
         log.info("Login: email={}, role={}", email, role);
-        User user = userService.getByEmail(email);
+        User user = userService.findByEmail(email).orElseThrow(() -> {
+            log.warn("Login failed, unknown email");
+            return new InvalidCredentialsException();
+        });
         if (!CryptoUtils.verify(password, user.getPassword())) {
-            log.error("Invalid password");
-            throw new IllegalArgumentException("Invalid password");
+            log.warn("Login failed, invalid password");
+            throw new InvalidCredentialsException();
         }
 
         if (user.getRole() != role) {
-            log.error("Invalid role: expected={}, actual={}", role, user.getRole());
-            throw new IllegalArgumentException("Invalid role");
+            log.warn("Login failed, invalid role: expected={}, actual={}", role, user.getRole());
+            throw new InvalidCredentialsException();
         }
         return tokenService.generateToken(user);
     }
@@ -220,26 +224,26 @@ public class AuthService {
      */
     @Transactional
     public String resetPassword(final ResetPasswordRequest request) {
-        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
             log.warn("New password and confirmation do not match");
             throw new BadRequestException("Passwords do not match");
         }
 
-        String email = normalizeEmail(request.getEmail());
+        String email = normalizeEmail(request.email());
         String codeKey = RESET_CODE_PREFIX + email;
         String failureKey = RESET_FAILURE_PREFIX + email;
         ensureNotLocked(failureKey);
 
         Response saved = redisClient.get(codeKey);
-        if (saved == null || !CryptoUtils.verify(request.getVerificationCode(), saved.toString())) {
+        if (saved == null || !CryptoUtils.verify(request.verificationCode(), saved.toString())) {
             registerFailure(codeKey, failureKey);
             log.warn("Invalid or expired password reset code");
             throw new InvalidResetCodeException();
         }
         redisClient.del(List.of(codeKey, failureKey));
 
-        User user = userService.getByEmail(request.getEmail());
-        User updatedUser = userService.updatePassword(user.getId(), request.getNewPassword());
+        User user = userService.getByEmail(request.email());
+        User updatedUser = userService.updatePassword(user.getId(), request.newPassword());
 
         log.debug("Updated user with ID={}", updatedUser.getId());
 

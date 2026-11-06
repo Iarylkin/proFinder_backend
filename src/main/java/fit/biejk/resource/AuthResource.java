@@ -42,7 +42,7 @@ public class AuthResource {
             @Valid final AuthRequest request
     ) {
         log.info("Register request: {}", request);
-        String result = authService.register(request.getEmail(), request.getPassword(), request.getRole());
+        String result = authService.register(request.email(), request.password(), request.role());
         AuthResponse response = new AuthResponse(result);
         log.info("Register response: {}", response);
 
@@ -61,7 +61,7 @@ public class AuthResource {
     @PermitAll
     public Response login(@Valid final AuthRequest request) {
         log.info("Login request: {}", request);
-        String result = authService.login(request.getEmail(), request.getPassword(), request.getRole());
+        String result = authService.login(request.email(), request.password(), request.role());
         AuthResponse response = new AuthResponse(result);
         log.info("Login response: {}", response);
         return Response.ok(response).build();
@@ -77,7 +77,7 @@ public class AuthResource {
     @Path("/password-recovery")
     @PermitAll
     public Response createRecoveryRequest(@Valid final ForgotPasswordRequest request) {
-        authService.forgotPassword(request.getEmail());
+        authService.forgotPassword(request.email());
         return Response.accepted().build();
     }
 

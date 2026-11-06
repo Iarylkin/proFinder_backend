@@ -1,7 +1,7 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.5
-- **Date:** 2026-10-31
+- **Version:** 1.7
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
 
@@ -26,15 +26,15 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | Class | Layer | Responsibility |
 |---|---|---|
 | `Order` | Entity | maps to `orders` (see [file 6](6%20-%20Database%20Schema.md#2-orders--categories)) |
-| `OrderResponse` | Entity | maps to `responses` |
+| `Bid` | Entity | maps to `bids` |
 | `OrderRepository` | Repository | `findActiveByCategoryAndCity()`, `findByCustomer()`, `findExpiring(before)` |
-| `OrderResponseRepository` | Repository | `findByOrder(sort)`, `findByOrderAndProfessional()` (upsert lookup) |
+| `BidRepository` | Repository | `findByOrder(sort)`, `findByOrderAndProfessional()` (upsert lookup) |
 | `OrderService` | Service | `createDraft()`, `updateDraft()` / `updateActive()`, `publish()`, `close()`, `extendExpiration()`, `autoCloseForAccountAction(userId)` — called from `ReportService`/account deletion |
-| `OrderResponseService` | Service | `submitOrEdit()` (one per professional per order, `409 ORDER_CLOSED`/`409 ORDER_EXPIRED` checks), `listForOrder(sortBy)` filtering out banned/suspended/deleted professionals |
+| `BidService` | Service | `submitOrEdit()` (one per professional per order, `409 ORDER_CLOSED`/`409 ORDER_EXPIRED` checks), `listForOrder(sortBy)` filtering out banned/suspended/deleted professionals |
 | `OrderController` | Controller | `POST /orders`, `PATCH /orders/{id}` (edit, publish, close, extend), `DELETE /orders/{id}` (draft only), `GET /orders/{id}`, `GET /orders` |
-| `OrderResponseController` | Controller | `POST /orders/{id}/responses`, `GET /orders/{id}/responses` |
-| `OrderCreateRequestDto`, `OrderUpdateRequestDto`, `OrderDto`, `OrderListItemDto` | DTO | order request/response shapes |
-| `OrderResponseCreateRequestDto`, `OrderResponseDto` | DTO | response request/response shapes |
+| `BidController` | Controller | `POST /orders/{id}/bids`, `GET /orders/{id}/bids` |
+| `OrderCreateRequest`, `OrderUpdateRequest`, `OrderResponse`, `OrderListItemResponse` | DTO | order request/response shapes |
+| `BidCreateRequest`, `BidResponse` | DTO | response request/response shapes |
 
 ### 1.2 Reviews
 ---
@@ -47,8 +47,8 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ReviewReplyRepository` | Repository | `findByReview(review)` |
 | `ReviewService` | Service | `postOrEdit()` (upsert one per pair), `delete()`, `recalcRating(revieweeId, direction)` (synchronous, same transaction), `reply()` (rejects replies on `PROFESSIONAL`-direction reviews) |
 | `ReviewController` | Controller | `POST /reviews`, `PATCH /reviews/{id}`, `DELETE /reviews/{id}`, `GET /users/{id}/reviews`, `POST /reviews/{id}/replies` |
-| `ReviewCreateRequestDto`, `ReviewDto` | DTO | review request/response |
-| `ReviewReplyCreateRequestDto`, `ReviewReplyDto` | DTO | reply request/response |
+| `ReviewCreateRequest`, `ReviewResponse` | DTO | review request/response |
+| `ReviewReplyCreateRequest`, `ReviewReplyResponse` | DTO | reply request/response |
 
 ### 1.3 Profiles & Categories
 ---
@@ -66,7 +66,7 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ProfileController` | Controller | `GET/PATCH /customers/me`, `GET/PATCH /professionals/me`, `GET /professionals/{id}` |
 | `CategoryController` | Controller | `POST/PATCH/DELETE /categories`, `GET /categories` |
 | `PortfolioController` | Controller | `POST /users/me/portfolio`, `DELETE /users/me/portfolio/{id}` |
-| `ProfessionalProfileDto`, `CustomerProfileDto`, `ProfileUpdateRequestDto`, `CategoryDto`, `PortfolioPhotoDto`, `PortfolioUploadRequestDto` | DTO | profile/category/portfolio shapes |
+| `ProfessionalResponse`, `CustomerResponse`, `ProfileUpdateRequest`, `CategoryResponse`, `PortfolioPhotoResponse`, `PortfolioUploadRequest` | DTO | profile/category/portfolio shapes |
 
 ### 1.4 Reports & Moderation
 ---
@@ -84,7 +84,7 @@ Source: [3 - System Design.md § 2. Core API](3%20-%20System%20Design.md), [4 - 
 | `ReportController` | Controller | `POST /reports`, `GET /reports` (moderator queue), `POST /reports/{id}/decision` |
 | `BanAppealController` | Controller | `POST /ban-appeals`, `POST /ban-appeals/{id}/decision` |
 | `BlockController` | Controller | `POST/DELETE /users/{id}/block` |
-| `ReportCreateRequestDto`, `ReportDto`, `ReportDecisionRequestDto`, `BanAppealCreateRequestDto`, `BanAppealDto`, `BlockDto` | DTO | request/response shapes |
+| `ReportCreateRequest`, `ReportResponse`, `ReportDecisionRequest`, `BanAppealCreateRequest`, `BanAppealResponse`, `BlockResponse` | DTO | request/response shapes |
 
 ### 1.5 Search
 ---
@@ -97,7 +97,7 @@ No dedicated entities — reads `Order`/`ProfessionalProfile` via their reposito
 | `SearchIndexConsumer` | Service (RabbitMQ `@Incoming`) | consumes `search.professional_reindex` / `search.order_reindex` (see [9 - Event Catalog.md](9%20-%20Event%20Catalog.md)), upserts ES idempotently on `version` |
 | `SearchService` | Service | builds filter/sort/`function_score` queries, applies the 60s Redis result-page cache |
 | `SearchController` | Controller | `GET /search/professionals` |
-| `SearchQueryDto`, `SearchResultCardDto` | DTO | query params / result card shape |
+| `SearchQueryRequest`, `SearchResultCardResponse` | DTO | query params / result card shape |
 
 ### 1.6 Files
 ---
@@ -108,7 +108,7 @@ No dedicated entities — reads `Order`/`ProfessionalProfile` via their reposito
 | `FileAssetRepository` | Repository | standard finders |
 | `FileStorageService` | Service | upload to MinIO, magic-byte type validation, EXIF strip, JPEG re-encode/resize per [File Storage rules](4%20-%20Business%20logic.md#file-storage) |
 | `FileController` | Controller | `POST /files` (multipart), `GET /files/{id}`, `DELETE /files/{id}` |
-| `FileUploadResponseDto` | DTO | uploaded file metadata + URL |
+| `FileUploadResponse` | DTO | uploaded file metadata + URL |
 
 ### 1.7 Event Outbox (cross-cutting)
 ---
@@ -150,7 +150,7 @@ Source: [3 - System Design.md § 3. Auth Service](3%20-%20System%20Design.md), [
 | `RegistrationService` | Service | `registerWithEmail()`, `verifyEmail()`, `resendVerification()` (rate-limited 1/60s, ≤5/hr) |
 | `PasswordService` | Service | bcrypt hash/verify, `requestReset()`, `resetPassword()` (15-min link) |
 | `AuthController` | Controller | `POST /auth/register`, `POST /auth/verify-email`, `POST /auth/resend-verification`, `POST /auth/forgot-password`, `POST /auth/reset-password` |
-| `RegisterRequestDto`, `VerifyEmailRequestDto`, `ForgotPasswordRequestDto`, `ResetPasswordRequestDto` | DTO | request shapes |
+| `RegisterRequest`, `VerifyEmailRequest`, `ForgotPasswordRequest`, `ResetPasswordRequest` | DTO | request shapes |
 
 ### 2.2 Login & OAuth
 ---
@@ -161,7 +161,7 @@ Source: [3 - System Design.md § 3. Auth Service](3%20-%20System%20Design.md), [
 | `OAuthService` | Service | provider code exchange, finds or creates the account by `(provider, subject)`, links an identity to a matching verified email, `unlink()` (needs another way to sign in), creates the account with the role from `state` |
 | `AuthController` | Controller | `POST /auth/login` |
 | `OAuthController` | Controller | `GET /auth/{provider}/login`, `GET /auth/{provider}/link`, `GET /auth/{provider}/callback`, `DELETE /auth/identities/{provider}` |
-| `LoginRequestDto`, `LoginResponseDto` | DTO | request/response shapes |
+| `LoginRequest`, `LoginResponse` | DTO | request/response shapes |
 
 ### 2.3 Sessions & Tokens
 ---
@@ -173,7 +173,7 @@ Source: [3 - System Design.md § 3. Auth Service](3%20-%20System%20Design.md), [
 | `TokenService` | Service | `issueAccessToken()` (15-min JWT, role+status claims), `issueRefreshToken()`, `rotate()`, `detectReuse()` (revokes whole family), `revokeAll()` |
 | `SessionDenylistService` | Service | Redis wrapper for `v1:denylist:{user_id}` — set on ban/suspend/role change/password change/logout-all |
 | `TokenController` | Controller | `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all` |
-| `RefreshRequestDto`, `TokenPairResponseDto` | DTO | request/response shapes |
+| `RefreshRequest`, `TokenPairResponse` | DTO | request/response shapes |
 
 
 ## 3. Messaging Service (port 8082)
@@ -195,7 +195,7 @@ Source: [3 - System Design.md § 4. Messaging Service](3%20-%20System%20Design.m
 | `ChatController` | Controller | `GET /chats/me`, `GET /chats/{id}/messages` |
 | `MessageWebSocketEndpoint` | Controller (WebSocket) | connect/auth handshake, send, delivery-receipt events (Sent→Delivered→Read) |
 | `MessageController` | Controller | `POST /chats/{id}/messages` (HTTP fallback), `DELETE /messages/{id}` |
-| `ChatDto`, `MessageDto`, `SendMessageRequestDto`, `MessageReceiptDto` | DTO | request/response shapes |
+| `ChatResponse`, `MessageResponse`, `SendMessageRequest`, `MessageReceiptResponse` | DTO | request/response shapes |
 
 
 ## 4. Notification Service (port 8083)
@@ -215,7 +215,7 @@ Source: [3 - System Design.md § 5. Notification Service](3%20-%20System%20Desig
 | `PreferenceService` | Service | get/update the `(user, event_type, channel)` matrix |
 | `NotificationController` | Controller | `GET /notifications`, `POST /notifications/mark-read`, `POST /notifications/mark-all-read` |
 | `PreferenceController` | Controller | `GET/PATCH /users/me/notification-preferences` |
-| `NotificationDto`, `NotificationPreferenceDto` | DTO | response/request shapes |
+| `NotificationResponse`, `NotificationPreferenceResponse` | DTO | response/request shapes |
 
 ### 4.2 Device Tokens & Push
 ---
@@ -227,7 +227,7 @@ Source: [3 - System Design.md § 5. Notification Service](3%20-%20System%20Desig
 | `PushNotificationService` | Service | sends via FCM, deep-link payload `{type, entity_type, entity_id, url}`, deletes token on `UNREGISTERED`/`INVALID` |
 | `DeviceTokenService` | Service | `register()`/`refresh()` (`onNewToken`), `invalidate()`, `purgeInactive()` (`@Scheduled`, 60 days) |
 | `DeviceTokenController` | Controller | `POST /users/me/device-tokens`, `DELETE /users/me/device-tokens/{id}` |
-| `DeviceTokenRegisterDto` | DTO | request shape |
+| `DeviceTokenRegisterRequest` | DTO | request shape |
 
 ### 4.3 Email Delivery
 ---
@@ -263,7 +263,7 @@ Source: [3 - System Design.md § 5a. Moderation Service](3%20-%20System%20Design
 |---|---|---|
 | `SyncModerationCheckService` | Service | spam-word / profanity-dictionary / URL-blocklist regex checks, <200ms, called synchronously from Core API before storing a review/message |
 | `ModerationController` | Controller | `POST /moderation/check-text`, `POST /moderation/check-url` |
-| `ModerationCheckRequestDto`, `ModerationCheckResultDto` | DTO | request/response shapes |
+| `ModerationCheckRequest`, `ModerationCheckResultResponse` | DTO | request/response shapes |
 
 ### 5.2 Async Checks — Phase 2, not built in MVP
 ---
@@ -293,6 +293,8 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-04 | **Naming:** the profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse` and `ProfessionalResponse`, to match the code (a record cannot extend a class, so the two update requests have no common parent). |
+| 1.6 | 2026-11-04 | **Naming:** the entity of a professional's response is `Bid` (`BidRepository`, `BidService`, `BidController`, table `bids`) so `OrderResponse` does not clash with the DTO of an order; DTOs are named by direction, `*Request` and `*Response`, with no `*Dto`. |
 | 1.5 | 2026-10-31 | **D-1.5:** `OAuthService` / `OAuthController` work with several providers and no role-selection step; `RoleSelectionRequestDto` removed; `ProfileController` serves per-role `/…/me` endpoints. |
 | 1.4 | 2026-10-28 | **Naming:** *conversation* → *chat* (`ChatService`, `ChatController`, `ChatDto`); the response entity is `OrderResponse` (not `Response`, which clashes with the JAX-RS type); the order DTO is `OrderDto`; own-user paths are under `/users/me`; order publish, close and extend are one `PATCH /orders/{id}`. |
 | 1.3 | 2026-10-27 | **D-1.3:** DTOs are Java records serialized with Jackson; records with secrets mask `toString`. |

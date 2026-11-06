@@ -1,10 +1,12 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.User;
+import fit.biejk.exception.EmailAlreadyRegisteredException;
 import fit.biejk.repository.UserRepository;
 import fit.biejk.utilits.CryptoUtils;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,7 @@ public class UserService {
      *
      * @param user the user to create
      * @return the created user
-     * @throws IllegalArgumentException if the email is already registered
+     * @throws EmailAlreadyRegisteredException if the email is already registered
      */
     @Transactional
     public User create(final User user) {
@@ -53,13 +55,13 @@ public class UserService {
      * Checks if the given email is unique.
      *
      * @param email email to check
-     * @throws IllegalArgumentException if the email is already taken
+     * @throws EmailAlreadyRegisteredException if the email is already taken
      */
     public void checkUniqueEmail(final String email) {
         log.info("Check unique email: {}", email);
         if (userRepository.findByEmail(email).isPresent()) {
             log.error("User {} already exists", email);
-            throw new IllegalArgumentException("User " + email + " already exists");
+            throw new EmailAlreadyRegisteredException();
         }
     }
 
@@ -193,10 +195,10 @@ public class UserService {
                                final String confirmPassword) {
         User user = getById(userId);
         if (!CryptoUtils.verify(currentPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Invalid old password");
+            throw new BadRequestException("Invalid old password");
         }
         if (!newPassword.equals(confirmPassword)) {
-            throw new IllegalArgumentException("Passwords do not match");
+            throw new BadRequestException("Passwords do not match");
         }
         return updatePassword(userId, newPassword);
     }
@@ -215,10 +217,10 @@ public class UserService {
                             final String currentPassword) {
         User user = getById(userId);
         if (user.getEmail().equalsIgnoreCase(newEmail)) {
-            throw new IllegalArgumentException("New email is same as old email");
+            throw new BadRequestException("New email is same as old email");
         }
         if (!CryptoUtils.verify(currentPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Invalid password");
+            throw new BadRequestException("Invalid password");
         }
         checkUniqueEmail(newEmail);
         String oldEmail = user.getEmail();

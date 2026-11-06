@@ -1,7 +1,7 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.4
-- **Date:** 2026-10-31
+- **Version:** 1.5
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
 
@@ -135,7 +135,7 @@ sequenceDiagram
                 Core-->>U: 403 FORBIDDEN
             else authorized
                 Core->>PG: SELECT ... (the actual work)
-                Core-->>U: 200 OrderDto
+                Core-->>U: 200 OrderResponse
             end
         end
     end
@@ -205,13 +205,13 @@ sequenceDiagram
     Auth->>PG: SELECT linked_identities WHERE provider = GOOGLE AND subject = ?
     alt identity known
         Auth->>PG: refresh claims
-        Auth-->>U: 200 LoginResponseDto
+        Auth-->>U: 200 LoginResponse
     else new identity
         alt email missing or not verified by the provider
             Auth-->>U: 400 PROVIDER_EMAIL_REQUIRED
         else existing account with the same verified email
             Auth->>PG: INSERT linked_identities (user_id = that account)
-            Auth-->>U: 200 LoginResponseDto
+            Auth-->>U: 200 LoginResponse
         else no account and no role in state
             Auth-->>U: 404 ACCOUNT_NOT_FOUND (client sends the user to sign-up)
         else brand new
@@ -219,7 +219,7 @@ sequenceDiagram
             Auth->>PG: INSERT linked_identities (claims)
             Auth->>Core: account-created event (role, display name and picture URL from the claims)
             Core->>PG: INSERT the profile of that role (avatar fetched through the avatar pipeline, best effort)
-            Auth-->>U: 200 LoginResponseDto
+            Auth-->>U: 200 LoginResponse
         end
     end
 ```
@@ -305,7 +305,7 @@ sequenceDiagram
         Core->>PG: INSERT outbox (order.published)
         Core->>PG: INSERT outbox (search.order_reindex, reason=published)
         Core->>PG: COMMIT
-        Core-->>C: 200 OrderDto (status ACTIVE)
+        Core-->>C: 200 OrderResponse (status ACTIVE)
     end
 
     Note over Core,MQ: outbox poller
@@ -346,7 +346,7 @@ sequenceDiagram
     participant MQ as RabbitMQ
     participant Notif as Notification Service
 
-    P->>Core: POST /orders/{id}/responses {quote_price, message}
+    P->>Core: POST /orders/{id}/bids {quote_price, message}
     Core->>Core: authz — role PROFESSIONAL, profile_status ACTIVE, email verified
     alt profile INCOMPLETE
         Core-->>P: 409 PROFILE_INCOMPLETE
@@ -363,21 +363,21 @@ sequenceDiagram
             Core->>PG: SELECT responses WHERE order_id=? AND professional_id=?
             alt first submit
                 Core->>PG: INSERT responses
-                Core->>PG: INSERT outbox (response.created)
+                Core->>PG: INSERT outbox (bid.created)
             else editing existing
                 Core->>PG: UPDATE responses SET quote_price, message, updated_at
-                Core->>PG: INSERT outbox (response.edited)
+                Core->>PG: INSERT outbox (bid.edited)
             end
             Core->>PG: COMMIT
-            Core-->>P: 201 / 200 OrderResponseDto
+            Core-->>P: 201 / 200 BidResponse
         end
     end
 
-    Core->>MQ: publish response.created OR response.edited (via outbox)
+    Core->>MQ: publish bid.created OR bid.edited (via outbox)
     MQ->>Notif: orders.notifications
-    alt response.created
+    alt bid.created
         Notif->>Notif: notify customer — push + email + in-app
-    else response.edited
+    else bid.edited
         Notif->>Notif: notify customer — in-app only (D1 decision)
     end
 ```
@@ -472,7 +472,7 @@ sequenceDiagram
     Core->>Core: authz + email verified
     opt text is present
         Core->>Mod: POST /moderation/check-text {text, type: review} (internal, <200ms)
-        Mod-->>Core: ModerationCheckResultDto {approved}
+        Mod-->>Core: ModerationCheckResultResponse {approved}
         opt not approved
             Core-->>C: 400 VALIDATION_ERROR (content)
         end
@@ -489,7 +489,7 @@ sequenceDiagram
     Core->>PG: INSERT outbox (search.professional_reindex, reason=rating_recalc)
     Core->>PG: COMMIT
     Core->>Redis: DEL v1:profile:pro:{reviewee_id}
-    Core-->>C: 201 / 200 ReviewDto
+    Core-->>C: 201 / 200 ReviewResponse
 
     Core->>MQ: publish review.posted + search.professional_reindex (via outbox)
     MQ->>Idx: search.index
@@ -609,7 +609,7 @@ sequenceDiagram
         Core-->>RP: 409 DUPLICATE_REPORT
     else ok
         Core->>PG: INSERT reports (status=submitted) + INSERT outbox (report.created)
-        Core-->>RP: 201 ReportDto
+        Core-->>RP: 201 ReportResponse
     end
     Core->>MQ: publish report.created (via outbox)
     MQ->>Notif: reports.notifications
@@ -631,7 +631,7 @@ sequenceDiagram
         Core->>PG: INSERT outbox: search.professional_reindex (hide)  — and/or one search.order_reindex per closed order
         Core->>PG: COMMIT
         Core->>Redis: SET v1:denylist:{banned_user_id} EX 900 + revoke refresh tokens
-        Core-->>M: 200 ReportDto
+        Core-->>M: 200 ReportResponse
     end
 
     Core->>MQ: publish the batch (via outbox)
@@ -711,6 +711,7 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-11-04 | **Naming:** `POST /orders/{id}/bids`, events `bid.created` / `bid.edited`, DTOs named by direction (`BidResponse`, `OrderResponse`, ...), to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** A5 rewritten: the role is chosen before the provider redirect (signed `state`), identities live in `linked_identities`, the account and its profile are created together, no `temp_token` or `POST /auth/role`. |
 | 1.3 | 2026-10-28 | **Naming:** *conversation* → *chat*; `PATCH /orders/{id}` replaces `/publish`; `DELETE /users/me`; DTO names `OrderDto` and `OrderResponseDto`. |
 | 1.2 | 2026-10-27 | **D-1.4:** `closed_reason` value `account_action` → `ACCOUNT_ACTION`. |

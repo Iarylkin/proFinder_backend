@@ -1,6 +1,6 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
@@ -31,7 +31,7 @@ public class CustomerProfile extends Profile {
      * </p>
      */
     @OneToMany(mappedBy = "customer")
-    @JsonbTransient
+    @JsonIgnore
     private List<Order> orders;
 
     /**

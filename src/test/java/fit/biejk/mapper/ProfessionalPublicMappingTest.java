@@ -1,6 +1,6 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.ProfessionalPublicDto;
+import fit.biejk.dto.ProfessionalPublicResponse;
 import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.entity.User;
 import org.junit.jupiter.api.Test;
@@ -25,11 +25,11 @@ class ProfessionalPublicMappingTest {
         professional.setUser(user);
         professional.setPhoneNumber(PHONE);
 
-        ProfessionalPublicDto dto = mapper.toPublicDto(professional);
+        ProfessionalPublicResponse dto = mapper.toPublicDto(professional);
 
-        assertEquals(PHONE, dto.getPhoneNumber());
+        assertEquals(PHONE, dto.phoneNumber());
         assertFalse(dto.toString().contains(EMAIL));
-        assertFalse(Arrays.stream(ProfessionalPublicDto.class.getDeclaredFields())
+        assertFalse(Arrays.stream(ProfessionalPublicResponse.class.getDeclaredFields())
                 .anyMatch(field -> field.getName().equals("email")));
     }
 }

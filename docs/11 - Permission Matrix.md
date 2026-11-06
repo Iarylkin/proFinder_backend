@@ -1,7 +1,7 @@
 # ProFinder — Permission Matrix
 
-- **Version:** 1.4
-- **Date:** 2026-10-31
+- **Version:** 1.5
+- **Date:** 2026-11-04
 - **Status:** Stable
 - **Purpose:** One table of who can do what — roles × actions, plus the account-status and ownership conditions layered on top. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 ("permission matrix (role × action)").
 
@@ -59,8 +59,8 @@ A `MODERATOR` is **not** also a customer or professional. Moderator accounts don
 | View a single order | `GET /orders/{id}` | ✅ | ✅ | ✅ |
 | List / browse own orders | `GET /orders?status=` | ✅ own | — | — |
 | Browse **ACTIVE** orders to respond to | `GET /orders?category_id=&city=…` | — | ✅ (own categories/cities only) | ✅ |
-| Submit / edit a response | `POST /orders/{id}/responses` | ⛔ | ✅ ✎ + `profile_status=ACTIVE` | ⛔ |
-| View an order's responses | `GET /orders/{id}/responses` | ✅ own order | ⛔ (sealed bids) | ✅ |
+| Submit / edit a response | `POST /orders/{id}/bids` | ⛔ | ✅ ✎ + `profile_status=ACTIVE` | ⛔ |
+| View an order's responses | `GET /orders/{id}/bids` | ✅ own order | ⛔ (sealed bids) | ✅ |
 
 ### Reviews
 ---
@@ -159,6 +159,7 @@ Everything a hypothetical Admin would do (category management is the concrete ca
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5 | 2026-11-04 | **Paths:** `POST|GET /orders/{id}/bids` (was `/responses`), to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** per-role profile endpoints; the role is chosen at sign-up, not by `POST /auth/role`. |
 | 1.3 | 2026-10-28 | **Paths:** `PATCH /orders/{id}` for publish, close and extend; `GET /chats/me`, `/chats/{id}/messages`; `/users/me/...` for profile, portfolio, preferences, device tokens and account deletion. |
 | 1.2 | 2026-10-26 | Added `GET /customers/{id}` (public customer view, any authenticated user, no contact data). |

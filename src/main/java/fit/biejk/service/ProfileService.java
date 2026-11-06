@@ -3,6 +3,7 @@ package fit.biejk.service;
 import fit.biejk.entity.Profile;
 import fit.biejk.entity.User;
 import fit.biejk.repository.ProfileRepository;
+import fit.biejk.validation.Text;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.transaction.Transactional;
@@ -80,7 +81,8 @@ public class ProfileService {
      * are not {@code null} change. Meant to be called inside the transaction of the caller.
      *
      * @param profile the profile to change
-     * @param changes a profile holding only the requested changes
+     * @param changes a profile holding only the requested changes; a phone that is the empty text clears the
+     *                field (the names are required, the request validation rejects an empty one)
      */
     public void updatePersonalData(final Profile profile, final Profile changes) {
         if (changes.getFirstName() != null) {
@@ -90,7 +92,7 @@ public class ProfileService {
             profile.setLastName(changes.getLastName());
         }
         if (changes.getPhoneNumber() != null) {
-            profile.setPhoneNumber(changes.getPhoneNumber());
+            profile.setPhoneNumber(Text.emptyToNull(changes.getPhoneNumber()));
         }
         if (changes.getLocation() != null) {
             profile.setLocation(locationService.getById(changes.getLocation().getId()));

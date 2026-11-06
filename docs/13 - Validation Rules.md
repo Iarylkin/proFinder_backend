@@ -1,11 +1,11 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.6
-- **Date:** 2026-10-31
+- **Version:** 1.10
+- **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
-**Mechanism:** Jakarta Bean Validation ([2 § Tech Stack](2%20-%20Requirements.md)) on request DTOs. A failure returns `400 VALIDATION_ERROR` with `details` as a `{field: reason}` map ([8 § Response Envelope](8%20-%20API%20Specification.md)). Domain rules that need a DB lookup (uniqueness, existence, cross-row invariants) are checked in the service layer and may raise a domain-specific code.
+**Mechanism:** Jakarta Bean Validation ([2 § Tech Stack](2%20-%20Requirements.md)) on request DTOs. A failure returns `400 VALIDATION_ERROR` with `violations`, a list of `{field, in, message}` ([8 § Error Body](8%20-%20API%20Specification.md)). Domain rules that need a DB lookup (uniqueness, existence, cross-row invariants) are checked in the service layer and may raise a domain-specific code.
 
 > All 6 spec gaps identified in v1.0 were resolved in v1.1 (see §12).
 
@@ -20,8 +20,10 @@ Applied everywhere, not repeated per field below.
 |---|---|
 | **Trim** | All string fields are trimmed of leading/trailing whitespace before validation and storage. |
 | **Empty = null** | An empty string after trim is treated as `null` (and then fails `@NotBlank` if required). |
+| **`PATCH` fields** | A field that is not in the body is not changed. `null` is the same as not sent. An optional text field (phone, a professional's description) is **cleared** by an empty text `""`; a required field (first name, last name, location, the categories of a professional, the fields of an order) cannot be cleared, only replaced: an empty name is `VALIDATION_ERROR`, an empty list of categories is `CATEGORY_REQUIRED`. The text is checked (length, characters) only when it is not empty. |
 | **Control chars** | Reject `U+0000`–`U+001F` and `U+007F` except `\n` / `\t` inside multi-line text fields (`bio`, `description`, review `text`, message `text`, report `description`, `notes`). |
 | **UUID path/body params** | Must match the UUID format before any DB lookup; a malformed id → `400 VALIDATION_ERROR`, never `404`. |
+| **Malformed body** | A body that is not valid JSON, or has a value of the wrong type or format (for example a date that is not ISO 8601), is `400 VALIDATION_ERROR` without `violations`. |
 | **Unknown JSON fields** | Ignored (Jackson `FAIL_ON_UNKNOWN_PROPERTIES = false`) — gap ⑤. |
 | **Numbers** | `NaN` / `Infinity` rejected. Money fields: max 2 decimal places, non-negative. |
 | **Timestamps in requests** | ISO-8601; no per-user timezone handling ([A5](Documentation%20Roadmap.md)). |
@@ -35,7 +37,7 @@ Applied everywhere, not repeated per field below.
 | Field | Endpoint(s) | Required | Constraints | Error |
 |---|---|---|---|---|
 | `email` | register, login, forgot-password | ✅ | `@Email`; ≤ 254 chars; normalized lowercase; case-insensitive unique (register). Disposable-domain blocklist (config, empty in MVP). No MX check. | `VALIDATION_ERROR`; `EMAIL_ALREADY_REGISTERED` (register) |
-| `password` | register, reset-password | ✅ | ≥ `password_min_length` (default **8**); complexity: ≥1 upper, ≥1 lower, ≥1 digit, ≥1 special — each toggle config, all on by default; ≤ **128**; no reuse restriction; not equal to the email local-part. Hashed bcrypt cost 12. | `VALIDATION_ERROR` |
+| `password` | register, login, reset-password | ✅ | ≥ `password_min_length` (default **8**); complexity: ≥1 upper, ≥1 lower, ≥1 digit, ≥1 special — each toggle config, all on by default; ≤ **128**; no reuse restriction; not equal to the email local-part. Hashed bcrypt cost 12. | `VALIDATION_ERROR` |
 | `display_name` | register, profile update (stored in the profile) | ✅ | **2–50** chars (③); letters/marks/spaces/`.` `'` `-` and digits; no URL-like strings. This is also the "nickname". For a Google sign-up the value comes from the Google profile name, cleaned to this format (fallback: the email local-part). | `VALIDATION_ERROR` |
 | `role` | register, `GET /auth/{provider}/login` | ✅ | ∈ {`CUSTOMER`, `PROFESSIONAL`} (never `MODERATOR` via these paths); settable once. Required at registration; a provider sign-up sends it as `role` in the login request and it travels in the signed `state`. | `VALIDATION_ERROR`; `ROLE_IMMUTABLE` |
 | `token` (verify / reset / unsubscribe) | verify-email, reset-password, unsubscribe | ✅ | opaque string, exact match, single-use, unexpired (verify 24 h, reset 15 min). | `VERIFICATION_TOKEN_INVALID` / `RESET_TOKEN_INVALID` |
@@ -49,7 +51,7 @@ Applied everywhere, not repeated per field below.
 
 | Field | Applies to | Required | Constraints | Error |
 |---|---|---|---|---|
-| `phone` | customer, professional | ❌ | E.164-style; country code + national number validated against the selected country's format; ≤ **20** chars. | `VALIDATION_ERROR` |
+| `phone` | customer, professional | ❌ | E.164-style; country code + national number validated against the selected country's format; ≤ **20** chars. *Current code (the per-country check needs a phone library and comes with the profiles in 2.5.0):* only digits, a leading `+`, spaces, brackets and hyphens, ≤ **20** chars. | `VALIDATION_ERROR` |
 | `city` (customer) | customer profile | ❌ | ≤ **100** chars; free text (no gazetteer). | `VALIDATION_ERROR` |
 | `bio` | customer, professional | ❌ | ≤ **2000** chars (`bio_max_length` config). | `VALIDATION_ERROR` |
 | `preferred_category_ids` | customer profile | ❌ | array of UUID; each must exist in `categories`; ≤ **50** entries; frontend hint only. | `VALIDATION_ERROR` |
@@ -73,7 +75,7 @@ Applied everywhere, not repeated per field below.
 | `description` | ✅ | **20–5000** chars (②). | `VALIDATION_ERROR` |
 | `budget_min` / `budget_max` | ❌ | `numeric(10,2)`; ≥ 0; if both present, `min ≤ max`; ≤ 2 decimals. | `VALIDATION_ERROR` |
 | `city` | ✅ | city string; ≤ **100** chars. | `VALIDATION_ERROR` |
-| `preferred_date` | ❌ | date; must be today or later (⑥). | `VALIDATION_ERROR` |
+| `preferred_date` | ❌ | date; must be today or later (⑥). *Current code:* the field is `deadline`, a date and time in ISO 8601 that must not be earlier than now on the clock of the server (so a time earlier today is rejected); whose "today" it is (the time zone) is decided in D-7.1. | `VALIDATION_ERROR` |
 | `version` (on `PATCH`) | ✅ | integer; must equal the current row version (optimistic lock). | `CONFLICT` |
 | `expires_at` (extend, `PATCH /orders/{id}`) | ❌ | later than the current `expires_at` and at most **90 days** later (was `additional_days` 1–90); not allowed on a `CLOSED` order. | `VALIDATION_ERROR`; `ORDER_CLOSED` |
 | default expiry window | — | `order_default_expiry_days` config, default **7**. | — |
@@ -195,6 +197,10 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-11-06 | **`PATCH` fields:** `null` no longer clears a text field (it is the same as not sent); an empty text `""` clears an optional field (phone, description); required fields can only be replaced. Reason: a plain `String` in the request instead of `Optional` read by a custom deserializer. |
+| 1.9 | 2026-11-06 | **Error body is RFC 9457:** a failed check returns `violations` (`field`, `in`, `message`) instead of the `details` map ([8 - API Specification.md](8%20-%20API%20Specification.md) 1.19). |
+| 1.8 | 2026-11-04 | **Sync with the code (1.5.0):** the password limits apply to sign-in too (one `AuthRequest` for sign-up and sign-in); the current phone check (characters and length, the per-country check comes in 2.5.0); `deadline` is a date and time that must not be in the past; a body that cannot be read is `400 VALIDATION_ERROR`. |
+| 1.7 | 2026-11-04 | **`PATCH` fields:** a field that is not sent is not changed; `null` or an empty text clears an optional text field. Needed because "empty = null" alone could not tell "keep" from "clear". |
 | 1.6 | 2026-10-31 | **D-1.5:** `role` comes with the registration or the provider login request (no `POST /auth/role`); `display_name` is stored in the profile; callback path is `{provider}/callback`. |
 | 1.5 | 2026-10-28 | **Naming and paths:** `conversation_id` → `chat_id`, `/users/me/...`; `expires_at` replaces `additional_days` for extending an order; `role` is part of email registration. |
 | 1.4 | 2026-10-27 | **D-1.3:** order field `location` → `city`; report reason, decision, appeal outcome and notification channel values are `UPPER_SNAKE_CASE`. |

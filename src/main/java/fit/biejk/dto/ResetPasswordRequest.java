@@ -1,49 +1,43 @@
 package fit.biejk.dto;
 
+import fit.biejk.validation.Limits;
+import fit.biejk.validation.Text;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.validation.constraints.Size;
 
 /**
- * Request DTO for resetting a user's password using a verification code.
- * <p>
- * This object is used when the user submits a new password along with the verification code
- * received via email.
- * </p>
+ * Request DTO for resetting a user's password using a verification code. This object is used when the user
+ * submits a new password along with the verification code received via email.
+ *
+ * @param email The email address of the user requesting the password reset.
+ * @param newPassword The new password the user wants to set.
+ * @param confirmPassword Confirmation of the new password for validation.
+ * @param verificationCode The verification code previously sent to the user's email.
  */
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class ResetPasswordRequest {
+public record ResetPasswordRequest(
+        @NotBlank(message = "Email must not be blank")
+        @Email(message = "Invalid email format")
+        @Size(max = Limits.EMAIL_MAX_LENGTH)
+        String email,
+        @NotBlank(message = "New password must not be blank")
+        @Size(min = Limits.PASSWORD_MIN_LENGTH, max = Limits.PASSWORD_MAX_LENGTH)
+        String newPassword,
+        @NotBlank(message = "Password confirmation must not be blank")
+        @Size(max = Limits.PASSWORD_MAX_LENGTH)
+        String confirmPassword,
+        @NotBlank(message = "Verification code must not be blank")
+        String verificationCode) {
 
     /**
-     * The email address of the user requesting the password reset.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    @NotBlank(message = "Email must not be blank")
-    @Email(message = "Invalid email format")
-    private String email;
+    public ResetPasswordRequest {
+        email = Text.clean(email);
+    }
 
-    /**
-     * The new password the user wants to set.
-     */
-    @NotBlank(message = "New password must not be blank")
-    @ToString.Exclude
-    private String newPassword;
-
-    /**
-     * Confirmation of the new password for validation.
-     */
-    @NotBlank(message = "Password confirmation must not be blank")
-    @ToString.Exclude
-    private String confirmPassword;
-
-    /**
-     * The verification code previously sent to the user's email.
-     */
-    @NotBlank(message = "Verification code must not be blank")
-    @ToString.Exclude
-    private String verificationCode;
+    @Override
+    public String toString() {
+        return "ResetPasswordRequest[email=" + email + ", newPassword=***, confirmPassword=***, verificationCode=***]";
+    }
 }

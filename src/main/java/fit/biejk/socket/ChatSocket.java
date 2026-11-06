@@ -2,8 +2,8 @@ package fit.biejk.socket;
 
 import fit.biejk.converter.ChatMessageDecoder;
 import fit.biejk.converter.ChatMessageEncoder;
-import fit.biejk.dto.ChatInputMessage;
-import fit.biejk.dto.ChatOutputMessage;
+import fit.biejk.dto.ChatMessageRequest;
+import fit.biejk.dto.ChatMessageResponse;
 import fit.biejk.entity.ChatMessage;
 import fit.biejk.mapper.ChatMessageMapper;
 import fit.biejk.service.ChatMessageService;
@@ -126,7 +126,7 @@ public class ChatSocket {
      * @param chatIdParam  ID of the chat, as it stands in the path
      */
     @OnMessage
-    public void onMessage(final ChatInputMessage inputMessage, final Session session,
+    public void onMessage(final ChatMessageRequest inputMessage, final Session session,
                           @PathParam("chatId") final String chatIdParam) {
         UUID chatId = parseChatId(chatIdParam);
         UUID senderId = (UUID) session.getUserProperties().get("userId");
@@ -138,14 +138,14 @@ public class ChatSocket {
         executor.execute(() -> handleIncomingMessage(inputMessage, senderId, chatId));
     }
 
-    private void handleIncomingMessage(final ChatInputMessage inputMessage, final UUID senderId, final UUID chatId) {
+    private void handleIncomingMessage(final ChatMessageRequest inputMessage, final UUID senderId, final UUID chatId) {
         if (!userService.existById(senderId)) {
             return;
         }
 
         try {
-            ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.getContent());
-            ChatOutputMessage outputMessage = chatMessageMapper.toDto(message);
+            ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.content());
+            ChatMessageResponse outputMessage = chatMessageMapper.toDto(message);
             log.info("Sending message {} in chat {}", message.getId(), chatId);
             broadcastMessage(chatId, outputMessage);
         } catch (Exception e) {
@@ -153,7 +153,7 @@ public class ChatSocket {
         }
     }
 
-    private void broadcastMessage(final UUID chatId, final ChatOutputMessage outputMessage) {
+    private void broadcastMessage(final UUID chatId, final ChatMessageResponse outputMessage) {
         Set<Session> sessions = CHAT_SESSIONS.getOrDefault(chatId, Set.of());
         for (Session s : sessions) {
             if (s.isOpen()) {

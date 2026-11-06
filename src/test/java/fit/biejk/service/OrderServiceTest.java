@@ -4,6 +4,7 @@ import fit.biejk.entity.CustomerProfile;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.Order;
 import fit.biejk.entity.OrderStatus;
+import fit.biejk.exception.StaleVersionException;
 import fit.biejk.exception.StatusConflictException;
 import fit.biejk.repository.OrderRepository;
 import fit.biejk.search.OrderSearchMapper;
@@ -32,6 +33,7 @@ class OrderServiceTest {
     private static final UUID LOCATION_ID = UUID.randomUUID();
     private static final int PRICE = 100;
     private static final int NEW_PRICE = 250;
+    private static final long VERSION = 3L;
 
     private OrderRepository orderRepository;
     private OrderSearchService orderSearchService;
@@ -48,7 +50,7 @@ class OrderServiceTest {
                 orderSearchService,
                 mock(OrderSearchMapper.class),
                 orderRepository,
-                mock(OrderResponseService.class),
+                mock(BidService.class),
                 mock(ProfessionalService.class),
                 authService);
 
@@ -65,14 +67,42 @@ class OrderServiceTest {
         order.setDescription("Old description");
         order.setPrice(PRICE);
         order.setLocation(location);
+        order.setVersion(VERSION);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(order);
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
     }
 
+    private static Order changes() {
+        Order changes = new Order();
+        changes.setVersion(VERSION);
+        return changes;
+    }
+
+    @Test
+    void updateWithAStaleVersionIsRejectedAndChangesNothing() {
+        Order changes = changes();
+        changes.setVersion(VERSION - 1);
+        changes.setTitle("New title");
+
+        assertThrows(StaleVersionException.class, () -> service.update(ORDER_ID, changes));
+
+        assertEquals("Old title", order.getTitle());
+        verify(orderRepository, never()).persist(any(Order.class));
+        verify(orderSearchService, never()).save(any());
+    }
+
+    @Test
+    void updateWithoutAVersionIsRejected() {
+        Order changes = new Order();
+        changes.setTitle("New title");
+
+        assertThrows(StaleVersionException.class, () -> service.update(ORDER_ID, changes));
+    }
+
     @Test
     void updateChangesOnlyTheSentFields() {
-        Order changes = new Order();
+        Order changes = changes();
         changes.setTitle("New title");
         changes.setPrice(NEW_PRICE);
 
@@ -90,7 +120,7 @@ class OrderServiceTest {
 
     @Test
     void updateWithStatusCancelledCancelsTheOrder() {
-        Order changes = new Order();
+        Order changes = changes();
         changes.setStatus(OrderStatus.CANCELLED);
 
         Order result = service.update(ORDER_ID, changes);
@@ -102,7 +132,7 @@ class OrderServiceTest {
 
     @Test
     void updateRejectsAnyStatusExceptCancelled() {
-        Order changes = new Order();
+        Order changes = changes();
         changes.setStatus(OrderStatus.COMPLETED);
 
         assertThrows(StatusConflictException.class, () -> service.update(ORDER_ID, changes));
@@ -114,7 +144,7 @@ class OrderServiceTest {
     @Test
     void updateRejectsCancellingACompletedOrder() {
         order.setStatus(OrderStatus.COMPLETED);
-        Order changes = new Order();
+        Order changes = changes();
         changes.setStatus(OrderStatus.CANCELLED);
 
         StatusConflictException exception =
@@ -127,7 +157,7 @@ class OrderServiceTest {
     @Test
     void updateIsForbiddenForANonOwner() {
         when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
-        Order changes = new Order();
+        Order changes = changes();
         changes.setTitle("Hijacked");
 
         assertThrows(ForbiddenException.class, () -> service.update(ORDER_ID, changes));
@@ -138,7 +168,7 @@ class OrderServiceTest {
 
     @Test
     void updateOfAMissingOrderIsNotFound() {
-        Order changes = new Order();
+        Order changes = changes();
 
         assertThrows(NotFoundException.class, () -> service.update(MISSING_ORDER_ID, changes));
     }
@@ -149,7 +179,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void nextStatusAllowsCancellingAnOrderWithResponses() {
+    void nextStatusAllowsCancellingAnOrderWithBids() {
         assertEquals(OrderStatus.CANCELLED,
                 OrderService.nextStatus(OrderStatus.CUSTOMER_PENDING, OrderStatus.CANCELLED));
     }

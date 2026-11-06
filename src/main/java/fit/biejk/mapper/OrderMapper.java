@@ -1,6 +1,7 @@
 package fit.biejk.mapper;
 
-import fit.biejk.dto.OrderDto;
+import fit.biejk.dto.OrderCreateRequest;
+import fit.biejk.dto.OrderResponse;
 import fit.biejk.dto.OrderUpdateRequest;
 import fit.biejk.entity.Order;
 import org.mapstruct.Mapper;
@@ -10,47 +11,43 @@ import java.util.List;
 
 /**
  * MapStruct mapper for converting between {@link Order}
- * entities and {@link OrderDto} data transfer objects.
+ * entities and {@link OrderResponse} data transfer objects.
  */
 @Mapper(componentModel = "jakarta")
 public interface OrderMapper {
 
     /**
-     * Converts an OrderDto to an Order entity.
-     * Ignores the 'customer' and 'orderResponses' fields during mapping.
+     * Converts the request to create an order to a new Order entity. The identifier, version, status, customer
+     * and location are set by the server, so they are not mapped.
      *
-     * @param orderDto the DTO to convert
+     * @param request the request to convert
      * @return the mapped Order entity
      */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
-    Order toEntity(OrderDto orderDto);
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "location", ignore = true)
+    @Mapping(target = "bids", ignore = true)
+    Order toEntity(OrderCreateRequest request);
 
     /**
-     * Converts an Order entity to an OrderDto.
+     * Converts an Order entity to an OrderResponse.
      * Maps the customer ID from the nested customer entity.
      *
      * @param order the entity to convert
-     * @return the mapped OrderDto
+     * @return the mapped OrderResponse
      */
     @Mapping(target = "customerId", source = "customer.id")
-    OrderDto toDto(Order order);
+    OrderResponse toDto(Order order);
 
     /**
-     * Converts a list of Order entities to a list of OrderDto objects.
+     * Converts a list of Order entities to a list of OrderResponse objects.
      *
      * @param entitiyList list of Order entities
-     * @return list of OrderDto objects
+     * @return list of OrderResponse objects
      */
-    List<OrderDto> toDtoList(List<Order> entitiyList);
-
-    /**
-     * Converts a list of OrderDto objects to a list of Order entities.
-     *
-     * @param dtoList list of OrderDto objects
-     * @return list of Order entities
-     */
-    List<Order> toEntityList(List<OrderDto> dtoList);
+    List<OrderResponse> toDtoList(List<Order> entitiyList);
 
     /**
      * Converts an update request to an Order that holds only the requested changes.
@@ -61,7 +58,7 @@ public interface OrderMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "customer", ignore = true)
-    @Mapping(target = "orderResponses", ignore = true)
+    @Mapping(target = "bids", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     Order toEntity(OrderUpdateRequest request);
 }

@@ -1,42 +1,41 @@
 package fit.biejk.dto;
 
 import fit.biejk.entity.UserRole;
+import fit.biejk.validation.Limits;
+import fit.biejk.validation.Text;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import jakarta.validation.constraints.Size;
 
 /**
- * Data Transfer Object for authentication requests.
- * <p>
- * Contains user's email, password, and selected user role
+ * Data Transfer Object for authentication requests. Contains user's email, password, and selected user role
  * for authorization purposes.
- * </p>
+ *
+ * @param email User email address, must be a valid email format.
+ * @param password User password, must not be blank.
+ * @param role User role in the system, must not be null.
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class AuthRequest {
+public record AuthRequest(
+        @NotBlank
+        @Email
+        @Size(max = Limits.EMAIL_MAX_LENGTH)
+        String email,
+        @NotBlank
+        @Size(min = Limits.PASSWORD_MIN_LENGTH, max = Limits.PASSWORD_MAX_LENGTH)
+        String password,
+        @NotNull
+        UserRole role) {
 
     /**
-     * User email address, must be a valid email format.
+     * Cleans the text fields: the white space around a text is removed and an empty text is {@code null}.
      */
-    @Email
-    private String email;
+    public AuthRequest {
+        email = Text.clean(email);
+    }
 
-    /**
-     * User password, must not be blank.
-     */
-    @NotBlank
-    @ToString.Exclude
-    private String password;
-
-    /**
-     * User role in the system, must not be null.
-     */
-    @NotNull
-    private UserRole role;
+    @Override
+    public String toString() {
+        return "AuthRequest[email=" + email + ", password=***, role=" + role + "]";
+    }
 }

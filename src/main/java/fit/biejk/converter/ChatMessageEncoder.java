@@ -1,18 +1,18 @@
 package fit.biejk.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fit.biejk.dto.ChatOutputMessage;
+import fit.biejk.dto.ChatMessageResponse;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import lombok.SneakyThrows;
 
 /**
- * WebSocket encoder that serializes {@link ChatOutputMessage} instances to JSON strings.
+ * WebSocket encoder that serializes {@link ChatMessageResponse} instances to JSON strings.
  * <p>
  * Uses Jackson's {@link ObjectMapper} to handle the conversion and date-time formatting.
  * </p>
  */
-public class ChatMessageEncoder implements Encoder.Text<ChatOutputMessage> {
+public class ChatMessageEncoder implements Encoder.Text<ChatMessageResponse> {
 
     /**
      * Configured Jackson object mapper for serialization.
@@ -20,7 +20,7 @@ public class ChatMessageEncoder implements Encoder.Text<ChatOutputMessage> {
     private final ObjectMapper jackson = ChatMessageDecoder.getJackson();
 
     /**
-     * Serializes a {@link ChatOutputMessage} to its JSON string representation.
+     * Serializes a {@link ChatMessageResponse} to its JSON string representation.
      *
      * @param chatOutputMessage the message to encode
      * @return JSON string representing the message
@@ -28,7 +28,7 @@ public class ChatMessageEncoder implements Encoder.Text<ChatOutputMessage> {
      */
     @Override
     @SneakyThrows
-    public String encode(final ChatOutputMessage chatOutputMessage) throws EncodeException {
+    public String encode(final ChatMessageResponse chatOutputMessage) throws EncodeException {
         return jackson.writeValueAsString(chatOutputMessage);
     }
 }

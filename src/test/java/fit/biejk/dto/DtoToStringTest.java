@@ -29,8 +29,7 @@ class DtoToStringTest {
 
     @Test
     void changeEmailRequestHidesPassword() {
-        ChangeEmailRequest dto = new ChangeEmailRequest();
-        dto.setPassword(SECRET);
+        ChangeEmailRequest dto = new ChangeEmailRequest("a@b.c", SECRET);
         assertFalse(dto.toString().contains(SECRET));
     }
 

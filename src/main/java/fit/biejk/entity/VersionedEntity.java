@@ -1,6 +1,6 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
 import lombok.Getter;
@@ -18,7 +18,7 @@ public abstract class VersionedEntity {
      * Version of the row; a concurrent update of an outdated row fails.
      * Not exposed in JSON.
      */
-    @JsonbTransient
+    @JsonIgnore
     @Version
     private Long version;
 }

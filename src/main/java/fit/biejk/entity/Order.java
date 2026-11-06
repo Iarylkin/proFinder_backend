@@ -1,6 +1,7 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import fit.biejk.validation.Limits;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +14,7 @@ import java.util.List;
  * Entity representing an order placed by a customer.
  * <p>
  * Contains details about specialization, status, price, deadline,
- * responses from professionals, and a linked review after completion.
+ * bids from professionals, and a linked review after completion.
  * </p>
  */
 @Data
@@ -47,28 +48,28 @@ public class Order extends BaseEntity {
     private OrderStatus status;
 
     /**
-     * List of responses submitted for this order.
+     * List of bids submitted for this order.
      * <p>
      * Ignored during JSON serialization to avoid circular references.
      * </p>
      */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonbTransient
-    private List<OrderResponse> orderResponses;
+    @JsonIgnore
+    private List<Bid> bids;
 
 
     /** Brief title summarizing the order. */
-    @Column(name = "title")
+    @Column(name = "title", length = Limits.ORDER_TITLE_MAX_LENGTH)
     private String title;
 
     /**
      * Description provided by the customer for the order.
      */
-    @Column(name = "description")
+    @Column(name = "description", length = Limits.ORDER_DESCRIPTION_MAX_LENGTH)
     private String description;
 
     /**
-     * Price of the order; replaced by the final agreed price when a response is approved.
+     * Price of the order; replaced by the final agreed price when a bid is approved.
      */
     @Column(name = "price")
     private Integer price;

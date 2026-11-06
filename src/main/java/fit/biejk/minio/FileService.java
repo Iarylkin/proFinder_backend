@@ -9,6 +9,7 @@ import io.minio.*;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -113,6 +114,7 @@ public class FileService {
      *
      * @param userId ID of the user
      * @return presigned URL for accessing the avatar
+     * @throws NotFoundException if the user has no avatar
      * @throws Exception if URL generation fails
      */
     public AvatarData getAvatar(final UUID userId) throws Exception {
@@ -121,7 +123,7 @@ public class FileService {
         Profile profile = profileService.get(userId);
         if (profile.getAvatarKey() == null) {
             log.warn("User with id={} has no avatar", userId);
-            throw new IllegalStateException("User does not have an avatar");
+            throw new NotFoundException("User does not have an avatar");
         }
 
         StatObjectResponse stat = minioClient.statObject(

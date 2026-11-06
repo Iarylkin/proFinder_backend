@@ -1,6 +1,6 @@
 package fit.biejk.resource;
 
-import fit.biejk.dto.CreateChatRequest;
+import fit.biejk.dto.ChatCreateRequest;
 import fit.biejk.dto.PageRequest;
 import fit.biejk.entity.Chat;
 import fit.biejk.entity.ChatMessage;
@@ -50,10 +50,10 @@ public class ChatResource {
     @POST
     @Authenticated
     public Response create(
-            @Valid final CreateChatRequest request
+            @Valid final ChatCreateRequest request
     ) {
         UUID userId = authService.getCurrentUserId();
-        Chat result = chatService.create(userId, request.getRecipientId());
+        Chat result = chatService.create(userId, request.recipientId());
 
 
         return Response.status(Response.Status.CREATED).entity(chatMapper.toDto(result, userId)).build();
@@ -64,7 +64,7 @@ public class ChatResource {
      *
      * @param chatId     The ID of the chat whose history is to be retrieved.
      * @param pagination The pagination parameters (page and size).
-     * @return A Response containing a list of ChatOutputMessage DTOs.
+     * @return A Response containing a list of ChatMessageResponse DTOs.
      */
     @GET
     @Path("/{chatId}/messages")

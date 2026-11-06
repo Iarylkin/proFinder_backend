@@ -1,20 +1,16 @@
 package fit.biejk.exception;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 /**
- * Thrown when a password reset code is wrong, missing or expired (HTTP 400, {@code RESET_TOKEN_INVALID}).
+ * The password reset code is wrong, expired or already used.
  */
-public class InvalidResetCodeException extends WebApplicationException {
+public class InvalidResetCodeException extends ApiException {
 
-    /** Serialization version. */
     private static final long serialVersionUID = 1L;
 
     /**
-     * Creates the exception with the {@code RESET_TOKEN_INVALID} message and status 400.
+     * Creates the exception.
      */
     public InvalidResetCodeException() {
-        super("The password reset code is invalid or expired", Response.Status.BAD_REQUEST);
+        super(ErrorCode.RESET_TOKEN_INVALID, ErrorCode.RESET_TOKEN_INVALID.getMessage());
     }
 }

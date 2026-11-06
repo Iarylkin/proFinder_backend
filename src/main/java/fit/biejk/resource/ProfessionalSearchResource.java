@@ -1,7 +1,7 @@
 package fit.biejk.resource;
 
 import fit.biejk.dto.PageRequest;
-import fit.biejk.dto.ProfessionalFilterCriteria;
+import fit.biejk.dto.ProfessionalFilterRequest;
 import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.mapper.ProfessionalMapper;
 import fit.biejk.search.ProfessionalSearchMapper;
@@ -55,7 +55,7 @@ public class ProfessionalSearchResource {
     @GET
     @PermitAll
     public Response search(
-            @BeanParam final ProfessionalFilterCriteria criteria,
+            @BeanParam final ProfessionalFilterRequest criteria,
             @BeanParam final PageRequest pagination
     ) {
         if (criteria.hasFilters()) {

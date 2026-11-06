@@ -1,9 +1,11 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.*;
+import fit.biejk.exception.CategoryRequiredException;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
+import fit.biejk.validation.Text;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.transaction.Transactional;
@@ -105,30 +107,6 @@ public class ProfessionalService {
     }
 
     /**
-     * Updates an existing professional.
-     * Delegates base update logic to {@link UserService}, then applies additional updates.
-     *
-     * @param id         professional ID
-     * @param professional updated professional data
-     * @return updated professional
-     */
-    @Transactional
-    public ProfessionalProfile update(final UUID id, final ProfessionalProfile professional) {
-        log.info("Update professional: ID={}", id);
-        ProfessionalProfile old = getById(id);
-        profileService.updatePersonalData(old, professional);
-        old.setDescription(professional.getDescription());
-        professionalRepository.flush();
-
-        old.getCategories().size();
-
-        professionalSearchService.save(professionalSearchMapper.toDto(old));
-
-        log.debug("Professional updated with ID={}", id);
-        return old;
-    }
-
-    /**
      * Deletes a professional by ID.
      * Delegates deletion logic to {@link UserService}.
      *
@@ -201,7 +179,8 @@ public class ProfessionalService {
 
     /**
      * Partially updates the profile of a professional, including the description and the categories:
-     * only the non-null fields of {@code changes} are applied.
+     * only the non-null fields of {@code changes} are applied. The description is optional (the empty text clears
+     * it); the categories can only be replaced, an empty list is rejected.
      *
      * @param id      ID of the professional
      * @param changes a professional holding only the requested changes
@@ -211,11 +190,15 @@ public class ProfessionalService {
     public ProfessionalProfile updateProfile(final UUID id, final ProfessionalProfile changes) {
         log.info("Update professional profile: ID={}", id);
         ProfessionalProfile professional = getById(id);
+        VersionCheck.require(professional, changes.getVersion());
         profileService.updatePersonalData(professional, changes);
         if (changes.getDescription() != null) {
-            professional.setDescription(changes.getDescription());
+            professional.setDescription(Text.emptyToNull(changes.getDescription()));
         }
         if (changes.getCategories() != null) {
+            if (changes.getCategories().isEmpty()) {
+                throw new CategoryRequiredException();
+            }
             professional.setCategories(changes.getCategories());
         }
         professionalRepository.flush();

@@ -1,6 +1,6 @@
 package fit.biejk.entity;
 
-import jakarta.json.bind.annotation.JsonbTransient;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Entity representing a geographical location such as a city.
  * <p>
- * A location is associated with users and orders registered in that area.
+ * A location is associated with the profiles of the users and with the orders of that area.
  * </p>
  */
 @Data
@@ -29,17 +29,6 @@ public class Location extends BaseEntity {
     private String name;
 
     /**
-     * List of users registered in this location.
-     * <p>
-     * Mapped by the {@code location} field in the {@link User} entity.
-     * This field is ignored during JSON serialization.
-     * </p>
-     */
-    @OneToMany(mappedBy = "location")
-    @JsonbTransient
-    private List<User> users;
-
-    /**
      * List of orders created for this location.
      * <p>
      * Mapped by the {@code location} field in the {@link Order} entity.
@@ -47,6 +36,6 @@ public class Location extends BaseEntity {
      * </p>
      */
     @OneToMany(mappedBy = "location")
-    @JsonbTransient
+    @JsonIgnore
     private List<Order> orders;
 }

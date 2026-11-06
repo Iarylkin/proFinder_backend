@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fit.biejk</groupId>
     <artifactId>pro-finder</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
 
     <properties>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
@@ -20,6 +20,9 @@
         <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
         <sonar.projectKey>${env.SONAR_PROJECT_KEY}</sonar.projectKey>
         <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S110</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/exception/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     </properties>
 
     <dependencyManagement>
@@ -45,7 +48,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-jsonb</artifactId>
+            <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.resteasy-problem</groupId>
+            <artifactId>quarkus-resteasy-problem</artifactId>
+            <version>3.21.1</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

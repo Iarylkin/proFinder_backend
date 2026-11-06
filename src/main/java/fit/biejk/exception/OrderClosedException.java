@@ -1,20 +1,16 @@
 package fit.biejk.exception;
 
-import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Response;
-
 /**
- * Thrown when a response is submitted to an order that no longer accepts responses (HTTP 409, {@code ORDER_CLOSED}).
+ * The order does not accept bids any more.
  */
-public class OrderClosedException extends WebApplicationException {
+public class OrderClosedException extends ApiException {
 
-    /** Serialization version. */
     private static final long serialVersionUID = 1L;
 
     /**
-     * Creates the exception with the {@code ORDER_CLOSED} message and status 409.
+     * Creates the exception.
      */
     public OrderClosedException() {
-        super("This order is closed", Response.Status.CONFLICT);
+        super(ErrorCode.ORDER_CLOSED, ErrorCode.ORDER_CLOSED.getMessage());
     }
 }

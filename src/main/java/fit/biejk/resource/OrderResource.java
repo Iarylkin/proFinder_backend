@@ -3,7 +3,7 @@ package fit.biejk.resource;
 import fit.biejk.dto.*;
 import fit.biejk.entity.*;
 import fit.biejk.mapper.OrderMapper;
-import fit.biejk.mapper.OrderResponseMapper;
+import fit.biejk.mapper.BidMapper;
 import fit.biejk.search.OrderSearchMapper;
 import fit.biejk.search.OrderSearchService;
 import fit.biejk.service.*;
@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST resource for managing orders and responses.
+ * REST resource for managing orders and bids.
  * <p>
- * Supports creating, updating, cancelling and retrieving orders, as well as submitting and listing responses.
+ * Supports creating, updating, cancelling and retrieving orders, as well as submitting and listing bids.
  * </p>
  */
 @Path("/v1/orders")
@@ -28,8 +28,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderResource {
 
-    /** Service for managing order responses. */
-    private final OrderResponseService orderResponseService;
+    /** Service for managing bids. */
+    private final BidService bidService;
 
     /**
      * Service handling order-related business logic.
@@ -62,22 +62,22 @@ public class OrderResource {
     private final AuthService authService;
 
     /**
-     * Mapper for converting between OrderResponse entities and DTOs.
+     * Mapper for converting between Bid entities and DTOs.
      */
-    private final OrderResponseMapper orderResponseMapper;
+    private final BidMapper bidMapper;
 
 
     /**
      * Creates a new order for the authenticated customer.
      *
-     * @param dto order data
+     * @param request order data
      * @return created order
      */
     @POST
     @RolesAllowed("CUSTOMER")
-    public Response create(@Valid final OrderDto dto) {
-        log.info("Create order request: {}", dto);
-        Order order = orderMapper.toEntity(dto);
+    public Response create(@Valid final OrderCreateRequest request) {
+        log.info("Create order request: {}", request);
+        Order order = orderMapper.toEntity(request);
         UUID customerId = authService.getCurrentUserId();
         CustomerProfile customer = customerService.getById(customerId);
         order.setCustomer(customer);
@@ -109,49 +109,49 @@ public class OrderResource {
     }
 
     /**
-     * Submits a response for an order by the authenticated professional.
+     * Submits a bid for an order by the authenticated professional.
      *
      * @param orderId      ID of the order to propose on
-     * @param orderResponseDto  response data
-     * @return created response
+     * @param request       bid data
+     * @return created bid
      */
     @POST
-    @Path("/{orderId}/responses")
+    @Path("/{orderId}/bids")
     @RolesAllowed("PROFESSIONAL")
-    public Response respond(
+    public Response createBid(
             @PathParam("orderId") final UUID orderId,
-            @Valid final OrderResponseDto orderResponseDto) {
-        log.info("Response request: orderId={}, orderResponseDto={}", orderId, orderResponseDto);
-        OrderResponse orderResponse = orderResponseMapper.toEntity(orderResponseDto);
+            @Valid final BidCreateRequest request) {
+        log.info("Create bid request: orderId={}, request={}", orderId, request);
+        Bid bid = bidMapper.toEntity(request);
         UUID professionalId = authService.getCurrentUserId();
 
-        OrderResponse result = orderService.respond(orderId, professionalId, orderResponse);
+        Bid result = orderService.placeBid(orderId, professionalId, bid);
 
         log.debug("Response created with ID={}", result.getId());
-        return Response.status(Response.Status.CREATED).entity(orderResponseMapper.toDto(result)).build();
+        return Response.status(Response.Status.CREATED).entity(bidMapper.toDto(result)).build();
     }
 
     /**
-     * Retrieves all responses associated with a specific order.
+     * Retrieves all bids associated with a specific order.
      *
      * @param orderId    the ID of the order
      * @param pagination the pagination parameters (page and size)
-     * @return list of responses for the order
+     * @return list of bids for the order
      */
     @GET
-    @Path("/{orderId}/responses")
+    @Path("/{orderId}/bids")
     @RolesAllowed("CUSTOMER")
     public Response getResponses(
             @PathParam("orderId") final UUID orderId,
             @BeanParam final PageRequest pagination
     ) {
-        log.info("Get all responses for orderId={}", orderId);
-        List<OrderResponse> orderResponses = orderResponseService.getByOrderId(
+        log.info("Get all bids for orderId={}", orderId);
+        List<Bid> bids = bidService.getByOrderId(
                 orderId,
                 pagination.getPage(),
                 pagination.getSize());
-        log.debug("Responses found: {}", orderResponses.size());
-        return Response.ok(orderResponseMapper.toDtoList(orderResponses)).build();
+        log.debug("Bids found: {}", bids.size());
+        return Response.ok(bidMapper.toDtoList(bids)).build();
     }
 
     /**
@@ -179,7 +179,7 @@ public class OrderResource {
     @GET
     @PermitAll
     public Response getOrders(
-            @BeanParam final OrderFilterCriteria criteria,
+            @BeanParam final OrderFilterRequest criteria,
             @BeanParam final PageRequest pagination) {
 
         if (criteria.hasFilters()) {
@@ -217,7 +217,7 @@ public class OrderResource {
     public Response delete(@PathParam("orderId") final UUID orderId) {
         log.info("Delete order request: orderId={}", orderId);
         orderService.delete(orderId);
-        return Response.ok().build();
+        return Response.noContent().build();
     }
 
 }
