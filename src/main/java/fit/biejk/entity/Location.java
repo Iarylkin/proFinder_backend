@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Entity representing a geographical location such as a city.
  * <p>
- * A location is associated with users and orders registered in that area.
+ * A location is associated with the profiles of the users and with the orders of that area.
  * </p>
  */
 @Data
@@ -27,17 +27,6 @@ public class Location extends BaseEntity {
      */
     @Column(name = "name", unique = true, nullable = false)
     private String name;
-
-    /**
-     * List of users registered in this location.
-     * <p>
-     * Mapped by the {@code location} field in the {@link User} entity.
-     * This field is ignored during JSON serialization.
-     * </p>
-     */
-    @OneToMany(mappedBy = "location")
-    @JsonIgnore
-    private List<User> users;
 
     /**
      * List of orders created for this location.
