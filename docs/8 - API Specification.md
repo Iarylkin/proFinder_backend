@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.19
+- **Version:** 1.20
 - **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -332,7 +332,7 @@ Every error response is a problem of [RFC 9457](https://www.rfc-editor.org/rfc/r
 - `code` — extension member: one of the values below, stable, machine-matchable. Match on `code`, not on `title` or `detail`.
 - `violations` — extension member of a failed field check (`VALIDATION_ERROR` from Bean Validation): a list of `{"field", "in", "message"}`, one per invalid field (see [Generic / Cross-Cutting](#generic--cross-cutting)). Absent in other errors.
 - The body is made by the `quarkus-resteasy-problem` library; the application adds the `code` and the `type` (`ErrorCode`, `ErrorCodeProcessor`) and the error classes that carry their own code (`ApiException`).
-- **Current limitation:** the `401` and `403` that Quarkus Security answers before a request reaches a resource (an invalid JWT, a role that does not fit `@RolesAllowed`) may be sent **without** the `code` for now; every other error has it.
+- A body that cannot be read (not valid JSON, a value of the wrong type) has the `detail` "The request body is malformed"; the text of the parser is never shown. The `401` of a missing token has the same body and the code `UNAUTHENTICATED`.
 
 
 ### Generic / Cross-Cutting
@@ -468,6 +468,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.20 | 2026-11-06 | **Error body checked on the running app:** the `401` of a missing token has the problem body with `UNAUTHENTICATED` (the "no body" limitation is gone); the title and the `detail` of a built-in error come from the code (no `HTTP 404 Not Found`); an unreadable body has the `detail` "The request body is malformed". |
 | 1.19 | 2026-11-06 | **Error body is RFC 9457:** `application/problem+json` with `type`, `title`, `status`, `detail`, `instance` and the extension member `code`; a failed field check lists `violations` (`field`, `in`, `message`) instead of the `details` map; the `{"error": {...}}` envelope is gone. |
 | 1.18 | 2026-11-04 | **Sync with the code (1.5.0):** `CONFLICT` also answers a status change that is not allowed and a second bid; `VALIDATION_ERROR` also answers a broken business rule (`details: null`) and a body that cannot be read; the reset error is about the 6-digit code until 2.2.0; `version` on `PATCH /customers/me` and `/professionals/me`; a text field is cleared with `null` or `""`; profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse`, `ProfessionalResponse`; `401`/`403` from Quarkus Security have no error body yet. |
 | 1.17 | 2026-11-04 | **`PATCH` semantics:** a field that is not sent keeps its value, an optional text field sent as `null` or as an empty text is cleared (code: `Optional` fields read by `ClearableTextDeserializer`), a required field cannot be cleared. |

@@ -1,5 +1,6 @@
 package fit.biejk.exception;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkiverse.resteasy.problem.HttpProblem;
 import io.quarkiverse.resteasy.problem.postprocessing.ProblemContext;
 import jakarta.ws.rs.core.Response;
@@ -37,6 +38,26 @@ class ErrorCodeProcessorTest {
         assertEquals("NOT_FOUND", result.getParameters().get("code"));
         assertEquals(URI.create("urn:profinder:problem:not-found"), result.getType());
         assertEquals("no such order", result.getDetail());
+    }
+
+    @Test
+    void theTitleAndTheDefaultDetailOfTheFrameworkAreReplaced() {
+        HttpProblem result = process(HttpProblem.builder().withStatus(404).withTitle("Not Found")
+                .withDetail("HTTP 404 Not Found").build());
+
+        assertEquals("Not found", result.getTitle());
+        assertEquals("Not found", result.getDetail());
+    }
+
+    @Test
+    void theTextOfTheParserIsNotShown() {
+        HttpProblem problem = HttpProblem.valueOf(Response.Status.BAD_REQUEST, "Cannot deserialize value of type int");
+        JsonProcessingException cause = new JsonProcessingException("x") { };
+
+        HttpProblem result = processor.apply(problem, ProblemContext.of(cause, "/api/v1/orders"));
+
+        assertEquals("The request body is malformed", result.getDetail());
+        assertEquals("VALIDATION_ERROR", result.getParameters().get("code"));
     }
 
     @Test
