@@ -1,0 +1,56 @@
+package fit.biejk.core.mapper;
+
+import fit.biejk.core.dto.CustomerUpdateRequest;
+import fit.biejk.core.dto.ProfessionalUpdateRequest;
+import fit.biejk.core.entity.Category;
+import fit.biejk.core.entity.CustomerProfile;
+import fit.biejk.core.entity.ProfessionalProfile;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+class ProfileMappingTest {
+
+    private final CustomerMapper customerMapper = new CustomerMapperImpl();
+    private final ProfessionalMapper professionalMapper = new ProfessionalMapperImpl();
+
+    @Test
+    void customerChangesKeepUnsentFieldsNull() {
+        CustomerUpdateRequest request = new CustomerUpdateRequest(null, null, "222222222", null, 0L);
+
+        CustomerProfile changes = customerMapper.toEntity(request);
+
+        assertEquals("222222222", changes.getPhoneNumber());
+        assertNull(changes.getFirstName());
+        assertNull(changes.getLastName());
+        assertNull(changes.getLocation());
+    }
+
+    @Test
+    void anEmptyPhoneIsCarriedToTheChangesSoTheServiceClearsTheField() {
+        CustomerProfile changes = customerMapper.toEntity(new CustomerUpdateRequest(null, null, "", null, 0L));
+
+        assertEquals("", changes.getPhoneNumber());
+        assertNull(changes.getFirstName());
+        assertNull(changes.getLastName());
+    }
+
+    @Test
+    void professionalChangesCarryDescriptionAndCategories() {
+        Category plumbing = new Category();
+        plumbing.setId(UUID.randomUUID());
+        ProfessionalUpdateRequest request = new ProfessionalUpdateRequest(
+                null, null, null, null, "I fix pipes", List.of(plumbing), 0L);
+
+        ProfessionalProfile changes = professionalMapper.toEntity(request);
+
+        assertEquals("I fix pipes", changes.getDescription());
+        assertEquals(List.of(plumbing), changes.getCategories());
+        assertNull(changes.getFirstName());
+        assertNull(changes.getPhoneNumber());
+    }
+}

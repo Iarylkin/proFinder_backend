@@ -1,0 +1,50 @@
+package fit.biejk.common.exception;
+
+import fit.biejk.auth.exception.EmailAlreadyRegisteredException;
+import fit.biejk.auth.exception.InvalidCredentialsException;
+import fit.biejk.auth.exception.InvalidResetCodeException;
+import fit.biejk.auth.exception.TooManyAttemptsException;
+import fit.biejk.core.exception.CategoryRequiredException;
+import fit.biejk.core.exception.FileTooLargeException;
+import fit.biejk.core.exception.InvalidFileTypeException;
+import fit.biejk.core.exception.OrderClosedException;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class ExceptionStatusTest {
+
+    private static final int RETRY_AFTER_SECONDS = 120;
+
+    @Test
+    void exceptionsCarryTheirHttpStatus() {
+        assertEquals(409, new OrderClosedException().getStatusCode());
+        assertEquals(413, new FileTooLargeException().getStatusCode());
+        assertEquals(415, new InvalidFileTypeException().getStatusCode());
+        assertEquals(400, new InvalidResetCodeException().getStatusCode());
+        assertEquals(409, new StatusConflictException("conflict").getResponse().getStatus());
+        assertEquals(401, new InvalidCredentialsException().getStatusCode());
+        assertEquals(409, new EmailAlreadyRegisteredException().getStatusCode());
+        assertEquals(400, new CategoryRequiredException().getStatusCode());
+    }
+
+    @Test
+    void exceptionsCarryTheirErrorCode() {
+        assertEquals(ErrorCode.ORDER_CLOSED, new OrderClosedException().getCode());
+        assertEquals(ErrorCode.FILE_TOO_LARGE, new FileTooLargeException().getCode());
+        assertEquals(ErrorCode.INVALID_FILE_TYPE, new InvalidFileTypeException().getCode());
+        assertEquals(ErrorCode.RESET_TOKEN_INVALID, new InvalidResetCodeException().getCode());
+        assertEquals(ErrorCode.INVALID_CREDENTIALS, new InvalidCredentialsException().getCode());
+        assertEquals(ErrorCode.EMAIL_ALREADY_REGISTERED, new EmailAlreadyRegisteredException().getCode());
+        assertEquals(ErrorCode.CATEGORY_REQUIRED, new CategoryRequiredException().getCode());
+        assertEquals(ErrorCode.RATE_LIMITED, new TooManyAttemptsException(RETRY_AFTER_SECONDS).getCode());
+    }
+
+    @Test
+    void tooManyAttemptsHasStatusAndRetryAfter() {
+        TooManyAttemptsException exception = new TooManyAttemptsException(RETRY_AFTER_SECONDS);
+
+        assertEquals(429, exception.getStatusCode());
+        assertEquals((long) RETRY_AFTER_SECONDS, exception.getHeaders().get("Retry-After"));
+    }
+}
