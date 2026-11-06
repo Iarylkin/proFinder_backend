@@ -44,6 +44,6 @@ public class PageRequest {
      * @return the page size
      */
     public int getSize() {
-        return Math.min(Math.max(size, 1), Limits.PAGE_SIZE_MAX);
+        return Math.clamp(size, 1, Limits.PAGE_SIZE_MAX);
     }
 }
