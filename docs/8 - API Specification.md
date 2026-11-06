@@ -1,6 +1,6 @@
 # ProFinder — API Specification
 
-- **Version:** 1.20
+- **Version:** 1.21
 - **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
@@ -19,7 +19,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 - **Auth:** `Authorization: Bearer <JWT>` header. Endpoints marked "public" need none.
 - **Money:** all amounts are plain `numeric`, USD, no `currency` field ([A5 decision](Documentation%20Roadmap.md)).
 - **Dates:** ISO 8601 timestamps, no per-user timezone conversion ([A5 decision](Documentation%20Roadmap.md)).
-- **Partial update (`PATCH`):** a field that is not in the body keeps its value. An optional text field (first name, last name, phone, a professional's description) sent as `null` or as an empty text is **cleared**; a required field (the title, description and price of an order) cannot be cleared. Every `PATCH` of a resource also carries its `version` (`409 CONFLICT` if it is stale).
+- **Partial update (`PATCH`):** a field that is not in the body keeps its value. `null` is the same as not sent. An optional text field (phone, a professional's description) sent as an empty text `""` is **cleared**; a required field (first name, last name, the categories of a professional, the title, description and price of an order) cannot be cleared, only replaced. Every `PATCH` of a resource also carries its `version` (`409 CONFLICT` if it is stale).
 - **Identifiers:** every id is a **UUID** (v4, random). Generated application-side (Hibernate `GenerationType.UUID`), never DB-default, so the id exists before flush and travels in the outbox row. The built-in generator is used instead of a time-ordered v7: it needs no extra library or custom generator, and the better index locality of v7 does not matter at the expected size. The column type is `uuid` either way, so v7 can be adopted later without a schema change. A path segment that is not a UUID returns `404`.
 - **Enums are returned raw, never localized.** The API always emits the machine token — `status: "ACTIVE"`, `reason: "NO_SHOW"`, `decision: "CONTENT_REMOVED"` — and never a display string. Turning a token into human text is the **client's** job, via its own i18n bundle keyed `enum.<enum_name>.<value>` (e.g. `enum.report_reason.NO_SHOW`). MVP ships English only ([NFR-UX-4](2%20-%20Requirements.md)); adding locales later changes nothing in the API contract. This keeps responses locale-independent (so cacheable) and keeps `Accept-Language` out of the service layer. Free-text the server composes for storage — notification `title`/`body` rows — is rendered at write time from server-side templates and is a separate concern from enum values on the wire.
 - **Load balancer (decided 2026-09-05):** every service sits behind the Nginx LB from [3 - System Design.md § Nginx Gateway](3%20-%20System%20Design.md) — fixed the "not needed" contradiction in [2 - Requirements.md](2%20-%20Requirements.md) NFR-Scale-1/2. Practically, this means:
@@ -78,9 +78,9 @@ Each role has its own `/…/me` endpoints: the type of the profile is the addres
 | Endpoint | Auth | Request | Response | Errors |
 |---|---|---|---|---|
 | `GET /customers/me` | `CUSTOMER` | — | `200 CustomerResponse` | — |
-| `PATCH /customers/me` | `CUSTOMER` | `CustomerUpdateRequest` (name, phone, city, bio…) + `version`; an optional text field sent as `null` or `""` is cleared | `200 CustomerResponse` | `VALIDATION_ERROR`, `CONFLICT` |
+| `PATCH /customers/me` | `CUSTOMER` | `CustomerUpdateRequest` (name, phone, city, bio…) + `version`; an optional text field sent as `""` is cleared | `200 CustomerResponse` | `VALIDATION_ERROR`, `CONFLICT` |
 | `GET /professionals/me` | `PROFESSIONAL` | — | `200 ProfessionalResponse` | — |
-| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalUpdateRequest` (name, phone, bio, categories, cities, rate…) + `version`; an optional text field sent as `null` or `""` is cleared | `200 ProfessionalResponse` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED`, `CONFLICT` |
+| `PATCH /professionals/me` | `PROFESSIONAL` | `ProfessionalUpdateRequest` (name, phone, bio, categories, cities, rate…) + `version`; an optional text field sent as `""` is cleared; an empty `categories` list is `CATEGORY_REQUIRED` | `200 ProfessionalResponse` | `VALIDATION_ERROR`, `CATEGORY_REQUIRED`, `CITY_REQUIRED`, `CONFLICT` |
 | `GET /professionals/{id}` | **public** | — | `200 ProfessionalResponse` (public view: bio, categories, cities, rate, experience, portfolio, rating) | `NOT_FOUND` |
 | `GET /customers/{id}` | any authenticated | — | `200 CustomerPublicResponse` (public view: display name, city, member since — **no** email or phone; there is no customer list endpoint) | `NOT_FOUND` |
 | `GET /categories` | **public** | — | `200 CategoryResponse[]` (flat list) | — |
@@ -468,6 +468,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.21 | 2026-11-06 | **`PATCH` semantics:** `null` is the same as not sent; `""` clears an optional text field (phone, description); first name, last name and the categories are required and can only be replaced (`CATEGORY_REQUIRED` for an empty list). |
 | 1.20 | 2026-11-06 | **Error body checked on the running app:** the `401` of a missing token has the problem body with `UNAUTHENTICATED` (the "no body" limitation is gone); the title and the `detail` of a built-in error come from the code (no `HTTP 404 Not Found`); an unreadable body has the `detail` "The request body is malformed". |
 | 1.19 | 2026-11-06 | **Error body is RFC 9457:** `application/problem+json` with `type`, `title`, `status`, `detail`, `instance` and the extension member `code`; a failed field check lists `violations` (`field`, `in`, `message`) instead of the `details` map; the `{"error": {...}}` envelope is gone. |
 | 1.18 | 2026-11-04 | **Sync with the code (1.5.0):** `CONFLICT` also answers a status change that is not allowed and a second bid; `VALIDATION_ERROR` also answers a broken business rule (`details: null`) and a body that cannot be read; the reset error is about the 6-digit code until 2.2.0; `version` on `PATCH /customers/me` and `/professionals/me`; a text field is cleared with `null` or `""`; profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse`, `ProfessionalResponse`; `401`/`403` from Quarkus Security have no error body yet. |

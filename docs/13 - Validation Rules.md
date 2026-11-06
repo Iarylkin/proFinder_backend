@@ -1,6 +1,6 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.9
+- **Version:** 1.10
 - **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
@@ -20,7 +20,7 @@ Applied everywhere, not repeated per field below.
 |---|---|
 | **Trim** | All string fields are trimmed of leading/trailing whitespace before validation and storage. |
 | **Empty = null** | An empty string after trim is treated as `null` (and then fails `@NotBlank` if required). |
-| **`PATCH` fields** | A field that is not in the body is not changed. For an optional text field (first name, last name, phone, a professional's description) `null` or an empty text **clears** it; the other fields cannot be cleared. The text is checked (length, characters) only when it is not empty. |
+| **`PATCH` fields** | A field that is not in the body is not changed. `null` is the same as not sent. An optional text field (phone, a professional's description) is **cleared** by an empty text `""`; a required field (first name, last name, location, the categories of a professional, the fields of an order) cannot be cleared, only replaced: an empty name is `VALIDATION_ERROR`, an empty list of categories is `CATEGORY_REQUIRED`. The text is checked (length, characters) only when it is not empty. |
 | **Control chars** | Reject `U+0000`–`U+001F` and `U+007F` except `\n` / `\t` inside multi-line text fields (`bio`, `description`, review `text`, message `text`, report `description`, `notes`). |
 | **UUID path/body params** | Must match the UUID format before any DB lookup; a malformed id → `400 VALIDATION_ERROR`, never `404`. |
 | **Malformed body** | A body that is not valid JSON, or has a value of the wrong type or format (for example a date that is not ISO 8601), is `400 VALIDATION_ERROR` without `violations`. |
@@ -197,6 +197,7 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-11-06 | **`PATCH` fields:** `null` no longer clears a text field (it is the same as not sent); an empty text `""` clears an optional field (phone, description); required fields can only be replaced. Reason: a plain `String` in the request instead of `Optional` read by a custom deserializer. |
 | 1.9 | 2026-11-06 | **Error body is RFC 9457:** a failed check returns `violations` (`field`, `in`, `message`) instead of the `details` map ([8 - API Specification.md](8%20-%20API%20Specification.md) 1.19). |
 | 1.8 | 2026-11-04 | **Sync with the code (1.5.0):** the password limits apply to sign-in too (one `AuthRequest` for sign-up and sign-in); the current phone check (characters and length, the per-country check comes in 2.5.0); `deadline` is a date and time that must not be in the past; a body that cannot be read is `400 VALIDATION_ERROR`. |
 | 1.7 | 2026-11-04 | **`PATCH` fields:** a field that is not sent is not changed; `null` or an empty text clears an optional text field. Needed because "empty = null" alone could not tell "keep" from "clear". |
