@@ -1,6 +1,7 @@
 package fit.biejk.service;
 
 import fit.biejk.entity.*;
+import fit.biejk.exception.CategoryRequiredException;
 import fit.biejk.repository.ProfessionalRepository;
 import fit.biejk.search.ProfessionalSearchMapper;
 import fit.biejk.search.ProfessionalSearchService;
@@ -178,7 +179,8 @@ public class ProfessionalService {
 
     /**
      * Partially updates the profile of a professional, including the description and the categories:
-     * only the non-null fields of {@code changes} are applied.
+     * only the non-null fields of {@code changes} are applied. The description is optional (the empty text clears
+     * it); the categories can only be replaced, an empty list is rejected.
      *
      * @param id      ID of the professional
      * @param changes a professional holding only the requested changes
@@ -194,6 +196,9 @@ public class ProfessionalService {
             professional.setDescription(Text.emptyToNull(changes.getDescription()));
         }
         if (changes.getCategories() != null) {
+            if (changes.getCategories().isEmpty()) {
+                throw new CategoryRequiredException();
+            }
             professional.setCategories(changes.getCategories());
         }
         professionalRepository.flush();

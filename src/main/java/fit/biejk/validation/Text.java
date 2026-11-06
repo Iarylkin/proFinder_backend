@@ -1,7 +1,5 @@
 package fit.biejk.validation;
 
-import java.util.Optional;
-
 /**
  * Cleaning of the text fields of a request (docs/13, "Global rules").
  */
@@ -11,29 +9,15 @@ public final class Text {
     }
 
     /**
-     * Cleans the text of a field that a partial update can clear. The field has three states: not sent
-     * ({@code null}, keep the value), sent as {@code null} or as an empty text ({@link Optional#empty()}, clear the
-     * value) and sent with a text (that text, trimmed).
+     * Removes the white space around the text of a field of a partial update ({@code PATCH}). Unlike {@link
+     * #clean(String)} an empty text stays empty: for a field that can be cleared it means "clear", for a required
+     * field the validation rejects it.
      *
-     * @param value the field of the request
-     * @return the field with the white space around its text removed; an empty text is {@link Optional#empty()}
+     * @param value the text from the request, may be {@code null} (the field was not sent)
+     * @return the trimmed text, or {@code null} if the field was not sent
      */
-    public static Optional<String> cleanOrClear(final Optional<String> value) {
-        if (value == null) {
-            return null;
-        }
-        return value.map(String::strip).filter(text -> !text.isEmpty());
-    }
-
-    /**
-     * Writes a field of a partial update as the text of the entity that holds the changes: the empty text means
-     * "clear the field", {@code null} means "keep it".
-     *
-     * @param value the field of the request
-     * @return {@code null} if the field was not sent, the empty text to clear it, or the text
-     */
-    public static String toChange(final Optional<String> value) {
-        return value == null ? null : value.orElse("");
+    public static String strip(final String value) {
+        return value == null ? null : value.strip();
     }
 
     /**

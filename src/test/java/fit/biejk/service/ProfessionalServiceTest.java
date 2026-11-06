@@ -1,5 +1,6 @@
 package fit.biejk.service;
 
+import fit.biejk.exception.CategoryRequiredException;
 import fit.biejk.entity.ProfessionalProfile;
 import fit.biejk.entity.Category;
 import fit.biejk.exception.StaleVersionException;
@@ -113,5 +114,18 @@ class ProfessionalServiceTest {
 
         assertEquals(List.of(plumbing), result.getCategories());
         assertEquals("Old description", result.getDescription());
+    }
+
+    @Test
+    void anEmptyListOfCategoriesIsRejectedAndChangesNothing() {
+        Category plumbing = new Category();
+        professional.setCategories(List.of(plumbing));
+        ProfessionalProfile changes = changes();
+        changes.setCategories(List.of());
+
+        assertThrows(CategoryRequiredException.class, () -> service.updateProfile(PROFESSIONAL_ID, changes));
+
+        assertEquals(List.of(plumbing), professional.getCategories());
+        verify(searchService, never()).save(any());
     }
 }

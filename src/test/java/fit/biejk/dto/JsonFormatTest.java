@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -182,9 +181,9 @@ class JsonFormatTest {
                 "{\"version\":1,\"firstName\":\" Ann \",\"lastName\":null,\"phoneNumber\":\"  \"}",
                 CustomerUpdateRequest.class);
 
-        assertEquals(Optional.of("Ann"), request.firstName());
-        assertEquals(Optional.empty(), request.lastName());
-        assertEquals(Optional.empty(), request.phoneNumber());
+        assertEquals("Ann", request.firstName());
+        assertNull(request.lastName());
+        assertEquals("", request.phoneNumber());
     }
 
     @Test
@@ -195,7 +194,7 @@ class JsonFormatTest {
 
         assertNull(customer.firstName());
         assertNull(customer.phoneNumber());
-        assertEquals(Optional.empty(), professional.description());
+        assertNull(professional.description());
         assertNull(professional.firstName());
     }
 

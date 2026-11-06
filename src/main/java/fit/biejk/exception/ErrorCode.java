@@ -29,6 +29,13 @@ public enum ErrorCode {
     VALIDATION_ERROR(Response.Status.BAD_REQUEST.getStatusCode(), "Validation failed", "Some fields are invalid", true),
 
     /**
+     * A professional tried to remove the last of their categories: a profile keeps at least one, the categories
+     * can only be replaced.
+     */
+    CATEGORY_REQUIRED(Response.Status.BAD_REQUEST.getStatusCode(), "Category required",
+            "You must keep at least one category", false),
+
+    /**
      * The password reset code is wrong, expired or already used.
      */
     RESET_TOKEN_INVALID(Response.Status.BAD_REQUEST.getStatusCode(), "Invalid reset code",

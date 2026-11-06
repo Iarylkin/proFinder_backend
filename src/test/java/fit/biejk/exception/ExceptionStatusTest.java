@@ -17,6 +17,7 @@ class ExceptionStatusTest {
         assertEquals(409, new StatusConflictException("conflict").getResponse().getStatus());
         assertEquals(401, new InvalidCredentialsException().getStatusCode());
         assertEquals(409, new EmailAlreadyRegisteredException().getStatusCode());
+        assertEquals(400, new CategoryRequiredException().getStatusCode());
     }
 
     @Test
@@ -27,6 +28,7 @@ class ExceptionStatusTest {
         assertEquals(ErrorCode.RESET_TOKEN_INVALID, new InvalidResetCodeException().getCode());
         assertEquals(ErrorCode.INVALID_CREDENTIALS, new InvalidCredentialsException().getCode());
         assertEquals(ErrorCode.EMAIL_ALREADY_REGISTERED, new EmailAlreadyRegisteredException().getCode());
+        assertEquals(ErrorCode.CATEGORY_REQUIRED, new CategoryRequiredException().getCode());
         assertEquals(ErrorCode.RATE_LIMITED, new TooManyAttemptsException(RETRY_AFTER_SECONDS).getCode());
     }
 

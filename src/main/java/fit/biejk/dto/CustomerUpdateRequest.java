@@ -1,8 +1,6 @@
 package fit.biejk.dto;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import fit.biejk.entity.Location;
-import fit.biejk.json.ClearableTextDeserializer;
 import fit.biejk.validation.Limits;
 import fit.biejk.validation.Text;
 import jakarta.validation.constraints.NotNull;
@@ -10,12 +8,11 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
-import java.util.Optional;
-
 /**
  * Request body for a partial update of the current user's profile. The fields are the same for every role.
- * Every field is optional. A text field (first name, last name, phone number) that is not sent keeps its value;
- * one that is sent as {@code null} or as an empty text is cleared. The location, once set, can only be replaced.
+ * Every field is optional: a field that is not sent (or sent as {@code null}) keeps its value. The phone number
+ * is optional data, so an empty text clears it. The names and the location are required: they can only be replaced,
+ * an empty name is rejected.
  *
  * @param firstName New first name.
  * @param lastName New last name.
@@ -25,24 +22,21 @@ import java.util.Optional;
  *        since, and the request is rejected with 409.
  */
 public record CustomerUpdateRequest(
-        @JsonDeserialize(using = ClearableTextDeserializer.class)
-        Optional<@Size(max = Limits.NAME_MAX_LENGTH) @Pattern(regexp = Limits.NAME_PATTERN) String> firstName,
-        @JsonDeserialize(using = ClearableTextDeserializer.class)
-        Optional<@Size(max = Limits.NAME_MAX_LENGTH) @Pattern(regexp = Limits.NAME_PATTERN) String> lastName,
-        @JsonDeserialize(using = ClearableTextDeserializer.class)
-        Optional<@Size(max = Limits.PHONE_MAX_LENGTH) @Pattern(regexp = Limits.PHONE_PATTERN) String> phoneNumber,
+        @Size(min = 1, max = Limits.NAME_MAX_LENGTH) @Pattern(regexp = Limits.NAME_PATTERN) String firstName,
+        @Size(min = 1, max = Limits.NAME_MAX_LENGTH) @Pattern(regexp = Limits.NAME_PATTERN) String lastName,
+        @Size(max = Limits.PHONE_MAX_LENGTH) @Pattern(regexp = Limits.PHONE_PATTERN) String phoneNumber,
         Location location,
         @NotNull
         @PositiveOrZero
         Long version) {
 
     /**
-     * Cleans the text fields: the white space around a text is removed. A field that is not sent is {@code null}
-     * (keep the value); a field sent as {@code null} or as an empty text is {@link Optional#empty()} (clear the value).
+     * Cleans the text fields: the white space around a text is removed. An empty text stays empty (it clears the
+     * phone number and is rejected for a name); a field that is not sent is {@code null} (keep the value).
      */
     public CustomerUpdateRequest {
-        firstName = Text.cleanOrClear(firstName);
-        lastName = Text.cleanOrClear(lastName);
-        phoneNumber = Text.cleanOrClear(phoneNumber);
+        firstName = Text.strip(firstName);
+        lastName = Text.strip(lastName);
+        phoneNumber = Text.strip(phoneNumber);
     }
 }

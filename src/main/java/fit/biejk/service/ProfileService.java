@@ -81,15 +81,15 @@ public class ProfileService {
      * are not {@code null} change. Meant to be called inside the transaction of the caller.
      *
      * @param profile the profile to change
-     * @param changes a profile holding only the requested changes; a name or phone that is the empty text clears the
-     *                field
+     * @param changes a profile holding only the requested changes; a phone that is the empty text clears the
+     *                field (the names are required, the request validation rejects an empty one)
      */
     public void updatePersonalData(final Profile profile, final Profile changes) {
         if (changes.getFirstName() != null) {
-            profile.setFirstName(Text.emptyToNull(changes.getFirstName()));
+            profile.setFirstName(changes.getFirstName());
         }
         if (changes.getLastName() != null) {
-            profile.setLastName(Text.emptyToNull(changes.getLastName()));
+            profile.setLastName(changes.getLastName());
         }
         if (changes.getPhoneNumber() != null) {
             profile.setPhoneNumber(Text.emptyToNull(changes.getPhoneNumber()));
