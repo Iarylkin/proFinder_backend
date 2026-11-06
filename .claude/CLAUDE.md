@@ -13,7 +13,7 @@ be aware of:
 
 | Aspect | `docs/` (intended design) | Current code |
 | --- | --- | --- |
-| Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`fit.biejk`) |
+| Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`io.github.strogolsky.profinder`) |
 | Async / events | RabbitMQ topic exchange + transactional outbox ([`9 - Event Catalog.md`](../docs/9%20-%20Event%20Catalog.md)) | in-process service calls |
 | Schema management | Flyway migrations | Hibernate `drop-and-create` (dev) |
 
@@ -67,8 +67,17 @@ docker-compose up -d                              # Start all services (PostgreS
 
 ### Project Structure
 
-#### `/src/main/java/fit/biejk`
-Main application code organized by layers:
+#### `/src/main/java/io/github/strogolsky/profinder`
+Main application code is split into modules, one package per future service (step 1.7.0 of `docs/16`; the boundaries between them are not enforced yet: the modules still call each other's classes and entities relate across them). Inside a module the classes are grouped by layer, in the sub-packages listed below (`<module>.entity`, `<module>.service`, ...):
+
+- **`core`** — orders, bids (responses), reviews, customer and professional profiles, categories, locations, search (Elasticsearch), file storage (MinIO)
+- **`auth`** — `User`, `UserRole`, registration, login, tokens, password recovery, `UserResource` (avatar, email and password changes), `CryptoUtils`
+- **`messaging`** — `Chat`, `ChatMessage`, the chat REST resource and the WebSocket `ChatSocket`
+- **`notification`** — `MailService`
+- **`moderation`** — empty until step 1.11.0
+- **`common`** — what belongs to no module and is shared by all: `BaseEntity`/`VersionedEntity`, `VersionCheck`, the error format (`ApiException`, `ErrorCode`, `ApiExceptionMapper`, `ErrorCodeProcessor`, ...), `validation/` and `PageRequest`; it becomes the `contracts` module in 2.0.0-rc.1
+
+The layers (each is a sub-package of the module that owns the class):
 
 - **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
