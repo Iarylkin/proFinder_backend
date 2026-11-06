@@ -90,8 +90,10 @@ class BidServiceTest {
 
     @Test
     void approvingWithAStaleVersionIsRejectedAndChangesNothing() {
-        assertThrows(StaleVersionException.class, () -> service.updateStatus(
-                RESPONSE_ID, BidStatus.APPROVED, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION - 1));
+        LocalDateTime deadline = LocalDateTime.now().plusDays(1);
+
+        assertThrows(StaleVersionException.class,
+                () -> service.updateStatus(RESPONSE_ID, BidStatus.APPROVED, FINAL_PRICE, deadline, VERSION - 1));
 
         assertEquals(OrderStatus.CUSTOMER_PENDING, order.getStatus());
         assertEquals(BidStatus.CREATED, bid.getStatus());
