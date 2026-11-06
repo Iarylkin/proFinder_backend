@@ -1,7 +1,5 @@
 package fit.biejk.exception;
 
-import jakarta.ws.rs.core.Response;
-
 /**
  * Thrown when a client exceeds an attempt limit (HTTP 429, {@code RATE_LIMITED}) and must wait before retrying.
  */
@@ -16,8 +14,7 @@ public class TooManyAttemptsException extends ApiException {
      * @param retryAfterSeconds number of seconds after which the client may try again
      */
     public TooManyAttemptsException(final long retryAfterSeconds) {
-        super(ErrorCode.RATE_LIMITED, "Too many attempts, try again later",
-                Response.status(ErrorCode.RATE_LIMITED.getStatus())
-                        .header("Retry-After", retryAfterSeconds).build());
+        super(ErrorCode.RATE_LIMITED, problem(ErrorCode.RATE_LIMITED, "Too many attempts, try again later")
+                .withHeader("Retry-After", retryAfterSeconds));
     }
 }

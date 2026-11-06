@@ -11,8 +11,6 @@ import fit.biejk.entity.Category;
 import fit.biejk.entity.Location;
 import fit.biejk.entity.OrderStatus;
 import fit.biejk.entity.UserRole;
-import fit.biejk.exception.ErrorCode;
-import fit.biejk.exception.ErrorResponse;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -158,16 +156,6 @@ class JsonFormatTest {
         assertEquals(json("{\"comment\":\"good\",\"id\":\"11111111-1111-1111-1111-111111111111\",\"rating\":5}"),
                 withoutNulls(r));
         assertEquals(json("{\"token\":\"tok\"}"), withoutNulls(new AuthResponse("tok")));
-    }
-
-    @Test
-    void errorResponseKeepsTheNullDetails() throws Exception {
-        assertEquals(json("{\"error\":{\"code\":\"NOT_FOUND\",\"details\":null,\"message\":\"Not found\"}}"),
-                parse(ErrorResponse.of(ErrorCode.NOT_FOUND, "Not found", null)));
-        assertEquals(json("{\"error\":{\"code\":\"VALIDATION_ERROR\",\"details\":{\"title\":\"must not be blank\"},"
-                + "\"message\":\"Some fields are invalid\"}}"),
-                parse(ErrorResponse.of(ErrorCode.VALIDATION_ERROR, "Some fields are invalid",
-                        Map.of("title", "must not be blank"))));
     }
 
     @Test

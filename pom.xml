@@ -20,6 +20,9 @@
         <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
         <sonar.projectKey>${env.SONAR_PROJECT_KEY}</sonar.projectKey>
         <sonar.host.url>${env.SONAR_HOST_URL}</sonar.host.url>
+        <sonar.issue.ignore.multicriteria>e1</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S110</sonar.issue.ignore.multicriteria.e1.ruleKey>
+        <sonar.issue.ignore.multicriteria.e1.resourceKey>**/exception/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
     </properties>
 
     <dependencyManagement>
@@ -46,6 +49,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.resteasy-problem</groupId>
+            <artifactId>quarkus-resteasy-problem</artifactId>
+            <version>3.21.1</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

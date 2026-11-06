@@ -1,7 +1,7 @@
 # ProFinder — API Specification
 
-- **Version:** 1.18
-- **Date:** 2026-11-04
+- **Version:** 1.19
+- **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** Every REST endpoint across the 5 services (path, method, auth, request/response shape) plus the Error Catalog those endpoints reference. The Error Catalog lives here (not as its own file) because error codes only exist to serve API responses.
 
@@ -14,7 +14,7 @@ Referenced from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B,
 
 - **Base path:** every endpoint in this document is relative to **`/api/v1`** (e.g. "Orders" table's `POST /orders` really means `POST /api/v1/orders`) — not repeated on every row to keep the tables scannable. `/v1` doesn't imply a future `/v2` will ever coexist ([API versioning is still "current version only"](2%20-%20Requirements.md) — this is just a stable label, the same way Stripe/GitHub keep `/v1` without running two versions side by side). Since resource names don't collide across services (`orders`/`reviews`/`reports` vs `auth/*` vs `chats`/`messages` vs `notifications` vs `moderation/*`), Nginx can route by path under the same `/api/v1` prefix without a separate per-service segment.
 - **Exception:** the Health endpoints at the bottom of each service section are framework-level (`/q/health/*`, Quarkus `smallrye-health` convention) and are **not** under `/api/v1` — they're infrastructure routes the LB polls directly, not versioned business API.
-- **Response envelope (error):** shown below.
+- **Error body:** a problem of [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`), shown below.
 - **Pagination:** offset-style, `page`/`size` query params, default 20, `page_size_max` = 100 (matches [FR-Search-10](2%20-%20Requirements.md) and every other "20/page" mention across file 4).
 - **Auth:** `Authorization: Bearer <JWT>` header. Endpoints marked "public" need none.
 - **Money:** all amounts are plain `numeric`, USD, no `currency` field ([A5 decision](Documentation%20Roadmap.md)).
@@ -308,25 +308,31 @@ Internal-only — called server-to-server by Core API before storing a review/me
 
 Every error code the API can return, with HTTP status, user-facing message, and trigger condition — collected from scattered mentions across [2 - Requirements.md](2%20-%20Requirements.md) and [4 - Business logic.md](4%20-%20Business%20logic.md). Codes not already fixed in those files were named here for the first time, following the existing `SCREAMING_SNAKE_CASE` style (`EMAIL_NOT_VERIFIED`, `ORDER_CLOSED`, etc.).
 
-### Response Envelope
+### Error Body (RFC 9457)
 ---
 
-Every error response uses the same shape, regardless of service:
+Every error response is a problem of [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`Content-Type: application/problem+json`), regardless of service:
 
 ```json
 {
-  "error": {
-    "code": "ORDER_CLOSED",
-    "message": "This order is closed",
-    "details": null
-  }
+  "type": "urn:profinder:problem:order-closed",
+  "title": "Order closed",
+  "status": 409,
+  "detail": "This order is closed",
+  "instance": "/api/v1/orders/4f1c.../responses",
+  "code": "ORDER_CLOSED"
 }
 ```
 
-- `code` — one of the values below, stable, machine-matchable.
-- `message` — human-readable, safe to show in a UI as-is.
-- `details` — nullable; for `VALIDATION_ERROR` caused by a field check it's a field→reason map (see [Generic / Cross-Cutting](#generic--cross-cutting)), otherwise `null`.
-- **Current limitation:** the `401` and `403` that Quarkus Security answers before a request reaches a resource (an invalid JWT, a role that does not fit `@RolesAllowed`) are sent **without** this body for now; every other error has it.
+- `type` — a URN that names the code: `urn:profinder:problem:` + the code in lower case with `-` (`ORDER_CLOSED` → `order-closed`).
+- `title` — a short name of the kind of error, the same for every error of the code.
+- `status` — the HTTP status (the same as the status of the response).
+- `detail` — human-readable, safe to show in a UI as-is (the "Message" column below is its default).
+- `instance` — the path of the request.
+- `code` — extension member: one of the values below, stable, machine-matchable. Match on `code`, not on `title` or `detail`.
+- `violations` — extension member of a failed field check (`VALIDATION_ERROR` from Bean Validation): a list of `{"field", "in", "message"}`, one per invalid field (see [Generic / Cross-Cutting](#generic--cross-cutting)). Absent in other errors.
+- The body is made by the `quarkus-resteasy-problem` library; the application adds the `code` and the `type` (`ErrorCode`, `ErrorCodeProcessor`) and the error classes that carry their own code (`ApiException`).
+- **Current limitation:** the `401` and `403` that Quarkus Security answers before a request reaches a resource (an invalid JWT, a role that does not fit `@RolesAllowed`) may be sent **without** the `code` for now; every other error has it.
 
 
 ### Generic / Cross-Cutting
@@ -336,11 +342,11 @@ Apply to every service, not tied to one domain.
 
 | Code | HTTP | Message | Trigger |
 |---|---|---|---|
-| `VALIDATION_ERROR` | 400 | "Some fields are invalid" | request body fails Jakarta Bean Validation; `details` carries `{field: reason}`. Also used, with `details: null` and the reason in `message`, for a request that breaks a business rule (the two passwords differ, the old password is wrong, a chat with yourself) and for a body that cannot be read (not valid JSON, or a value of the wrong type or format such as a date that is not ISO 8601; message "The request body is malformed") |
+| `VALIDATION_ERROR` | 400 | "Some fields are invalid" | request body fails Jakarta Bean Validation; `violations` lists the invalid fields. Also used, with the reason in `detail` and no `violations`, for a request that breaks a business rule (the two passwords differ, the old password is wrong, a chat with yourself) and for a body that cannot be read (not valid JSON, or a value of the wrong type or format such as a date that is not ISO 8601) |
 | `UNAUTHENTICATED` | 401 | "Please log in" | missing/invalid/expired JWT |
 | `FORBIDDEN` | 403 | "You don't have permission to do this" | valid token, wrong role/ownership for the action |
 | `NOT_FOUND` | 404 | "Not found" | resource id doesn't exist (or is soft-deleted and treated as gone) |
-| `CONFLICT` | 409 | "This item was modified, please refresh" | optimistic-locking failure (`version` mismatch) — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases). Also the answer, with the reason in `message`, to a request that does not fit the current state of the resource: a status change that is not allowed (for example cancelling a completed order) or a second bid of the same professional on an order. The more specific codes (`ORDER_NOT_DRAFT`, ...) come with the order lifecycle in 2.6.0 |
+| `CONFLICT` | 409 | "This item was modified, please refresh" | optimistic-locking failure (`version` mismatch) — see [4 - Business logic.md § Concurrency & Edge Cases](4%20-%20Business%20logic.md#concurrency--edge-cases). Also the answer, with the reason in `detail`, to a request that does not fit the current state of the resource: a status change that is not allowed (for example cancelling a completed order) or a second bid of the same professional on an order. The more specific codes (`ORDER_NOT_DRAFT`, ...) come with the order lifecycle in 2.6.0 |
 | `RATE_LIMITED` | 429 | "Too many requests, try again later" | any per-IP/per-user/per-endpoint request limit from [NFR-Sec-7](2%20-%20Requirements.md) **except** the login lockout (that is `ACCOUNT_LOCKED`); response carries `Retry-After` |
 | `INTERNAL_ERROR` | 500 | "Something went wrong, please try again" | unhandled server error |
 
@@ -462,6 +468,7 @@ Any other unhandled server exception (a bug, an unexpected null, a driver timeou
 
 | Version | Date | Change |
 |---|---|---|
+| 1.19 | 2026-11-06 | **Error body is RFC 9457:** `application/problem+json` with `type`, `title`, `status`, `detail`, `instance` and the extension member `code`; a failed field check lists `violations` (`field`, `in`, `message`) instead of the `details` map; the `{"error": {...}}` envelope is gone. |
 | 1.18 | 2026-11-04 | **Sync with the code (1.5.0):** `CONFLICT` also answers a status change that is not allowed and a second bid; `VALIDATION_ERROR` also answers a broken business rule (`details: null`) and a body that cannot be read; the reset error is about the 6-digit code until 2.2.0; `version` on `PATCH /customers/me` and `/professionals/me`; a text field is cleared with `null` or `""`; profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse`, `ProfessionalResponse`; `401`/`403` from Quarkus Security have no error body yet. |
 | 1.17 | 2026-11-04 | **`PATCH` semantics:** a field that is not sent keeps its value, an optional text field sent as `null` or as an empty text is cleared (code: `Optional` fields read by `ClearableTextDeserializer`), a required field cannot be cleared. |
 | 1.16 | 2026-11-04 | **Naming:** `/orders/{id}/responses` → `/orders/{id}/bids` (and `/bids/{id}`), the DTOs are named by direction (`BidCreateRequest`, `BidResponse`, `OrderResponse`, `LoginRequest`, ...) instead of `*Dto`, to match the code. |

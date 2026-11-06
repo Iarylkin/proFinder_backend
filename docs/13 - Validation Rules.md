@@ -1,11 +1,11 @@
 # ProFinder — Validation Rules
 
-- **Version:** 1.8
-- **Date:** 2026-11-04
+- **Version:** 1.9
+- **Date:** 2026-11-06
 - **Status:** Stable
 - **Purpose:** One consolidated table of every API input field — type, whether it's required, its constraints (length / range / format / allowed values), and the error it raises. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Validation rules".
 
-**Mechanism:** Jakarta Bean Validation ([2 § Tech Stack](2%20-%20Requirements.md)) on request DTOs. A failure returns `400 VALIDATION_ERROR` with `details` as a `{field: reason}` map ([8 § Response Envelope](8%20-%20API%20Specification.md)). Domain rules that need a DB lookup (uniqueness, existence, cross-row invariants) are checked in the service layer and may raise a domain-specific code.
+**Mechanism:** Jakarta Bean Validation ([2 § Tech Stack](2%20-%20Requirements.md)) on request DTOs. A failure returns `400 VALIDATION_ERROR` with `violations`, a list of `{field, in, message}` ([8 § Error Body](8%20-%20API%20Specification.md)). Domain rules that need a DB lookup (uniqueness, existence, cross-row invariants) are checked in the service layer and may raise a domain-specific code.
 
 > All 6 spec gaps identified in v1.0 were resolved in v1.1 (see §12).
 
@@ -23,7 +23,7 @@ Applied everywhere, not repeated per field below.
 | **`PATCH` fields** | A field that is not in the body is not changed. For an optional text field (first name, last name, phone, a professional's description) `null` or an empty text **clears** it; the other fields cannot be cleared. The text is checked (length, characters) only when it is not empty. |
 | **Control chars** | Reject `U+0000`–`U+001F` and `U+007F` except `\n` / `\t` inside multi-line text fields (`bio`, `description`, review `text`, message `text`, report `description`, `notes`). |
 | **UUID path/body params** | Must match the UUID format before any DB lookup; a malformed id → `400 VALIDATION_ERROR`, never `404`. |
-| **Malformed body** | A body that is not valid JSON, or has a value of the wrong type or format (for example a date that is not ISO 8601), is `400 VALIDATION_ERROR` with the message "The request body is malformed" and `details: null`. |
+| **Malformed body** | A body that is not valid JSON, or has a value of the wrong type or format (for example a date that is not ISO 8601), is `400 VALIDATION_ERROR` without `violations`. |
 | **Unknown JSON fields** | Ignored (Jackson `FAIL_ON_UNKNOWN_PROPERTIES = false`) — gap ⑤. |
 | **Numbers** | `NaN` / `Infinity` rejected. Money fields: max 2 decimal places, non-negative. |
 | **Timestamps in requests** | ISO-8601; no per-user timezone handling ([A5](Documentation%20Roadmap.md)). |
@@ -197,6 +197,7 @@ All previously undefined constraints have been decided and moved inline (marked 
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-11-06 | **Error body is RFC 9457:** a failed check returns `violations` (`field`, `in`, `message`) instead of the `details` map ([8 - API Specification.md](8%20-%20API%20Specification.md) 1.19). |
 | 1.8 | 2026-11-04 | **Sync with the code (1.5.0):** the password limits apply to sign-in too (one `AuthRequest` for sign-up and sign-in); the current phone check (characters and length, the per-country check comes in 2.5.0); `deadline` is a date and time that must not be in the past; a body that cannot be read is `400 VALIDATION_ERROR`. |
 | 1.7 | 2026-11-04 | **`PATCH` fields:** a field that is not sent is not changed; `null` or an empty text clears an optional text field. Needed because "empty = null" alone could not tell "keep" from "clear". |
 | 1.6 | 2026-10-31 | **D-1.5:** `role` comes with the registration or the provider login request (no `POST /auth/role`); `display_name` is stored in the profile; callback path is `{provider}/callback`. |
