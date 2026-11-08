@@ -236,15 +236,16 @@ public class ChatSocket {
      * Extracts user ID from a JWT token.
      *
      * @param token JWT token
-     * @return extracted user ID
-     * @throws IllegalArgumentException if token is invalid
+     * @return extracted user ID, or {@code null} if the token is invalid or its subject is not a user ID
      */
     private UUID extractUserId(final String token) {
         try {
             JsonWebToken jwt = jwtParser.parse(token);
-            return UUID.fromString(jwt.getSubject());
-        } catch (ParseException e) {
-            throw new IllegalArgumentException("Invalid JWT", e);
+            String subject = jwt.getSubject();
+            return subject == null ? null : UUID.fromString(subject);
+        } catch (ParseException | IllegalArgumentException e) {
+            log.warn("Rejected a WebSocket connection with an invalid token: {}", e.getClass().getSimpleName());
+            return null;
         }
     }
 }
