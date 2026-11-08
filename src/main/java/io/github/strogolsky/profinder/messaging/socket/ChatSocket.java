@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.messaging.socket;
 
-import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.messaging.converter.ChatMessageDecoder;
 import io.github.strogolsky.profinder.messaging.converter.ChatMessageEncoder;
 import io.github.strogolsky.profinder.messaging.dto.ChatMessageRequest;
@@ -62,11 +61,6 @@ public class ChatSocket {
     private final ChatMessageMapper chatMessageMapper;
 
     /**
-     * Service for managing user-related logic.
-     */
-    private final UserService userService;
-
-    /**
      * Map storing active chat sessions, keyed by chat ID.
      */
     private static final Map<UUID, Set<Session>> CHAT_SESSIONS = new ConcurrentHashMap<>();
@@ -96,7 +90,7 @@ public class ChatSocket {
     private void handleOpenSession(final String token, final UUID chatId, final Session session) {
         UUID userId = extractUserId(token);
 
-        if (userId == null || !userService.existById(userId)) {
+        if (userId == null) {
             closeSession(session, "Unauthorized");
             return;
         }
@@ -139,10 +133,6 @@ public class ChatSocket {
     }
 
     private void handleIncomingMessage(final ChatMessageRequest inputMessage, final UUID senderId, final UUID chatId) {
-        if (!userService.existById(senderId)) {
-            return;
-        }
-
         try {
             ChatMessage message = chatMessageService.create(chatId, senderId, inputMessage.content());
             ChatMessageResponse outputMessage = chatMessageMapper.toDto(message);
