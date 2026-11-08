@@ -20,7 +20,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -118,6 +117,6 @@ class ChatSocketTest {
         ArgumentCaptor<CloseReason> captor = ArgumentCaptor.forClass(CloseReason.class);
         verify(session).close(captor.capture());
         assertEquals(reason, captor.getValue().getReasonPhrase());
-        assertTrue(captor.getValue().getCloseCode() == CloseReason.CloseCodes.VIOLATED_POLICY);
+        assertEquals(CloseReason.CloseCodes.VIOLATED_POLICY, captor.getValue().getCloseCode());
     }
 }
