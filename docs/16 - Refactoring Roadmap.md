@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.19
-- **Date:** 2026-11-06
+- **Version:** 1.20
+- **Date:** 2026-11-08
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -89,7 +89,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
 | **1.7.0** | **Done 2026-11-06.** Packages `io.github.strogolsky.profinder.{core,auth,messaging,notification,moderation,common}`, each with the layer sub-packages (`entity`, `service`, ...); move classes only. The base package `fit.biejk` is renamed to `io.github.strogolsky.profinder` (Maven `groupId` `io.github.strogolsky`, `artifactId` stays `pro-finder`). `common` holds what belongs to no module (base entities, `VersionCheck`, the error format, validation, `PageRequest`) and becomes `contracts` in 2.0.0-rc.1. `UserResource` stays whole in `auth`; the module `moderation` is an empty package until 1.11.0. |
-| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, `CurrentUser` interface |
+| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). Open: the narrow interface over `UserService` for `core` and `messaging` (`exists`, `delete`) |
 | **1.9.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
 | **1.10.0** | Notification boundary: `MailService` behind `NotificationApi` |
 | **1.11.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
@@ -280,6 +280,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.20 | 2026-11-08 | **1.8.0 started:** `CurrentUser` is named `UserContext`; the role is left out because nothing used it. |
 | 1.19 | 2026-11-06 | **1.7.0 done:** classes moved into the modules `core`, `auth`, `messaging`, `notification`, `moderation` and the new `common`; the base package `fit.biejk` is renamed to `io.github.strogolsky.profinder`. `common` is not in the first plan: shared classes belong to no module and become `contracts` in 2.0.0-rc.1. |
 | 1.18 | 2026-11-04 | 1.5.0 gets the naming: DTOs are `*Request` / `*Response` (no `*Dto`) and a professional's response to an order is a `Bid` (table `bids`, paths `/bids`), so `OrderResponse` is free for the DTO of an order and every name shows its direction. |
 | 1.17 | 2026-11-03 | Flyway moves from 1.5.0 to 1.13.0: there are no modules yet and the schema still changes (1.12.0 replaces cross-module relations with IDs), so a baseline taken now would be rewritten at once and per-module schemas are not possible before the modules exist. 1.5.0 – 1.12.0 are the old 1.6.0 – 1.13.0 shifted down by one; M3 and later keep their numbers. M1 = 1.1.0 – 1.6.0, M2 = 1.7.0 – 1.13.0. `citext` goes with Flyway to 1.13.0. |
