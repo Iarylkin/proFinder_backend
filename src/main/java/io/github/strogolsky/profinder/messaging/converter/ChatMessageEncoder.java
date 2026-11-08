@@ -1,7 +1,6 @@
 package io.github.strogolsky.profinder.messaging.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.strogolsky.profinder.common.validation.Text;
 import io.github.strogolsky.profinder.messaging.dto.ChatMessageResponse;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
