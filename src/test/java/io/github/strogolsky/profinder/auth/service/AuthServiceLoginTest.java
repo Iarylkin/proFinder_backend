@@ -7,7 +7,6 @@ import io.github.strogolsky.profinder.auth.utilits.CryptoUtils;
 import io.github.strogolsky.profinder.core.service.ProfileService;
 import io.github.strogolsky.profinder.notification.service.MailService;
 import io.quarkus.redis.client.RedisClient;
-import io.quarkus.security.identity.SecurityIdentity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,8 +31,7 @@ class AuthServiceLoginTest {
     void setUp() {
         userService = mock(UserService.class);
         tokenService = mock(TokenService.class);
-        service = new AuthService(mock(MailService.class), mock(ProfileService.class), userService,
-                mock(SecurityIdentity.class), mock(RedisClient.class), tokenService);
+        service = new AuthService(mock(MailService.class), mock(ProfileService.class), userService, mock(RedisClient.class), tokenService);
     }
 
     private User user() {

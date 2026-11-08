@@ -1,8 +1,8 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.exception.StaleVersionException;
 import io.github.strogolsky.profinder.common.exception.StatusConflictException;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.Location;
 import io.github.strogolsky.profinder.core.entity.Order;
@@ -38,7 +38,7 @@ class OrderServiceTest {
 
     private OrderRepository orderRepository;
     private OrderSearchService orderSearchService;
-    private AuthService authService;
+    private UserContext userContext;
     private OrderService service;
     private Order order;
 
@@ -46,14 +46,14 @@ class OrderServiceTest {
     void setUp() {
         orderRepository = mock(OrderRepository.class);
         orderSearchService = mock(OrderSearchService.class);
-        authService = mock(AuthService.class);
+        userContext = mock(UserContext.class);
         service = new OrderService(
                 orderSearchService,
                 mock(OrderSearchMapper.class),
                 orderRepository,
                 mock(BidService.class),
                 mock(ProfessionalService.class),
-                authService);
+                userContext);
 
         CustomerProfile customer = new CustomerProfile();
         customer.setId(CUSTOMER_ID);
@@ -71,7 +71,7 @@ class OrderServiceTest {
         order.setVersion(VERSION);
 
         when(orderRepository.findById(ORDER_ID)).thenReturn(order);
-        when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
+        when(userContext.is(CUSTOMER_ID)).thenReturn(true);
     }
 
     private static Order changes() {
@@ -157,7 +157,7 @@ class OrderServiceTest {
 
     @Test
     void updateIsForbiddenForANonOwner() {
-        when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
+        when(userContext.is(CUSTOMER_ID)).thenReturn(false);
         Order changes = changes();
         changes.setTitle("Hijacked");
 

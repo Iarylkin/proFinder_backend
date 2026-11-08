@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.auth.service.UserService;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.common.service.VersionCheck;
 import io.github.strogolsky.profinder.common.validation.Text;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
@@ -57,8 +57,10 @@ public class ProfessionalService {
     /** Service for managing reviews. */
     private final ReviewService reviewService;
 
-    /** Service for authentication and user context. */
-    private final AuthService authService;
+    /**
+     * The user who makes the current request.
+     */
+    private final UserContext userContext;
 
     /** Service for customer management. */
     private final CustomerService customerService;
@@ -172,7 +174,7 @@ public class ProfessionalService {
     @Transactional
     public Review review(final UUID professionalId, final Review review) {
 
-        UUID customerId = authService.getCurrentUserId();
+        UUID customerId = userContext.id();
         CustomerProfile customer = customerService.getById(customerId);
         ProfessionalProfile professional = getById(professionalId);
 

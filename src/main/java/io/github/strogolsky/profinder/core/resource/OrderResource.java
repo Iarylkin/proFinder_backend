@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.resource;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.dto.PageRequest;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.dto.BidCreateRequest;
 import io.github.strogolsky.profinder.core.dto.OrderCreateRequest;
 import io.github.strogolsky.profinder.core.dto.OrderFilterRequest;
@@ -66,9 +66,9 @@ public class OrderResource {
     private final CustomerService customerService;
 
     /**
-     * Service for authentication and identity resolution.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /**
      * Mapper for converting between Bid entities and DTOs.
@@ -87,7 +87,7 @@ public class OrderResource {
     public Response create(@Valid final OrderCreateRequest request) {
         log.info("Create order request: {}", request);
         Order order = orderMapper.toEntity(request);
-        UUID customerId = authService.getCurrentUserId();
+        UUID customerId = userContext.id();
         CustomerProfile customer = customerService.getById(customerId);
         order.setCustomer(customer);
         order.setLocation(customer.getLocation());
@@ -132,7 +132,7 @@ public class OrderResource {
             @Valid final BidCreateRequest request) {
         log.info("Create bid request: orderId={}, request={}", orderId, request);
         Bid bid = bidMapper.toEntity(request);
-        UUID professionalId = authService.getCurrentUserId();
+        UUID professionalId = userContext.id();
 
         Bid result = orderService.placeBid(orderId, professionalId, bid);
 

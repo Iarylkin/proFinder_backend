@@ -1,8 +1,8 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.common.exception.StaleVersionException;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.entity.Category;
 import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
 import io.github.strogolsky.profinder.core.exception.CategoryRequiredException;
@@ -49,7 +49,7 @@ class ProfessionalServiceTest {
                 searchService,
                 mock(ProfessionalSearchMapper.class),
                 mock(ReviewService.class),
-                mock(AuthService.class),
+                mock(UserContext.class),
                 mock(CustomerService.class),
                 profileService);
 

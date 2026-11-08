@@ -5,7 +5,6 @@ import io.github.strogolsky.profinder.auth.entity.UserRole;
 import io.github.strogolsky.profinder.core.service.ProfileService;
 import io.github.strogolsky.profinder.notification.service.MailService;
 import io.quarkus.redis.client.RedisClient;
-import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,6 @@ class AuthServiceRegisterTest {
                 mock(MailService.class),
                 profileService,
                 userService,
-                mock(SecurityIdentity.class),
                 mock(RedisClient.class),
                 tokenService);
         when(userService.create(any(User.class))).thenAnswer(call -> call.getArgument(0));

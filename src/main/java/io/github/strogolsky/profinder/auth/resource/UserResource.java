@@ -4,9 +4,9 @@ import io.github.strogolsky.profinder.auth.dto.AuthResponse;
 import io.github.strogolsky.profinder.auth.dto.ChangeEmailRequest;
 import io.github.strogolsky.profinder.auth.dto.ChangePasswordRequest;
 import io.github.strogolsky.profinder.auth.entity.User;
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.auth.service.TokenService;
 import io.github.strogolsky.profinder.auth.service.UserService;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.dto.AvatarData;
 import io.github.strogolsky.profinder.core.minio.FileService;
 import io.github.strogolsky.profinder.core.minio.FileUploadForm;
@@ -40,9 +40,9 @@ public class UserResource {
     private final FileService fileService;
 
     /**
-     * Service for retrieving the currently authenticated user ID and auth logic.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /** Service for user entity management. */
     private final UserService userService;
@@ -61,7 +61,7 @@ public class UserResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Authenticated
     public Response uploadAvatar(final FileUploadForm form) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         log.info("Received avatar upload request from userId={}", userId);
 
         fileService.uploadAvatar(userId, form.getFile());
@@ -104,7 +104,7 @@ public class UserResource {
     @Path("/me/password")
     @Authenticated
     public Response changePassword(@Valid final ChangePasswordRequest request) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         User updated = userService.changePassword(
                 userId,
                 request.oldPassword(),
@@ -125,7 +125,7 @@ public class UserResource {
     @Path("/me/email")
     @Authenticated
     public Response changeEmail(@Valid final ChangeEmailRequest request) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         User updated = userService.changeEmail(
                 userId,
                 request.newEmail(),

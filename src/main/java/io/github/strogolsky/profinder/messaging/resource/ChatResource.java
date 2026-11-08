@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.messaging.resource;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.dto.PageRequest;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.messaging.dto.ChatCreateRequest;
 import io.github.strogolsky.profinder.messaging.entity.Chat;
 import io.github.strogolsky.profinder.messaging.entity.ChatMessage;
@@ -29,9 +29,9 @@ public class ChatResource {
     private final ChatService chatService;
 
     /**
-     * Service for retrieving the current authenticated user's information.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /**
      * Mapper to convert ChatMessage entities to DTOs.
@@ -52,7 +52,7 @@ public class ChatResource {
     public Response create(
             @Valid final ChatCreateRequest request
     ) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         Chat result = chatService.create(userId, request.recipientId());
 
 
@@ -72,7 +72,7 @@ public class ChatResource {
     public Response getMessagesByChatId(
             @PathParam("chatId") final UUID chatId,
             @BeanParam final PageRequest pagination) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         List<ChatMessage> result = chatService.getMessagesById(
                 chatId,
                 userId,
@@ -92,7 +92,7 @@ public class ChatResource {
     @Path("/me")
     @Authenticated
     public Response getMyChats(@BeanParam final PageRequest pagination) {
-        UUID userId = authService.getCurrentUserId();
+        UUID userId = userContext.id();
         List<Chat> result = chatService.getByUserId(
                 userId,
                 pagination.getPage(),

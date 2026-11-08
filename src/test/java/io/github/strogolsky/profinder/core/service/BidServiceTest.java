@@ -1,8 +1,8 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.exception.StaleVersionException;
 import io.github.strogolsky.profinder.common.exception.StatusConflictException;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.entity.Bid;
 import io.github.strogolsky.profinder.core.entity.BidStatus;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
@@ -40,7 +40,7 @@ class BidServiceTest {
     private static final long VERSION = 5L;
 
     private BidRepository responseRepository;
-    private AuthService authService;
+    private UserContext userContext;
     private BidService service;
     private Order order;
     private Bid bid;
@@ -48,10 +48,10 @@ class BidServiceTest {
     @BeforeEach
     void setUp() {
         responseRepository = mock(BidRepository.class);
-        authService = mock(AuthService.class);
+        userContext = mock(UserContext.class);
         service = new BidService(
                 mock(OrderRepository.class),
-                authService,
+                userContext,
                 mock(OrderSearchService.class),
                 mock(OrderSearchMapper.class),
                 responseRepository);
@@ -71,7 +71,7 @@ class BidServiceTest {
         bid.setVersion(VERSION);
 
         when(responseRepository.findByIdOptional(RESPONSE_ID)).thenReturn(Optional.of(bid));
-        when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(true);
+        when(userContext.is(CUSTOMER_ID)).thenReturn(true);
     }
 
     private Order updateStatus(final UUID responseId, final BidStatus status) {
@@ -113,7 +113,7 @@ class BidServiceTest {
 
     @Test
     void onlyTheOrderOwnerCanApprove() {
-        when(authService.isCurrentUser(CUSTOMER_ID)).thenReturn(false);
+        when(userContext.is(CUSTOMER_ID)).thenReturn(false);
 
         assertThrows(ForbiddenException.class,
                 () -> updateStatus(RESPONSE_ID, BidStatus.APPROVED));

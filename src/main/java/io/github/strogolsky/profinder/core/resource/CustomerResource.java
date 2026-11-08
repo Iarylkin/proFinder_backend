@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.resource;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.dto.PageRequest;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.dto.CustomerUpdateRequest;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.Order;
@@ -53,9 +53,9 @@ public class CustomerResource {
     private final CustomerService customerService;
 
     /**
-     * Service for authentication and user identity operations.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /** Maps Review entity to ReviewResponse and vice versa. */
     private final ReviewMapper reviewMapper;
@@ -89,7 +89,7 @@ public class CustomerResource {
     @Path("/me")
     @RolesAllowed("CUSTOMER")
     public Response getMe() {
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         log.info("Get profile for customer ID={}", id);
         return Response.ok(customerMapper.toDto(customerService.getById(id))).build();
     }
@@ -104,7 +104,7 @@ public class CustomerResource {
     @Path("/me")
     @RolesAllowed("CUSTOMER")
     public Response updateMe(@Valid final CustomerUpdateRequest request) {
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         log.info("Update profile for customer ID={}", id);
         CustomerProfile result = customerService.updateProfile(id, customerMapper.toEntity(request));
         return Response.ok(customerMapper.toDto(result)).build();
@@ -120,7 +120,7 @@ public class CustomerResource {
     @RolesAllowed("CUSTOMER")
     public Response deleteProfile() {
         log.info("deleteProfile request");
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         customerService.delete(id);
         log.debug("Deleted profile for customer with ID={}", id);
         return Response.noContent().build();
@@ -138,7 +138,7 @@ public class CustomerResource {
     public Response getReviews(
             @BeanParam final PageRequest pagination
     ) {
-        UUID customerId = authService.getCurrentUserId();
+        UUID customerId = userContext.id();
         List<Review> res = reviewService.getByCustomerId(
                 customerId,
                 pagination.getPage(),
@@ -161,7 +161,7 @@ public class CustomerResource {
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {
-        UUID customerId = authService.getCurrentUserId();
+        UUID customerId = userContext.id();
         log.info("Get customer request: customerId={}", customerId);
         List<Order> result = orderService.getByCustomerId(
                 customerId,

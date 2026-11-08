@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.exception.StatusConflictException;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.common.service.VersionCheck;
 import io.github.strogolsky.profinder.core.entity.Bid;
 import io.github.strogolsky.profinder.core.entity.Order;
@@ -65,9 +65,9 @@ public class OrderService {
     private final ProfessionalService professionalService;
 
     /**
-     * Service for user identity validation.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /**
      * Creates a new order with default status.
@@ -108,7 +108,7 @@ public class OrderService {
     public Order update(final UUID orderId, final Order changes) {
         log.info("Update order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+        if (!userContext.is(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
             throw new ForbiddenException("You are not the owner of this order");
@@ -174,7 +174,7 @@ public class OrderService {
     public void delete(final UUID orderId) {
         log.info("Delete order: orderId={}", orderId);
         Order order = getById(orderId);
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+        if (!userContext.is(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
             throw new ForbiddenException("You are not the owner of this order");
@@ -289,7 +289,7 @@ public class OrderService {
      */
     public List<Order> getByCustomerId(final UUID userId, final int page, final int size) {
         log.info("Get orders by customerId={}", userId);
-        if (!authService.isCurrentUser(userId)) {
+        if (!userContext.is(userId)) {
             log.warn("Orders of another customer requested: customerId={}", userId);
             throw new ForbiddenException("You can only view your own orders");
         } // todo delete, when admin system will be created
@@ -310,7 +310,7 @@ public class OrderService {
      */
     public List<Order> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Get orders by professionalId={}", professionalId);
-        if (!authService.isCurrentUser(professionalId)) {
+        if (!userContext.is(professionalId)) {
             log.warn("Orders of another professional requested: professionalId={}", professionalId);
             throw new ForbiddenException("You can only view your own orders");
         }

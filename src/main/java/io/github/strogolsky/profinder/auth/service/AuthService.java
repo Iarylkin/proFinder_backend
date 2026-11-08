@@ -10,7 +10,6 @@ import io.github.strogolsky.profinder.auth.utilits.CryptoUtils;
 import io.github.strogolsky.profinder.core.service.ProfileService;
 import io.github.strogolsky.profinder.notification.service.MailService;
 import io.quarkus.redis.client.RedisClient;
-import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.redis.client.Response;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
@@ -18,11 +17,9 @@ import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Service responsible for authentication logic.
@@ -74,11 +71,6 @@ public class AuthService {
      * Service for managing users.
      */
     private final UserService userService;
-
-    /**
-     * Quarkus security context used to get the current authenticated identity.
-     */
-    private final SecurityIdentity securityIdentity;
 
     /**
      * Redis client for temporary storage (e.g., verification codes).
@@ -141,39 +133,6 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
         return tokenService.generateToken(user);
-    }
-
-    /**
-     * Returns the ID of the currently authenticated user.
-     *
-     * @return user ID
-     */
-    public UUID getCurrentUserId() {
-        log.debug("Current principal name={}", securityIdentity.getPrincipal().getName());
-        return UUID.fromString(securityIdentity.getPrincipal().getName());
-    }
-
-    /**
-     * Returns the role of the current user.
-     *
-     * @return the role, or empty if the account has not chosen one yet
-     */
-    public Optional<UserRole> getCurrentUserRole() {
-        return Arrays.stream(UserRole.values())
-                .filter(role -> securityIdentity.hasRole(role.name()))
-                .findFirst();
-    }
-
-    /**
-     * Checks if the specified user ID matches the currently authenticated user.
-     *
-     * @param userId user ID to check
-     * @return true if matches, false otherwise
-     */
-    public boolean isCurrentUser(final UUID userId) {
-        UUID currentUserId = getCurrentUserId();
-        log.debug("Comparing user IDs: current={}, requested={}", currentUserId, userId);
-        return currentUserId.equals(userId);
     }
 
     /**

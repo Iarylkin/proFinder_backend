@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.exception.StatusConflictException;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.common.service.VersionCheck;
 import io.github.strogolsky.profinder.core.entity.Bid;
 import io.github.strogolsky.profinder.core.entity.BidStatus;
@@ -39,9 +39,9 @@ public class BidService {
      */
     private final OrderRepository orderRepository;
     /**
-     * Service for checking the identity of the currently authenticated user.
+     * The user who makes the current request.
      */
-    private final AuthService authService;
+    private final UserContext userContext;
 
     /**
      * Service for indexing orders in Elasticsearch.
@@ -104,7 +104,7 @@ public class BidService {
 
         Order order = bid.getOrder();
 
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+        if (!userContext.is(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
         VersionCheck.require(bid, version);
@@ -168,8 +168,8 @@ public class BidService {
      */
     public Bid getByIdForCurrentUser(final UUID bidId) {
         Bid bid = getById(bidId);
-        boolean isOrderOwner = authService.isCurrentUser(bid.getOrder().getCustomer().getId());
-        boolean isAuthor = authService.isCurrentUser(bid.getProfessional().getId());
+        boolean isOrderOwner = userContext.is(bid.getOrder().getCustomer().getId());
+        boolean isAuthor = userContext.is(bid.getProfessional().getId());
         if (!isOrderOwner && !isAuthor) {
             throw new ForbiddenException("You do not have access to this bid");
         }
@@ -194,7 +194,7 @@ public class BidService {
         if (order == null) {
             throw new NotFoundException("Order not found");
         }
-        if (!authService.isCurrentUser(order.getCustomer().getId())) {
+        if (!userContext.is(order.getCustomer().getId())) {
             throw new ForbiddenException("You are not the owner of this order");
         }
 
@@ -218,7 +218,7 @@ public class BidService {
      */
     public List<Bid> getByProfessionalId(final UUID professionalId, final int page, final int size) {
         log.info("Searching for bid by professional ID={}", professionalId);
-        if (!authService.isCurrentUser(professionalId)) {
+        if (!userContext.is(professionalId)) {
             throw new ForbiddenException("You can only view your own bids");
         }
         return bidRepository.findByProfessionalId(professionalId, page, size);

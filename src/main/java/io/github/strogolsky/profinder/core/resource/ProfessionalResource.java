@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.resource;
 
-import io.github.strogolsky.profinder.auth.service.AuthService;
 import io.github.strogolsky.profinder.common.dto.PageRequest;
+import io.github.strogolsky.profinder.common.security.UserContext;
 import io.github.strogolsky.profinder.core.dto.ProfessionalUpdateRequest;
 import io.github.strogolsky.profinder.core.dto.ReviewCreateRequest;
 import io.github.strogolsky.profinder.core.entity.Bid;
@@ -65,8 +65,10 @@ public class ProfessionalResource {
     /** Mapper for converting between Professional entities and DTOs. */
     private final ProfessionalMapper professionalMapper;
 
-    /** Service for retrieving authenticated user context and identity. */
-    private final AuthService authService;
+    /**
+     * The user who makes the current request.
+     */
+    private final UserContext userContext;
 
     /** Mapper for converting between Review and ReviewResponse. */
     private final ReviewMapper reviewMapper;
@@ -98,7 +100,7 @@ public class ProfessionalResource {
     @Path("/me")
     @RolesAllowed("PROFESSIONAL")
     public Response getMe() {
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         log.info("Get profile for professional ID={}", id);
         return Response.ok(professionalMapper.toDto(professionalService.getById(id))).build();
     }
@@ -114,7 +116,7 @@ public class ProfessionalResource {
     @Path("/me")
     @RolesAllowed("PROFESSIONAL")
     public Response updateMe(@Valid final ProfessionalUpdateRequest request) {
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         log.info("Update profile for professional ID={}", id);
         ProfessionalProfile result = professionalService.updateProfile(id, professionalMapper.toEntity(request));
         return Response.ok(professionalMapper.toDto(result)).build();
@@ -129,7 +131,7 @@ public class ProfessionalResource {
     @Path("/me")
     @RolesAllowed("PROFESSIONAL")
     public Response deleteProfile() {
-        UUID id = authService.getCurrentUserId();
+        UUID id = userContext.id();
         log.info("Delete profile for professional ID={}", id);
         professionalService.delete(id);
         return Response.noContent().build();
@@ -210,7 +212,7 @@ public class ProfessionalResource {
     public Response getOrders(
             @BeanParam final PageRequest pagination
     ) {
-        UUID professionalId = authService.getCurrentUserId();
+        UUID professionalId = userContext.id();
         log.info("Get assigned by professional id: professionalId={}", professionalId);
         List<Order> result = orderService.getByProfessionalId(
                 professionalId,
