@@ -1,0 +1,56 @@
+package io.github.strogolsky.profinder.core.entity;
+
+import io.github.strogolsky.profinder.common.entity.BaseEntity;
+import io.github.strogolsky.profinder.common.validation.Limits;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+/**
+ * Entity representing a review submitted by a customer after an order is completed.
+ */
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "review")
+public class Review extends BaseEntity {
+
+    /**
+     * The customer who submitted the review.
+     */
+    @ManyToOne
+    @JoinColumn(name = "customer_id", nullable = false)
+    private CustomerProfile customer;
+
+    /**
+     * The professional being reviewed.
+     */
+    @ManyToOne
+    @JoinColumn(name = "professional_id", nullable = false)
+    private ProfessionalProfile professional;
+
+    /**
+     * Rating score from 1 to 5.
+     */
+    @Column(name = "rating")
+    private int rating;
+
+    /**
+     * Textual comment provided by the customer (max 1000 characters).
+     */
+    @Column(name = "comment", length = Limits.REVIEW_COMMENT_MAX_LENGTH)
+    private String comment;
+
+    /**
+     * Timestamp of when the review was created.
+     * <p>
+     * Automatically set at instantiation and cannot be modified later.
+     * </p>
+     */
+    @Column(name = "createAt", nullable = false, updatable = false)
+    private final LocalDateTime createAt = LocalDateTime.now();
+}

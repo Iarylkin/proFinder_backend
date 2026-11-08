@@ -13,7 +13,7 @@ be aware of:
 
 | Aspect | `docs/` (intended design) | Current code |
 | --- | --- | --- |
-| Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`fit.biejk`) |
+| Deployment unit | 5 microservices — Core API, Auth, Messaging, Notification, Moderation | single Quarkus module (`io.github.strogolsky.profinder`) |
 | Async / events | RabbitMQ topic exchange + transactional outbox ([`9 - Event Catalog.md`](../docs/9%20-%20Event%20Catalog.md)) | in-process service calls |
 | Schema management | Flyway migrations | Hibernate `drop-and-create` (dev) |
 
@@ -67,8 +67,17 @@ docker-compose up -d                              # Start all services (PostgreS
 
 ### Project Structure
 
-#### `/src/main/java/fit/biejk`
-Main application code organized by layers:
+#### `/src/main/java/io/github/strogolsky/profinder`
+Main application code is split into modules, one package per future service (step 1.7.0 of `docs/16`; the boundaries between them are not enforced yet: the modules still call each other's classes and entities relate across them). Inside a module the classes are grouped by layer, in the sub-packages listed below (`<module>.entity`, `<module>.service`, ...):
+
+- **`core`** — orders, bids (responses), reviews, customer and professional profiles, categories, locations, search (Elasticsearch), file storage (MinIO)
+- **`auth`** — `User`, `UserRole`, registration, login, tokens, password recovery, `UserResource` (avatar, email and password changes), `CryptoUtils`
+- **`messaging`** — `Chat`, `ChatMessage`, the chat REST resource and the WebSocket `ChatSocket`
+- **`notification`** — `MailService`
+- **`moderation`** — empty until step 1.11.0
+- **`common`** — what belongs to no module and is shared by all: `BaseEntity`/`VersionedEntity`, `VersionCheck`, `UserContext` (who makes the request), the error format (`ApiException`, `ErrorCode`, `ApiExceptionMapper`, `ErrorCodeProcessor`, ...), `validation/` and `PageRequest`; it becomes the `contracts` module in 2.0.0-rc.1
+
+The layers (each is a sub-package of the module that owns the class):
 
 - **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
@@ -92,7 +101,7 @@ Main application code organized by layers:
   - `BidService` — Response lifecycle (create, approve; the other responses of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
-  - `TokenService` — JWT token generation (the current user is resolved from the `SecurityIdentity` in `AuthService`)
+  - `TokenService` — JWT token generation (the current user is resolved by `UserContext`, not by this module)
   - `ReviewService` — Review creation and rating aggregation
   - `LocationService`, `CategoryService` — Reference data
 
@@ -158,7 +167,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 #### User Registration & Authentication
 1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create the `User` (hashed password), then its profile by role through `ProfileService`
 2. `AuthResource.login()` (`POST /v1/auth/login`) → `TokenService.generateToken()` returns a JWT with userId and role
-3. The current user ID and role are read from the `SecurityIdentity` via `AuthService.getCurrentUserId()` and `getCurrentUserRole()`; resources and services never use `SecurityIdentity` directly
+3. The current user ID is read from the verified token via `UserContext` (`id()`, `is(userId)`; the implementation `JwtUserContext` in `common.security` is the only class that reads the `SecurityIdentity`), so it costs no call to the auth module or to the database; resources and services never use `SecurityIdentity` directly
 4. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
 
 #### Order Lifecycle (Customer → Professional workflow)
@@ -197,7 +206,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 6. **Dependency injection:** constructor injection with `@RequiredArgsConstructor` and `private final` fields, no `@Inject` fields
 7. **Mappers:** DTO ↔ entity mappers are used in resources, services work with entities. Partial updates (`PATCH`) are passed to the service as an entity that holds only the changes (unsent fields are `null`). A text field of a `PATCH` is a plain `String`: not in the JSON or `null` is `null` (keep), a text replaces, an empty text clears a field that is optional (phone, a professional's description) and the service stores it as `null` (`Text.emptyToNull`). The compact constructor only strips it (`Text.strip`), so the empty text survives. A required field (names, and the title, description and price of an order) cannot be cleared: an empty name is `400 VALIDATION_ERROR` (`@Size(min = 1)`), and an empty list of categories is `400 CATEGORY_REQUIRED` (`CategoryRequiredException`, thrown by `ProfessionalService`). There is no `Optional` in a request: an explicit `null` is not told from a missing field. Only mappers that build an internal representation (`*SearchMapper`, entity → Elasticsearch document) are used in services
 8. **REST style:** state changes are a `PATCH` of the resource (`{"status": ...}`), not verb sub-resources; `/auth/*` actions are the exception. Everything about the current user is under `/users/me/...` (account: avatar, email, password) or the resource's own `/me` (`/customers/me`, `/professionals/me`, `/chats/me`)
-9. **ID Mapping:** Resources and services use `AuthService` to get the current user ID (a `UUID`) and role from the JWT claims
+9. **ID Mapping:** Resources and services use `UserContext` to get the current user ID (a `UUID`) from the JWT claims; a role is checked with `@RolesAllowed`
 10. **Identifiers and concurrency:** every id is a `UUID` and every path variable is a `UUID` (not a valid UUID → `404`); no `Long` ids. Every response DTO of an editable resource (`OrderResponse`, `BidResponse`, `CustomerResponse`, `ProfessionalResponse`) carries `version`, and the four `PATCH` requests that change such a resource (`/orders/{id}`, `/responses/{id}`, `/customers/me`, `/professionals/me`) must send back the version they read (`400` if missing). The service calls `VersionCheck.require(entity, version)` right after loading the entity and before changing anything; a different version is `StaleVersionException` (`409 CONFLICT`). The mappers take `version` only from a partial update (`toEntity(*UpdateRequest)`) and ignore it when something is created; Hibernate's `@Version` stays as the second line of defence for two overlapping transactions
 
 ### Debugging & Development Tips
