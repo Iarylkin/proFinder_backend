@@ -212,7 +212,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Debugging & Development Tips
 
 1. **Database Inspection:**
-   - Connect to PostgreSQL: `psql -h localhost -U iarylser -d profinder_db`
+   - Connect to PostgreSQL: `psql -h localhost -U iarylser -d core_db` (also `auth_db`, `messaging_db`)
    - Elasticsearch UI: http://localhost:5602 (Kibana)
    - MinIO Console: http://localhost:9001
 
