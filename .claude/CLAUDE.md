@@ -169,7 +169,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 2. `AuthResource.login()` (`POST /v1/auth/login`) → `TokenService.generateToken()` returns a JWT with userId and role
 3. The current user ID is read from the verified token via `UserContext` (`id()`, `is(userId)`; the implementation `JwtUserContext` in `common.security` is the only class that reads the `SecurityIdentity`), so it costs no call to the auth module or to the database; resources and services never use `SecurityIdentity` directly
 4. Deleting a user (`DELETE /customers/me`, `/professionals/me`) fires the event `UserDeleted` (`common.event`) after `auth` committed; `ProfileService` (core) and `ChatService` (messaging) observe it (`AFTER_SUCCESS`, each in its own transaction) and remove the profile and the chats
-5. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
+5. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`). An email is matched exactly as the client sent it (trimmed, never case-folded): `A@x.com` and `a@x.com` are two accounts until the `citext` column of `docs/6` arrives with Flyway
 
 #### Order Lifecycle (Customer → Professional workflow)
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
