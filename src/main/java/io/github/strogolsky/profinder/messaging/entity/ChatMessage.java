@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 /**
@@ -42,7 +43,7 @@ public class ChatMessage extends BaseEntity {
      * </p>
      */
     @Column(name = "create_at")
-    private LocalDateTime createAt = LocalDateTime.now();
+    private LocalDateTime createAt = LocalDateTime.now(ZoneOffset.UTC);
 
     /**
      * Chat to which the message belongs.

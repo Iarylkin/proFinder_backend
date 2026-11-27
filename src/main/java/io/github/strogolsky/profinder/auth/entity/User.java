@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Base entity representing a system user.
@@ -49,6 +50,6 @@ public class User extends BaseEntity {
      * Timestamp when the user account was created.
      */
     @Column(name = "createAt", nullable = false, updatable = false)
-    private final LocalDateTime createAt = LocalDateTime.now();
+    private final LocalDateTime createAt = LocalDateTime.now(ZoneOffset.UTC);
 
 }

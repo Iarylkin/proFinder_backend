@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -75,7 +76,7 @@ class BidServiceTest {
     }
 
     private Order updateStatus(final UUID responseId, final BidStatus status) {
-        return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now().plusDays(1), VERSION);
+        return service.updateStatus(responseId, status, FINAL_PRICE, LocalDateTime.now(ZoneId.systemDefault()).plusDays(1), VERSION);
     }
 
     @Test
@@ -91,7 +92,7 @@ class BidServiceTest {
 
     @Test
     void approvingWithAStaleVersionIsRejectedAndChangesNothing() {
-        LocalDateTime deadline = LocalDateTime.now().plusDays(1);
+        LocalDateTime deadline = LocalDateTime.now(ZoneId.systemDefault()).plusDays(1);
 
         assertThrows(StaleVersionException.class,
                 () -> service.updateStatus(RESPONSE_ID, BidStatus.APPROVED, FINAL_PRICE, deadline, VERSION - 1));

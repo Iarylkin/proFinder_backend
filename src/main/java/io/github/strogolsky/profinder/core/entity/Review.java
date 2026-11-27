@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Entity representing a review submitted by a customer after an order is completed.
@@ -52,5 +53,5 @@ public class Review extends BaseEntity {
      * </p>
      */
     @Column(name = "createAt", nullable = false, updatable = false)
-    private final LocalDateTime createAt = LocalDateTime.now();
+    private final LocalDateTime createAt = LocalDateTime.now(ZoneOffset.UTC);
 }

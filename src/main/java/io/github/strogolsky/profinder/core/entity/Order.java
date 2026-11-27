@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -82,7 +83,7 @@ public class Order extends BaseEntity {
      * </p>
      */
     @Column(name = "createAt", nullable = false, updatable = false)
-    private final LocalDateTime createdAt = LocalDateTime.now();
+    private final LocalDateTime createdAt = LocalDateTime.now(ZoneOffset.UTC);
 
     /**
      * Deadline for completing the order.

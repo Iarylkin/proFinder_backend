@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 /**
@@ -44,7 +45,7 @@ public abstract class Profile extends VersionedEntity {
      */
     @Column(name = "create_at", nullable = false, updatable = false)
     @ColumnDefault("CURRENT_TIMESTAMP")
-    private LocalDateTime createAt = LocalDateTime.now();
+    private LocalDateTime createAt = LocalDateTime.now(ZoneOffset.UTC);
 
     /**
      * First name of the person.
