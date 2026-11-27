@@ -6,15 +6,12 @@ import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.core.dto.ProfessionalUpdateRequest;
 import io.github.strogolsky.profinder.core.dto.ReviewCreateRequest;
 import io.github.strogolsky.profinder.core.entity.Bid;
-import io.github.strogolsky.profinder.core.entity.Order;
 import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
 import io.github.strogolsky.profinder.core.entity.Review;
 import io.github.strogolsky.profinder.core.mapper.BidMapper;
-import io.github.strogolsky.profinder.core.mapper.OrderMapper;
 import io.github.strogolsky.profinder.core.mapper.ProfessionalMapper;
 import io.github.strogolsky.profinder.core.mapper.ReviewMapper;
 import io.github.strogolsky.profinder.core.service.BidService;
-import io.github.strogolsky.profinder.core.service.OrderService;
 import io.github.strogolsky.profinder.core.service.ProfessionalService;
 import io.github.strogolsky.profinder.core.service.ReviewService;
 import jakarta.annotation.security.PermitAll;
@@ -44,16 +41,6 @@ public class ProfessionalResource {
      * Service responsible for handling business logic related to bids.
      */
     private final BidService bidService;
-
-    /**
-     * Service for managing order-related operations.
-     */
-    private final OrderService orderService;
-
-    /**
-     * Mapper for converting between Order entities and DTOs.
-     */
-    private final OrderMapper orderMapper;
 
     /**
      * Mapper for converting between Bid entities and DTOs.
@@ -201,31 +188,6 @@ public class ProfessionalResource {
                 pagination.getPage(),
                 pagination.getSize());
         return Response.ok(bidMapper.toDtoList(result)).build();
-    }
-
-    /**
-     * Retrieves all active orders assigned to a specific professional.
-     * <p>
-     * Only accessible to authenticated users with the PROFESSIONAL role.
-     * </p>
-     *
-     * @param pagination the pagination parameters (page and size)
-     * @return list of orders currently assigned to the professional
-     */
-    @GET
-    @Path("/me/orders")
-    @RolesAllowed("PROFESSIONAL")
-    public Response getOrders(
-            @BeanParam final PageRequest pagination
-    ) {
-        UUID professionalId = userContext.id();
-        log.info("Get assigned by professional id: professionalId={}", professionalId);
-        List<Order> result = orderService.getByProfessionalId(
-                professionalId,
-                pagination.getPage(),
-                pagination.getSize()
-        );
-        return Response.ok(orderMapper.toDtoList(result)).build();
     }
 
     private String email(final UUID id) {

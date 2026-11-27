@@ -11,7 +11,7 @@ import java.util.UUID;
  * Repository class for performing CRUD operations on {@link Order} entities.
  * <p>
  * Uses {@link PanacheRepositoryBase} for simplified data access with Quarkus and Hibernate ORM.
- * Provides custom queries for retrieving orders by customer and professional.
+ * Provides custom queries for retrieving orders by customer.
  * </p>
  */
 @ApplicationScoped
@@ -27,20 +27,6 @@ public class OrderRepository implements PanacheRepositoryBase<Order, UUID> {
      */
     public List<Order> findByCustomerId(final UUID customerId, final int page, final int size) {
         return find("customer.id", customerId)
-                .page(page - 1, size)
-                .list();
-    }
-
-    /**
-     * Retrieves all orders assigned to the specified professional.
-     *
-     * @param professionalId the ID of the professional
-     * @param page         page number for pagination
-     * @param size         number of orders per page
-     * @return a list of {@link Order} entities assigned to the given professional
-     */
-    public List<Order> findByProfessionalId(final UUID professionalId, final int page, final int size) {
-        return find("professional.id", professionalId)
                 .page(page - 1, size)
                 .list();
     }

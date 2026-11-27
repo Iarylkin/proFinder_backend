@@ -6,7 +6,6 @@ import io.github.strogolsky.profinder.common.service.VersionCheck;
 import io.github.strogolsky.profinder.core.entity.Bid;
 import io.github.strogolsky.profinder.core.entity.Order;
 import io.github.strogolsky.profinder.core.entity.OrderStatus;
-import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
 import io.github.strogolsky.profinder.core.exception.OrderClosedException;
 import io.github.strogolsky.profinder.core.repository.OrderRepository;
 import io.github.strogolsky.profinder.core.search.OrderSearchDto;
@@ -232,21 +231,19 @@ public class OrderService {
      */
     @Transactional
     public Bid placeBid(final UUID orderId, final UUID professionalId, final Bid bid) {
-        log.info("Create bid: orderId={}, professionalId={}", orderId, bid.getProfessional().getId());
+        log.info("Create bid: orderId={}, professionalId={}", orderId, professionalId);
         Order order = getById(orderId);
         if (!order.getStatus().acceptsBids()) {
             log.warn("Bid rejected, order is closed: orderId={}, status={}", orderId, order.getStatus());
             throw new OrderClosedException();
         }
+        bid.setProfessional(professionalService.getById(professionalId));
         if (haveProfessionalResponse(order, bid)) {
             log.error("Order bid already exists for this professional. orderId={}, professionalId={}",
-                    orderId, bid.getProfessional().getId());
+                    orderId, professionalId);
             throw new ClientErrorException("Order bid already exists", Response.Status.CONFLICT);
         }
         bid.setOrder(order);
-
-        ProfessionalProfile professional = professionalService.getById(professionalId);
-        bid.setProfessional(professional);
 
         bidService.create(bid);
         order.getBids().add(bid);
@@ -299,27 +296,6 @@ public class OrderService {
             throw new ForbiddenException("You can only view your own orders");
         } // todo delete, when admin system will be created
         return orderRepository.findByCustomerId(userId, page, size);
-    }
-
-    /**
-     * Retrieves all orders assigned to the specified professional.
-     * <p>
-     * Ensures that the requesting user is the same as the target professional.
-     * </p>
-     *
-     * @param professionalId ID of the professional
-     * @param page         page number for pagination
-     * @param size         number of orders per page
-     * @return list of orders currently assigned to the professional
-     * @throws ForbiddenException if the current user is not the same as the professional
-     */
-    public List<Order> getByProfessionalId(final UUID professionalId, final int page, final int size) {
-        log.info("Get orders by professionalId={}", professionalId);
-        if (!userContext.is(professionalId)) {
-            log.warn("Orders of another professional requested: professionalId={}", professionalId);
-            throw new ForbiddenException("You can only view your own orders");
-        }
-        return orderRepository.findByProfessionalId(professionalId, page, size);
     }
 
 
