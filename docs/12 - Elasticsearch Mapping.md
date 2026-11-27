@@ -1,7 +1,7 @@
 # ProFinder — Elasticsearch Mapping
 
-- **Version:** 1.5
-- **Date:** 2026-11-04
+- **Version:** 1.6
+- **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** The two Elasticsearch indexes — `professionals` and `orders` — their field mappings, analyzers, how each document is assembled from PostgreSQL, and how the queries behind [FR-Search](2%20-%20Requirements.md) map onto them. [Documentation Roadmap.md](Documentation%20Roadmap.md) Tier 2 "Elasticsearch mapping".
 
@@ -88,7 +88,7 @@ Both indexes use these. Defined once per index under `settings.analysis`.
       "years_experience": { "type": "integer" },
       "available":        { "type": "boolean" },
 
-      "rating_avg":       { "type": "scaled_float", "scaling_factor": 100 },
+      "rating":       { "type": "scaled_float", "scaling_factor": 100 },
       "review_count":     { "type": "integer" },
       "sort_rating":      { "type": "scaled_float", "scaling_factor": 1000 },
       "popularity":       { "type": "scaled_float", "scaling_factor": 1000 },
@@ -121,10 +121,10 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 | `hourly_rate` | `professional_profiles.hourly_rate` | **range filter** ([FR-Search-4](2%20-%20Requirements.md)); `price` sort. `null` when the professional hasn't set one → excluded from any price filter, sorts last on `price` |
 | `years_experience` | `professional_profiles.years_experience` | **filter** ([FR-Search-7](2%20-%20Requirements.md), exact or `gte`); `null` → excluded from the experience filter |
 | `available` | `professional_profiles.available` | **filter** ([FR-Search-5](2%20-%20Requirements.md)); `function_score` boost; primary sort key in "Recommended" |
-| `rating_avg` | `professional_profiles.rating_avg` (denormalized) | display; the `rating` sort (raw mean, [FR-Search-9](2%20-%20Requirements.md)) |
+| `rating` | `professional_profiles.rating` (denormalized) | display; the `rating` sort (raw mean, [FR-Search-9](2%20-%20Requirements.md)) |
 | `review_count` | `professional_profiles.review_count` | display; tie-break in "Recommended"; input to `popularity` |
-| `sort_rating` | **computed at index time** — `(C·m + rating_avg·review_count) / (C + review_count)` | the "Recommended" sort key and the `function_score` multiplier for text search. `C` and `m` are config (`bayes_prior_count` ≈ 5, `bayes_prior_mean` ≈ platform mean). Never shown to users. |
-| `popularity` | **computed at index time** — `rating_avg · log10(review_count + 1)` | the `popularity` sort ([FR-Search-9](2%20-%20Requirements.md)) |
+| `sort_rating` | **computed at index time** — `(C·m + rating·review_count) / (C + review_count)` | the "Recommended" sort key and the `function_score` multiplier for text search. `C` and `m` are config (`bayes_prior_count` ≈ 5, `bayes_prior_mean` ≈ platform mean). Never shown to users. |
+| `popularity` | **computed at index time** — `rating · log10(review_count + 1)` | the `popularity` sort ([FR-Search-9](2%20-%20Requirements.md)) |
 | `avatar_thumb_url` | derived from `professional_profiles.avatar_file_id` → the 128×128 thumb key | result-card display only, `index: false` |
 | `created_at` | `professional_profiles.created_at` | the `newest` sort |
 | `last_active_at` | `professional_profiles.last_active_at` (falls back to `created_at` when `NULL`) | final tie-break in "Recommended" ("most recently active") |
@@ -135,7 +135,7 @@ Both indexes use these. Defined once per index under `settings.analysis`.
 
 The API returns **only** these fields to `SearchResultCardResponse` ([FR-Search-10](2%20-%20Requirements.md)) — request them with `_source` filtering:
 
-`professional_id`, `display_name`, `avatar_thumb_url`, `rating_avg` (rounded to 1 decimal for display), `review_count`, `hourly_rate`. `cities` / `available` are cheap to include if the frontend wants them. Everything else (full bio, portfolio, contacts, working hours) loads from Core API when the profile is opened.
+`professional_id`, `display_name`, `avatar_thumb_url`, `rating` (rounded to 1 decimal for display), `review_count`, `hourly_rate`. `cities` / `available` are cheap to include if the frontend wants them. Everything else (full bio, portfolio, contacts, working hours) loads from Core API when the profile is opened.
 
 ### 3.4 Document assembly — `SearchIndexConsumer` on `search.professional_reindex`
 ---
@@ -158,15 +158,15 @@ on message { professional_id, version, reason }:
     cities = SELECT city FROM professional_cities WHERE professional_id = :professional_id
 
     C = config.bayes_prior_count ; m = config.bayes_prior_mean
-    sort_rating = (C*m + row.rating_avg * row.review_count) / (C + row.review_count)
-    popularity  = row.rating_avg * log10(row.review_count + 1)
+    sort_rating = (C*m + row.rating * row.review_count) / (C + row.review_count)
+    popularity  = row.rating * log10(row.review_count + 1)
 
     PUT professionals/_doc/:professional_id?version=:version&version_type=external
     {
       professional_id, display_name, bio,
       category_ids: cats.id[], category_names: cats.name[], cities: cities[],
       hourly_rate, years_experience, available,
-      rating_avg, review_count, sort_rating, popularity,
+      rating, review_count, sort_rating, popularity,
       avatar_thumb_url, created_at, last_active_at: coalesce(row.last_active_at, row.created_at),
       version, indexed_at: now()
     }
@@ -181,7 +181,7 @@ The **nightly full reindex** runs the same builder over `SELECT user_id FROM pro
 | `sort` value | ES query |
 |---|---|
 | `recommended` (default, no `q`) | `bool.filter` (see below), sorted `available` desc → `sort_rating` desc → `review_count` desc → `last_active_at` desc |
-| `rating` | filters + sort `rating_avg` desc |
+| `rating` | filters + sort `rating` desc |
 | `price` | filters + sort `hourly_rate` asc, `missing: _last` |
 | `newest` | filters + sort `created_at` desc |
 | `popularity` | filters + sort `popularity` desc |
@@ -192,7 +192,7 @@ The **nightly full reindex** runs the same builder over `SELECT user_id FROM pro
 - `term  category_ids = {category_id}`
 - `range hourly_rate >= {price_min}` / `<= {price_max}`
 - `term  available = true` (only when the availability filter is on)
-- `range rating_avg >= {rating_min}` (0.0–5.0, 0.1 steps — [FR-Search-3](2%20-%20Requirements.md))
+- `range rating >= {rating_min}` (0.0–5.0, 0.1 steps — [FR-Search-3](2%20-%20Requirements.md))
 - `term years_experience = {experience}` (or `range >=` — [FR-Search-7](2%20-%20Requirements.md) says "exact"; treat the value as a minimum only if product later wants a slider)
 
 Pagination: `from = (page-1)*size`, `size` (default 20, max 100). Result pages (first ~3) are cached in Redis 60 s keyed by the normalized filter hash ([4 § Search Result Caching](4%20-%20Business%20logic.md)).
@@ -297,6 +297,7 @@ sort: published_at desc
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.5 | 2026-11-04 | **Naming:** `SearchResultCardDto` → `SearchResultCardResponse`: DTOs are named by direction, `*Request` and `*Response`, to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** `display_name`, `bio` and the avatar are read from `professional_profiles`, not from `users`. |
 | 1.3 | 2026-10-27 | **D-1.4:** `last_active_at` is read from `professional_profiles.last_active_at` (falls back to `created_at`). |

@@ -1,6 +1,6 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.12
+- **Version:** 1.13
 - **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
@@ -128,7 +128,7 @@ The ways an account can sign in through a provider (Google first). An account ca
 | available | boolean | NOT NULL — manual toggle |
 | working_hours_start | time | nullable |
 | working_hours_end | time | nullable |
-| rating_avg | numeric(3,2) | denormalized, DEFAULT 0 |
+| rating | numeric(3,2) | denormalized, DEFAULT 0 |
 | review_count | int | denormalized, DEFAULT 0 |
 | last_active_at | timestamp | nullable — set when the professional submits a response, edits the profile or toggles `available`; feeds the "most recently active" tie-break in search; `NULL` falls back to `created_at` |
 | version | bigint | optimistic locking |
@@ -339,7 +339,7 @@ erDiagram
 **Constraints:**
 - `reviews`: partial unique index `UNIQUE (reviewer_id, reviewee_id) WHERE deleted_at IS NULL` — one live review per pair, in either direction ([A2 decision](Documentation%20Roadmap.md)). A soft-deleted review does not block a new one.
 - `review_replies` only ever attach to a `reviews` row where `reviewer_role = 'CUSTOMER'` (professional replies + customer's own follow-up) — a `PROFESSIONAL`-direction review (customer reliability rating) has **no reply** in MVP. Enforced at the application layer.
-- On insert/update/delete of a non-deleted, non-outlier `reviews` row, the corresponding `rating_avg`/`review_count` (on `professional_profiles` or `customer_profiles`, depending on `reviewer_role`) is recalculated **synchronously in the same transaction**.
+- On insert/update/delete of a non-deleted, non-outlier `reviews` row, the corresponding `rating`/`review_count` (on `professional_profiles` or `customer_profiles`, depending on `reviewer_role`) is recalculated **synchronously in the same transaction**.
 
 
 ## 4. Messaging
@@ -701,6 +701,7 @@ Everything else that references `users` (`orders.customer_id`, `bids.professiona
 
 | Version | Date | Change |
 |---|---|---|
+| 1.13 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.12 | 2026-11-27 | **Recipient projection (decision D11 of [9](9%20-%20Event%20Catalog.md)):** `notification_db` gets `recipients`, `recipient_categories`, `recipient_cities` and `recipient_matching_versions`, built from events, so Notification never reads another service's tables; Core reads `users.status` for a ban from Auth's internal API and never updates it. |
 | 1.11 | 2026-11-27 | **Database per service:** § Schema Ownership became § Database Ownership; one database per service instead of one schema per service (`core_db`, `auth_db`, `messaging_db`, ...), no transaction across databases, the deletion of a user is the event `UserDeleted`. The profile has its own `created_at` (the account lives in `auth_db`). |
 | 1.10 | 2026-11-04 | **Naming:** table `responses` → `bids` (entity `Bid`): the table, the entity and the API paths use one name, and `OrderResponse` is free for the DTO of an order. Columns and constraints are unchanged. |

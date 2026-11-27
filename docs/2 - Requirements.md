@@ -1,7 +1,7 @@
 # ProFinder — Requirements
 
-- **Version:** 1.8
-- **Date:** 2026-10-28
+- **Version:** 1.9
+- **Date:** 2026-11-27
 - **Status:** In Development
 - **Purpose:** Complete MVP requirements — functional requirements, non-functional requirements, use cases, scope, and the technology stack. Backend focus.
 
@@ -56,7 +56,7 @@ ProFinder is a free marketplace platform that connects customers with profession
 | FR-Profile-P3 | Portfolio | Professionals can upload photos of past work (optional, published immediately; moderator can remove a photo reactively if it's reported) |
 | FR-Profile-P4 | Availability | Professionals set working hours (single fixed schedule) and a manual available/unavailable toggle that directly controls search visibility |
 | FR-Profile-P5 | Profile State | `INCOMPLETE` (log in + edit only) → `ACTIVE` (searchable, can respond) once name + ≥1 category + ≥1 city are set. Missing optional fields do not penalise ranking. |
-| FR-Profile-P6 | Rating Display | Simple mean of 1–5 star reviews (outliers filtered), shown from the 1st review (0 when none). Stored as denormalized `rating_avg` / `review_count`, recalculated synchronously on every review write. |
+| FR-Profile-P6 | Rating Display | Simple mean of 1–5 star reviews (outliers filtered), shown from the 1st review (0 when none). Stored as denormalized `rating` / `review_count`, recalculated synchronously on every review write. |
 
 **Note:** Professional verification ("Verified" badge, admin review of professionals) and response-rate tracking are **not part of the scope** — reputation is a single 1–5 star rating with no secondary metrics.
 
@@ -987,6 +987,7 @@ Before production launch, system must pass:
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.8 | 2026-10-28 | **Naming:** *conversation* → *chat*. |
 | 1.7 | 2026-10-27 | **D-1.3:** report status in the requirement and notification channels use `UPPER_SNAKE_CASE` values. |
 | 1.6 | 2026-09-10 | Standardised to the shared doc format (title, metadata, separators, changelog). Renumbered the duplicated `## 9` / `## 10` (Launch Acceptance Criteria → §11, Key Decisions Made → §12). Fixed the test/lint stack in NFR-Maint-2 / NFR-Maint-7 (Jest/Pytest/ESLint/Prettier → JUnit 5 + JaCoCo + Checkstyle + Spotless, matching § Tech Stack and [15 - SDLC & Workflow.md](15%20-%20SDLC%20%26%20Workflow.md)). Repointed the dead file-5 links (a "Questions" doc that no longer exists — slot 5 is now State Machines) to [4 - Business logic.md](4%20-%20Business%20logic.md). Removed the stale "Next Steps" section. |

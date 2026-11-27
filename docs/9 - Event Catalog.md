@@ -1,6 +1,6 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.9
+- **Version:** 1.10
 - **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
@@ -224,7 +224,7 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
   "reviewee_id": "uuid",
   "rating": 1,                      // integer 1..5
   "has_text": true,
-  "new_rating_avg": "number", "new_review_count": 0,   // post-recalc, for the reindex cascade
+  "new_rating": "number", "new_review_count": 0,   // post-recalc, for the reindex cascade
   "created_at": "iso-8601"
 }
 
@@ -443,6 +443,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.10 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.9 | 2026-11-27 | **Projection (D11, roadmap D-5.2):** Notification Service builds its recipient table from the new `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core); new queues `recipients.projection`, `auth.account` and `core.account`; Auth consumes `moderation.suspended`, `moderation.banned` and `account.deletion_requested` to set `users.status` and produces `account.reactivated` and `account.deletion_finalized`; the email is a second deliberate PII exception in the payloads. Needed because every service has its own database. |
 | 1.8 | 2026-11-04 | **Naming:** events `bid.created` and `bid.edited` (aggregate `bid`, payload `bid_id`), publisher `BidService`, to match the entity and the table. |
 | 1.7 | 2026-10-28 | `event_id` is a plain UUID (v4): ids are no longer v7 (decision 3). |

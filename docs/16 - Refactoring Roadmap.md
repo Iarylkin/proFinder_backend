@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.26
+- **Version:** 1.27
 - **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -154,7 +154,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **2.5.0** | Profiles: professional (`INCOMPLETE → ACTIVE`, sticky, `years_experience`, `hourly_rate`, hours, `available`) and customer (city, `preferred_category_ids`, bio, avatar); public contact email; `@Version`; `v1:profile:*` cache with delete-on-write |
 | **2.6.0** | Order lifecycle `DRAFT → ACTIVE → CLOSED`, publish, close, extend (1–90 days), `expires_at`, `published_at`, `closed_at`, `closed_reason`, expiry scheduler, visibility for professionals (their categories and cities), customer history, role-dependent `GET /orders` (customer: own orders with `?status=`; professional: `ACTIVE` orders in their categories and cities), `@Version` → 409. *Decision 1* |
 | **2.7.0** | Responses: upsert, `edited`, sealed bids, sorting, `ORDER_CLOSED`/`ORDER_EXPIRED`/`PROFILE_INCOMPLETE`, professional-category check |
-| **2.8.0** | Reviews in both directions, one per pair, replies (only on `CUSTOMER`-direction reviews), `deleted_at`, `is_outlier`, `rating_avg` and `review_count`, Bayesian sort, customer reliability rating; synchronous `check-text` call. Review photos arrive in 2.12.0 |
+| **2.8.0** | Reviews in both directions, one per pair, replies (only on `CUSTOMER`-direction reviews), `deleted_at`, `is_outlier`, `rating` and `review_count`, Bayesian sort, customer reliability rating; synchronous `check-text` call. Review photos arrive in 2.12.0 |
 
 ## M8 — Notification features (2.9.0 – 2.10.0)
 ---
@@ -274,6 +274,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.27 | 2026-11-27 | **`rating` rename:** the professional's `averageRating`/`average_rating` is `rating` in the code (entity, responses, search document), `rating_avg` is `rating` in `docs/`. Until Flyway (1.14.0) a deployed database needs `ALTER TABLE professional_profiles RENAME COLUMN average_rating TO rating;` by hand; the search index is recreated at startup; the JSON field of a professional is `rating`. |
 | 1.26 | 2026-11-27 | **New order of work:** tests first, then Flyway, then the split, then business logic. The safety net (M3) is merged into M2: Testcontainers is 1.11.0 (was 1.14.0), the E2E smoke is 1.12.0 (was 1.15.0), the role tests, the coverage gate and ArchUnit are 1.13.0 (was 1.16.0), Flyway is 1.14.0 (was 1.13.0), and the cross-module IDs (done) are 1.10.0 (was 1.12.0). `NotificationApi` (old 1.10.0) is dropped and the Moderation module (old 1.11.0) waits for the extraction (rc.5, M11). Older changelog rows keep the numbers they used at the time. |
 | 1.25 | 2026-11-27 | **D-5.2 done:** Notification Service builds a recipient projection from events (`docs/9` 1.9, D11); `docs/6` 1.12 has the tables; `docs/10` 1.6 rewrites B1, E1 and E2 (Core no longer updates `users`: Auth applies `users.status` from `moderation.*` and `account.deletion_requested`, and owns the grace-window job). `docs/3` 1.7. Open follow-ups: the internal API of Auth (`GET /internal/users/{id}`) is not in `docs/8`, and the other diagrams of `docs/10` still use one generic `PG`. |
 | 1.24 | 2026-11-27 | **docs/10 checked after the database split:** B1 (Notification selects professionals from the tables of Core), E1 and E2 still show cross-service SQL; the rewrite depends on D-5.2 (the recipient projection) and is not done. Nothing else in `docs/` still says schema per service. |

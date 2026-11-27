@@ -1,7 +1,7 @@
 # ProFinder — Business Logic
 
-- **Version:** 3.12
-- **Date:** 2026-11-04
+- **Version:** 3.13
+- **Date:** 2026-11-27
 - **Status:** In Progress
 - **Purpose:** The authoritative business rules — order lifecycle, reviews, ratings, reports/appeals, auth, profiles, search, messaging, notifications, account deletion, concurrency, caching. All the "why", not the wire format.
 
@@ -569,7 +569,7 @@ The platform intentionally uses a **single metric**: a 1–5 star rating. There 
 ---
 
 - **Calculation:** Simple arithmetic mean of all (non-deleted, non-outlier) reviews
-- **Storage:** kept as denormalized columns `rating_avg` + `review_count` on the professional row, **recalculated synchronously in the same transaction** whenever a review is created / edited / deleted (`AVG(rating), COUNT(*) WHERE professional_id=? AND NOT deleted AND NOT outlier`). It is **not** a separate Redis cache. These fields flow into the profile cache and the Elasticsearch document.
+- **Storage:** kept as denormalized columns `rating` + `review_count` on the professional row, **recalculated synchronously in the same transaction** whenever a review is created / edited / deleted (`AVG(rating), COUNT(*) WHERE professional_id=? AND NOT deleted AND NOT outlier`). It is **not** a separate Redis cache. These fields flow into the profile cache and the Elasticsearch document.
 - **Outlier filtering:** Extreme ratings that look like brigading (e.g. a burst of all-5★ or all-1★ ratings) are filtered out before the average is computed
 - **Display:** 0 reviews → shown as 0; 1 review → the average is just that review's rating; no minimum-review threshold to start displaying a rating. The **displayed** value is always this raw mean.
 - **Search sorting uses a Bayesian-adjusted value:** `sort_rating = (C·m + Σratings) / (C + review_count)`, where `m` ≈ platform-wide mean rating and `C` ≈ 5 (both admin-configurable). This is used **only as a sort key** (so a 0-review professional is not buried at literal 0) — it is never shown to users.
@@ -955,7 +955,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 | Unread-count (optional) | `v1:notif:unread:{user_id}` | short | on new notification / mark-read |
 
 - **Professional rating is not cached** — it is a denormalized column recalculated synchronously on every review write (see [Rating](#professional-rating)).
-- **On a review posted/edited/deleted:** recalculate `rating_avg` / `review_count` → `DEL v1:profile:pro:{id}` → enqueue `search.professional_reindex`. The search cache is left to expire.
+- **On a review posted/edited/deleted:** recalculate `rating` / `review_count` → `DEL v1:profile:pro:{id}` → enqueue `search.professional_reindex`. The search cache is left to expire.
 - **Not cached:** messages, notification lists, reports (low read volume / must be exact).
 - Configurable: `profile_ttl` (30m), `search_ttl` (60s), `session_ttl` (15m).
 
@@ -1006,6 +1006,7 @@ Redis is the cache layer. Pattern: **cache-aside** (read → Redis, miss → DB 
 
 | Version | Date | Change |
 |---|---|---|
+| 3.13 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 3.12 | 2026-11-04 | **Naming:** the notification events are `bid.created` and `bid.edited` and the order JSON has `bids` / `bid_count` (a professional's response to an order is a *bid* in the code, the table and the API), so one word names it everywhere. |
 | 3.11 | 2026-10-31 | **Account vs profile (D-1.5):** Google OAuth rules rewritten for several providers (`linked_identities`), the role is chosen before the redirect, a verified email is required, one account and one profile per person. |
 | 3.10 | 2026-10-28 | **Optimistic locking** applies to every entity, not only order and profile: `version` lives in the shared `BaseEntity`. |

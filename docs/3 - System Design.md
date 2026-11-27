@@ -1,6 +1,6 @@
 # ProFinder — System Design
 
-- **Version:** 1.7
+- **Version:** 1.8
 - **Date:** 2026-11-27
 - **Status:** Approved
 - **Purpose:** Service topology, per-service responsibilities, infrastructure, inter-service communication, the RabbitMQ exchange/queue layout, and deployment/scaling.
@@ -81,7 +81,7 @@ flowchart TD
 - Direct messaging between customer and professionals
 - Manual order closing by customer; customer ban/suspend/delete auto-closes their ACTIVE orders
 - Review posting anytime, **fully decoupled from orders** (one review per professional, editable)
-- Rating stored denormalized (`rating_avg`/`review_count`), recalculated synchronously on review write
+- Rating stored denormalized (`rating`/`review_count`), recalculated synchronously on review write
 - Account soft-deletion (PII scrub, 30-day grace)
 - Report submission (independent of orders); moderator warn / suspend / ban (appealable) + reactive content removal
 - **Transactional outbox** for all RabbitMQ events (event row written in the same DB transaction, background poller publishes)
@@ -522,6 +522,7 @@ GET /moderation/analytics
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.7 | 2026-11-27 | Notification Service keeps a recipient projection built from events (decision D11 in [9](9%20-%20Event%20Catalog.md), roadmap D-5.2). |
 | 1.6 | 2026-11-27 | **Database per service (decision 7 revised):** the schema per service of 1.5 became a database per service (`core_db`, `auth_db`, `messaging_db`, ...); in production each service has its own PostgreSQL server. A transaction never writes to two databases. Implemented in the code with one datasource and persistence unit per module (roadmap 1.22, 1.23). |
 | 1.5 | 2026-10-27 | **D-1.1 (decision 7):** shared database replaced by one PostgreSQL with one schema per service and no cross-schema reads. Added the data ownership rule and per-service `Database` lines. Sequence diagrams B1, E1 and E2 in [10 - Sequence Diagrams.md](10%20-%20Sequence%20Diagrams.md) still show cross-service SQL and are to be rewritten as events or API calls. |

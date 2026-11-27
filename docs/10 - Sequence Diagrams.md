@@ -1,6 +1,6 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.6
+- **Version:** 1.7
 - **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
@@ -486,7 +486,7 @@ sequenceDiagram
         Core->>PG: INSERT reviews -> outbox review.posted
     end
     Core->>PG: recalc — SELECT AVG(rating), COUNT(*) WHERE professional_id=? AND NOT deleted AND NOT outlier
-    Core->>PG: UPDATE professional_profiles SET rating_avg, review_count, version = version + 1
+    Core->>PG: UPDATE professional_profiles SET rating, review_count, version = version + 1
     Core->>PG: INSERT outbox (search.professional_reindex, reason=rating_recalc)
     Core->>PG: COMMIT
     Core->>Redis: DEL v1:profile:pro:{reviewee_id}
@@ -723,6 +723,7 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-27 | **Rename:** the rating of a professional is `rating` (was `rating_avg`; the code field is `rating`, `averageRating` before). Nothing else changed. |
 | 1.6 | 2026-11-27 | **B1, E1 and E2 without cross-service SQL** (the open item of roadmap D-1.1; database per service): B1 matches professionals on the recipient projection of Notification Service (decision D11 of [9](9%20-%20Event%20Catalog.md)); E1 and E2 no longer let Core update `users` — Core applies its own data and publishes, Auth applies `users.status` when it consumes `moderation.*` / `account.deletion_requested`; E2's grace-window job and `account.deletion_finalized` move to Auth, `account.reactivated` un-hides the profile in Core. The participants `PG` are now `core_db`, `auth_db` and `notification_db`. |
 | 1.5 | 2026-11-04 | **Naming:** `POST /orders/{id}/bids`, events `bid.created` / `bid.edited`, DTOs named by direction (`BidResponse`, `OrderResponse`, ...), to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** A5 rewritten: the role is chosen before the provider redirect (signed `state`), identities live in `linked_identities`, the account and its profile are created together, no `temp_token` or `POST /auth/role`. |
