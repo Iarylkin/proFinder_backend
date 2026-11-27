@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.messaging.entity;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -8,11 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Entity representing a single message sent within a chat.
  * <p>
- * Each message is linked to a {@link Chat} and has a sender ({@link User}),
+ * Each message is linked to a {@link Chat} and has a sender (the ID of a user),
  * text content, and creation timestamp.
  * </p>
  */
@@ -24,13 +24,10 @@ import java.time.LocalDateTime;
 public class ChatMessage extends BaseEntity {
 
     /**
-     * User who sent the message.
-     * <p>
-     * Represented by a many-to-one relation to {@link User}.
-     * </p>
+     * User who sent the message: the ID of a user of the auth module (a plain reference, not a relation).
      */
-    @ManyToOne
-    private User sender;
+    @Column(name = "sender_id")
+    private UUID senderId;
 
     /**
      * Content of the message.

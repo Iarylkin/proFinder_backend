@@ -29,7 +29,7 @@ public class ChatRepository implements PanacheRepositoryBase<Chat, UUID> {
     public Chat findByUsersId(final UUID userId1, final UUID userId2) {
         UUID first = userId1.compareTo(userId2) <= 0 ? userId1 : userId2;
         UUID second = first.equals(userId1) ? userId2 : userId1;
-        return find("user1.id = ?1 AND user2.id = ?2", first, second).firstResult();
+        return find("user1Id = ?1 AND user2Id = ?2", first, second).firstResult();
     }
 
     /**
@@ -41,7 +41,7 @@ public class ChatRepository implements PanacheRepositoryBase<Chat, UUID> {
      * @return list of {@link Chat} entities
      */
     public List<Chat> findByUserId(final UUID userId, final int page, final int size) {
-        return find("user1.id = ?1 OR user2.id = ?1", userId)
+        return find("user1Id = ?1 OR user2Id = ?1", userId)
                 .page(page - 1, size)
                 .list();
     }

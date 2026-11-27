@@ -119,7 +119,6 @@ public class ProfessionalService {
      *
      * @param id professional ID
      */
-    @Transactional
     public void delete(final UUID id) {
         log.info("Delete professional: ID={}", id);
         userService.delete(id);

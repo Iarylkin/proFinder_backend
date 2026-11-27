@@ -3,15 +3,12 @@ package io.github.strogolsky.profinder.auth.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.github.strogolsky.profinder.common.entity.BaseEntity;
 import io.github.strogolsky.profinder.common.validation.Limits;
-import io.github.strogolsky.profinder.core.entity.Profile;
-import io.github.strogolsky.profinder.messaging.entity.Chat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Base entity representing a system user.
@@ -54,24 +51,4 @@ public class User extends BaseEntity {
     @Column(name = "createAt", nullable = false, updatable = false)
     private final LocalDateTime createAt = LocalDateTime.now();
 
-    /**
-     * List of chats initiated by the user.
-     */
-    @OneToMany(mappedBy = "user1", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Chat> initiatedChats;
-
-    /**
-     * List of chats received by the user.
-     */
-    @OneToMany(mappedBy = "user2", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Chat> receivedChats;
-
-    /**
-     * Profile of the user: a customer or a professional profile, by role. Removed together with the user.
-     */
-    @OneToOne(mappedBy = "user", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Profile profile;
 }

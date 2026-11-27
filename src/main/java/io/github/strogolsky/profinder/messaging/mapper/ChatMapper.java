@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.messaging.mapper;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.messaging.dto.ChatResponse;
 import io.github.strogolsky.profinder.messaging.entity.Chat;
 import org.mapstruct.Context;
@@ -10,6 +9,7 @@ import org.mapstruct.Mapping;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * {@code ChatMapper} converts {@link Chat} entities into {@link ChatResponse} DTOs using MapStruct.
@@ -34,24 +34,27 @@ public interface ChatMapper {
      *
      * @param chat          chat entity to convert
      * @param currentUserId id of the user making the request, needed to identify the chat partner
+     * @param firstNames    finds the first name of a user by ID; the names live in the core module
      * @return populated {@link ChatResponse}
      */
     @Mapping(target = "chatId", source = "id")
     @Mapping(target = "partnerId",
-            expression = "java(getPartner(chat, currentUserId).getId())")
+            expression = "java(getPartnerId(chat, currentUserId))")
     @Mapping(target = "partnerFirstName",
-            expression = "java(getPartner(chat, currentUserId).getProfile().getFirstName())")
-    ChatResponse toDto(Chat chat, @Context UUID currentUserId);
+            expression = "java(firstNames.apply(getPartnerId(chat, currentUserId)))")
+    ChatResponse toDto(Chat chat, @Context UUID currentUserId, @Context Function<UUID, String> firstNames);
 
     /**
      * Converts a list of {@link Chat} entities to DTOs.
      *
      * @param chats         list of chat entities
      * @param currentUserId id of the user making the request
+     * @param firstNames    finds the first name of a user by ID; the names live in the core module
      * @return list of {@link ChatResponse} DTOs
      */
     @IterableMapping(elementTargetType = ChatResponse.class)
-    List<ChatResponse> toDtoList(List<Chat> chats, @Context UUID currentUserId);
+    List<ChatResponse> toDtoList(List<Chat> chats, @Context UUID currentUserId,
+                                 @Context Function<UUID, String> firstNames);
 
     /**
      * Returns the partner of the current user in the given chat.
@@ -60,9 +63,9 @@ public interface ChatMapper {
      * @param currentUserId id of the current user
      * @return the partner {@link User} entity
      */
-    default User getPartner(final Chat chat, final UUID currentUserId) {
-        return chat.getUser1().getId().equals(currentUserId)
-                ? chat.getUser2()
-                : chat.getUser1();
+    default UUID getPartnerId(final Chat chat, final UUID currentUserId) {
+        return chat.getUser1Id().equals(currentUserId)
+                ? chat.getUser2Id()
+                : chat.getUser1Id();
     }
 }

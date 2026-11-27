@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.core.entity;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.common.entity.VersionedEntity;
 import io.github.strogolsky.profinder.common.validation.Limits;
 import jakarta.persistence.Column;
@@ -10,11 +9,11 @@ import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
+import org.hibernate.annotations.ColumnDefault;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -32,18 +31,20 @@ import java.util.UUID;
 public abstract class Profile extends VersionedEntity {
 
     /**
-     * Identifier of the profile, taken from the user it belongs to.
+     * Identifier of the profile: the ID of the user it belongs to. The user lives in the auth
+     * module, so this is a plain reference, not a relation.
      */
     @Id
+    @Column(name = "user_id")
     private UUID id;
 
     /**
-     * Account the profile belongs to.
+     * When the profile was created, which is when the person registered. Kept here because the account
+     * lives in the auth module, whose data this module cannot join.
      */
-    @OneToOne(optional = false)
-    @MapsId
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "create_at", nullable = false, updatable = false)
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    private LocalDateTime createAt = LocalDateTime.now();
 
     /**
      * First name of the person.

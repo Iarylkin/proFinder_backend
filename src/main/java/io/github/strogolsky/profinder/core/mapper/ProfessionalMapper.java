@@ -22,11 +22,11 @@ public interface ProfessionalMapper {
      * Converts a professional profile to its corresponding DTO.
      *
      * @param entity the professional profile
+     * @param email  the email of the account, which lives in the auth module
      * @return the corresponding ProfessionalResponse
      */
-    @Mapping(target = "email", source = "user.email")
-    @Mapping(target = "createAt", source = "user.createAt")
-    ProfessionalResponse toDto(ProfessionalProfile entity);
+    @Mapping(target = "email", source = "email")
+    ProfessionalResponse toDto(ProfessionalProfile entity, String email);
 
     /**
      * Converts a professional profile to its public DTO.
@@ -34,7 +34,6 @@ public interface ProfessionalMapper {
      * @param entity the professional profile
      * @return the corresponding ProfessionalPublicResponse
      */
-    @Mapping(target = "createAt", source = "user.createAt")
     ProfessionalPublicResponse toPublicDto(ProfessionalProfile entity);
 
     /**
@@ -55,7 +54,7 @@ public interface ProfessionalMapper {
      * @return a professional profile with the requested changes
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createAt", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
     @Mapping(target = "averageRating", ignore = true)
     @Mapping(target = "bids", ignore = true)

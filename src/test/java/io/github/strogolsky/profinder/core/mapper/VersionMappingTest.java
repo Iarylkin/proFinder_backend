@@ -36,8 +36,8 @@ class VersionMappingTest {
 
         assertEquals(VERSION, orderMapper.toDto(order).version());
         assertEquals(VERSION, bidMapper.toDto(bid).version());
-        assertEquals(VERSION, customerMapper.toDto(customer).version());
-        assertEquals(VERSION, professionalMapper.toDto(professional).version());
+        assertEquals(VERSION, customerMapper.toDto(customer, null).version());
+        assertEquals(VERSION, professionalMapper.toDto(professional, null).version());
     }
 
     @Test

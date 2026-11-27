@@ -23,7 +23,6 @@ public interface ChatMessageMapper {
      * @param entity the {@link ChatMessage} entity to convert
      * @return the resulting {@link ChatMessageResponse} DTO
      */
-    @Mapping(target = "senderId", source = "sender.id")
     @Mapping(target = "chatId", source = "chat.id")
     ChatMessageResponse toDto(ChatMessage entity);
 

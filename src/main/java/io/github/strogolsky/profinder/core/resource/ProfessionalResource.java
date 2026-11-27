@@ -2,6 +2,7 @@ package io.github.strogolsky.profinder.core.resource;
 
 import io.github.strogolsky.profinder.common.dto.PageRequest;
 import io.github.strogolsky.profinder.common.security.UserContext;
+import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.core.dto.ProfessionalUpdateRequest;
 import io.github.strogolsky.profinder.core.dto.ReviewCreateRequest;
 import io.github.strogolsky.profinder.core.entity.Bid;
@@ -66,6 +67,11 @@ public class ProfessionalResource {
     private final ProfessionalMapper professionalMapper;
 
     /**
+     * The account service of the auth module: the email is part of the private profile response.
+     */
+    private final UserService userService;
+
+    /**
      * The user who makes the current request.
      */
     private final UserContext userContext;
@@ -102,7 +108,7 @@ public class ProfessionalResource {
     public Response getMe() {
         UUID id = userContext.id();
         log.info("Get profile for professional ID={}", id);
-        return Response.ok(professionalMapper.toDto(professionalService.getById(id))).build();
+        return Response.ok(professionalMapper.toDto(professionalService.getById(id), email(id))).build();
     }
 
     /**
@@ -119,7 +125,7 @@ public class ProfessionalResource {
         UUID id = userContext.id();
         log.info("Update profile for professional ID={}", id);
         ProfessionalProfile result = professionalService.updateProfile(id, professionalMapper.toEntity(request));
-        return Response.ok(professionalMapper.toDto(result)).build();
+        return Response.ok(professionalMapper.toDto(result, email(id))).build();
     }
 
     /**
@@ -220,5 +226,9 @@ public class ProfessionalResource {
                 pagination.getSize()
         );
         return Response.ok(orderMapper.toDtoList(result)).build();
+    }
+
+    private String email(final UUID id) {
+        return userService.getById(id).getEmail();
     }
 }

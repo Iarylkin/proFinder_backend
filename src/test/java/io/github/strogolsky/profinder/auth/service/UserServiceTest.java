@@ -3,11 +3,14 @@ package io.github.strogolsky.profinder.auth.service;
 import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.auth.exception.EmailAlreadyRegisteredException;
 import io.github.strogolsky.profinder.auth.repository.UserRepository;
+import io.github.strogolsky.profinder.common.event.UserDeleted;
 import io.github.strogolsky.profinder.notification.service.MailService;
+import jakarta.enterprise.event.Event;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,12 +22,15 @@ import static org.mockito.Mockito.when;
 class UserServiceTest {
 
     private UserRepository userRepository;
+    private Event<UserDeleted> userDeleted;
     private UserService service;
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        service = new UserService(userRepository, mock(MailService.class));
+        userDeleted = mock(Event.class);
+        service = new UserService(userRepository, userDeleted, mock(MailService.class));
     }
 
     @Test
@@ -48,5 +54,17 @@ class UserServiceTest {
         assertThrows(EmailAlreadyRegisteredException.class, () -> service.create(created));
 
         verify(userRepository, never()).persist(created);
+    }
+
+    @Test
+    void deleteAnnouncesTheDeletedUser() {
+        UUID id = UUID.randomUUID();
+        User existing = new User();
+        when(userRepository.findById(id)).thenReturn(existing);
+
+        service.delete(id);
+
+        verify(userRepository).delete(existing);
+        verify(userDeleted).fire(new UserDeleted(id));
     }
 }
