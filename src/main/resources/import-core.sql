@@ -66,13 +66,13 @@ INSERT INTO customer_profiles (user_id, version, first_name, last_name, phone_nu
 ('00000000-0000-4000-8000-000000000111', 0, 'David', 'Svoboda', '222222222', '00000000-0000-4000-a000-000000000002');
 
 -- Orders IDs 120–125
-INSERT INTO orders (id, version, customer_id, status, description, price, review_id, createat, deadline, location_id) VALUES
-('00000000-0000-4000-8000-000000000120', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'I need a haircut before my wedding.',               0, NULL, now(), now() + interval '5 days', '00000000-0000-4000-a000-000000000001'),
-('00000000-0000-4000-8000-000000000121', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'My phone screen is cracked. Need a repair ASAP.',   0, NULL, now(), now() + interval '2 days', '00000000-0000-4000-a000-000000000002'),
-('00000000-0000-4000-8000-000000000122', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'I need help with tax filing for my small business.',0, NULL, now(), now() + interval '10 days', '00000000-0000-4000-a000-000000000002'),
-('00000000-0000-4000-8000-000000000123', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'Looking for a logo design for my startup.',         0, NULL, now(), now() + interval '7 days', '00000000-0000-4000-a000-000000000001'),
-('00000000-0000-4000-8000-000000000124', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'Need a website for my online portfolio.',           0, NULL, now(), now() + interval '14 days', '00000000-0000-4000-a000-000000000001'),
-('00000000-0000-4000-8000-000000000125', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'Interior design help for my apartment.',            0, NULL, now(), now() + interval '12 days', '00000000-0000-4000-a000-000000000001');
+INSERT INTO orders (id, version, customer_id, status, title, description, price, createat, deadline, location_id) VALUES
+('00000000-0000-4000-8000-000000000120', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'Haircut for a wedding', 'I need a haircut before my wedding.', 0, now(), now() + interval '5 days', '00000000-0000-4000-a000-000000000001'),
+('00000000-0000-4000-8000-000000000121', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'Phone screen repair', 'My phone screen is cracked. Need a repair ASAP.', 0, now(), now() + interval '2 days', '00000000-0000-4000-a000-000000000002'),
+('00000000-0000-4000-8000-000000000122', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'Tax filing help', 'I need help with tax filing for my small business.', 0, now(), now() + interval '10 days', '00000000-0000-4000-a000-000000000002'),
+('00000000-0000-4000-8000-000000000123', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'Logo design', 'Looking for a logo design for my startup.', 0, now(), now() + interval '7 days', '00000000-0000-4000-a000-000000000001'),
+('00000000-0000-4000-8000-000000000124', 0, '00000000-0000-4000-8000-000000000110', 'CREATED', 'Portfolio website', 'Need a website for my online portfolio.', 0, now(), now() + interval '14 days', '00000000-0000-4000-a000-000000000001'),
+('00000000-0000-4000-8000-000000000125', 0, '00000000-0000-4000-8000-000000000111', 'CREATED', 'Interior design help', 'Interior design help for my apartment.', 0, now(), now() + interval '12 days', '00000000-0000-4000-a000-000000000001');
 
 -- Orders ⟷ Categories
 INSERT INTO orders_categories (order_id, category_id) VALUES
