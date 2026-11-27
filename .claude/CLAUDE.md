@@ -74,7 +74,7 @@ Main application code is split into modules, one package per future service (ste
 - **`auth`** — `User`, `UserRole`, registration, login, tokens, password recovery, `UserResource` (avatar, email and password changes), `CryptoUtils`
 - **`messaging`** — `Chat`, `ChatMessage`, the chat REST resource and the WebSocket `ChatSocket`
 - **`notification`** — `MailService`
-- **`moderation`** — empty until step 1.11.0
+- **`moderation`** — empty until the Moderation Service is extracted (rc.5 in `docs/16`)
 - **`common`** — what belongs to no module and is shared by all: `BaseEntity`/`VersionedEntity`, `VersionCheck`, `UserContext` (who makes the request), the error format (`ApiException`, `ErrorCode`, `ApiExceptionMapper`, `ErrorCodeProcessor`, ...), `validation/` and `PageRequest`; it becomes the `contracts` module in 2.0.0-rc.1
 
 The layers (each is a sub-package of the module that owns the class):

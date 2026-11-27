@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.25
+- **Version:** 1.26
 - **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -21,7 +21,8 @@
 | Working version | Every tag starts in compose, passes tests and checkstyle, and passes the smoke scenario (sign up → sign in → create order → respond → accept → chat → complete → review) |
 | Unfinished work | Hidden behind feature flags, never left half-done in a tagged build |
 | Major / minor / patch | `2.0.0` marks the architecture change (five services). Features after it are `2.x` minors. Bug fixes are patches |
-| Schema | Flyway from `1.13.0`, when the modules and their ID-only relations are stable; before that dev keeps `drop-and-create` and `import.sql` (nothing is deployed). From `1.13.0` every version that changes the schema ships its own migration |
+| Order of work | Tests on real databases first (1.11.0–1.13.0), then Flyway (1.14.0), then events and the split into services (M4, M5), and only then new business logic (M6 onwards). A version changes the structure or the behaviour, never both |
+| Schema | Flyway from `1.14.0`, after the tests and when the modules and their ID-only relations are stable; before that dev keeps `drop-and-create` and `import.sql` (nothing is deployed). From `1.14.0` every version that changes the schema ships its own migration |
 | Docs tasks | Marked `D-…`. They belong to the milestone that needs them and do not bump the version. "Before code" means the task is closed before the first version of that milestone starts |
 | Tooling tasks | Marked `T-…`. Repository tooling, no version bump |
 
@@ -32,8 +33,8 @@
 |---|---|---|---|
 | M0 | Hotfixes | 1.0.1 – 1.0.4 | Close security holes and runtime bugs before any refactoring |
 | M1 | Foundation | 1.1.0 – 1.6.0 | Cross-cutting changes needed before splitting |
-| M2 | Modular monolith | 1.7.0 – 1.13.0 | Service boundaries inside one process, then Flyway on the stable schema |
-| M3 | Safety net | 1.14.0 – 1.16.0 | Tests before splitting |
+| M2 | Modular monolith and safety net | 1.7.0 – 1.14.0 | Service boundaries inside one process, tests on real databases, then Flyway on the stable schema |
+| M3 | (merged into M2) | — | The safety net became 1.11.0 – 1.13.0 of M2; the numbers 1.15.0 and 1.16.0 are not used |
 | M4 | Events & broker | 1.17.0 – 1.20.0 | Outbox, events, RabbitMQ |
 | M5 | Service extraction | 2.0.0-rc.1 – 2.0.0 | Physical split into five services |
 | M6 | Auth features | 2.1.0 – 2.3.0 | Verification, sessions, OAuth |
@@ -82,7 +83,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **1.5.0** | `ApiExceptionMapper`, one error format, Error Catalog, DTO validation per `docs/13` (except trimming passwords and tokens), pagination clamp, Spotless in CI. **`PATCH` carries `version`** (the DTOs expose it and the request is rejected with `CONFLICT` when it differs, see `docs/8` and `docs/13`); until then only concurrent transactions on the server are protected. **Serialization moves from JSON-B (`quarkus-rest-jsonb`, `@JsonbTransient`) to Jackson (`quarkus-rest-jackson`); DTOs move from Lombok `@Data` to `record`s** (immutable); records with secrets (passwords, codes, tokens) override `toString` or use a masked `Secret` type, `@ToString.Exclude` from 1.0.1 is dropped with `@Data`. Check MapStruct mappers (`@MappingTarget`), `@Builder` and annotations on getters first **Naming:** DTOs are named by direction, `*Request` and `*Response`, with no `*Dto`; the response of a professional to an order is the entity `Bid` (table `bids`, `/orders/{id}/bids`, `/bids/{id}`), which frees `OrderResponse` for the DTO of an order. |
 | **1.6.0** | Health (`/ready` checks PostgreSQL, Redis, MinIO, ES), Redis 7, profile cleanup, Mailpit in dev compose, `SETUP.md` and `CONFIGURATION.md` |
 
-## M2 — Modular monolith (1.7.0 – 1.13.0)
+## M2 — Modular monolith and safety net (1.7.0 – 1.14.0)
 ---
 
 | Version / task | What we do |
@@ -90,21 +91,14 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
 | **1.7.0** | **Done 2026-11-06.** Packages `io.github.strogolsky.profinder.{core,auth,messaging,notification,moderation,common}`, each with the layer sub-packages (`entity`, `service`, ...); move classes only. The base package `fit.biejk` is renamed to `io.github.strogolsky.profinder` (Maven `groupId` `io.github.strogolsky`, `artifactId` stays `pro-finder`). `common` holds what belongs to no module (base entities, `VersionCheck`, the error format, validation, `PageRequest`) and becomes `contracts` in 2.0.0-rc.1. `UserResource` stays whole in `auth`; the module `moderation` is an empty package until 1.11.0. |
 | **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). **Done 2026-11-27.** The narrow interface over `UserService` for `core` and `messaging` is dropped as overengineering: the modules still call `UserService` directly until 1.12.0 |
-| **1.9.0** | **Done 2026-11-27.** Messaging boundary: `User` no longer holds the lists `initiatedChats` and `receivedChats` (the only reference from another module into `messaging`); deleting a user removes their chats and messages when `messaging` handles the event `UserDeleted` (see 1.12.0). `MessagingApi` is dropped: no other module calls `messaging`; it is added if one ever does |
-| **1.10.0** | Notification boundary: `MailService` behind `NotificationApi` |
-| **1.11.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies **Done early, 2026-11-27, together with a database per module (1.22):** `Profile.user`, `Chat.user1`, `Chat.user2` and `ChatMessage.sender` are plain `UUID` columns; the deletion of a user is the event `UserDeleted` (`common.event`), handled after the commit by `core` (the profile) and `messaging` (the chats). `User` has no `profile` and `core` keeps its own `createAt`; the email in `/customers/me` is read from `auth`. ArchUnit tests are still open |
-| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table per database, one database per module (`core_db`, `auth_db`, `messaging_db`); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
-
-## M3 — Safety net (1.14.0 – 1.16.0)
----
-
-| Version / task | What we do |
-|---|---|
-| **D-3.1** | `docs/2` and `15`: clarify the coverage gate (JaCoCo 80% vs "not a gate"), "at least one test per endpoint", CI under 5 minutes for five services |
-| **1.14.0** | Testcontainers (PostgreSQL, Elasticsearch, Redis, MinIO), Flyway migrations run in tests, `%test` profile for CI |
-| **1.15.0** | E2E smoke scenario as its own CI job, remove `continue-on-error` |
-| **1.16.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests |
+| **1.9.0** | **Done 2026-11-27.** Messaging boundary: `User` no longer holds the lists `initiatedChats` and `receivedChats` (the only reference from another module into `messaging`); deleting a user removes their chats and messages when `messaging` handles the event `UserDeleted` (see 1.10.0). `MessagingApi` is dropped: no other module calls `messaging`; it is added if one ever does |
+| **D-3.1** | `docs/2` and `15`: clarify the coverage gate (JaCoCo 80% vs "not a gate"), "at least one test per endpoint", CI under 5 minutes for five services (closed before 1.11.0) |
+| **1.10.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). **Done 2026-11-27, together with a database per module (1.22):** `Profile.user`, `Chat.user1`, `Chat.user2` and `ChatMessage.sender` are plain `UUID` columns; the deletion of a user is the event `UserDeleted` (`common.event`), handled after the commit by `core` (the profile) and `messaging` (the chats). `User` has no `profile` and `core` keeps its own `createAt`; the email in `/customers/me` is read from `auth`. This was 1.12.0; the ArchUnit tests moved to 1.13.0 |
+| **1.11.0** | Testcontainers (PostgreSQL with the three databases, Elasticsearch, Redis, MinIO), `%test` profile for CI, integration tests of the main flows: register, order → response → accept, chat, deletion of a user, search. The checks done by hand on 2026-11-27 (schemas without cross-database keys, register, chat, delete) become automatic. This was 1.14.0 |
+| **1.12.0** | E2E smoke scenario as its own CI job, remove `continue-on-error`. This was 1.15.0 |
+| **1.13.0** | Role and authorization tests per `docs/11`, Sonar coverage threshold, OWASP Dependency-Check, SQLi and XSS tests, and the ArchUnit tests that forbid extra dependencies between modules. This was 1.16.0 |
+| **1.14.0** | **Flyway**, introduced on the stable schema, after the tests: baseline `V1` taken from the model, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table per database, one database per module (`core_db`, `auth_db`, `messaging_db`); `validate`. The Testcontainers profile of 1.11.0 switches from `drop-and-create` to the migrations, so they run in every test. Dev data lives in `db/dev`, not `import-*.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point. This was 1.13.0 |
+| *dropped* | **Notification boundary** (`MailService` behind `NotificationApi`, was 1.10.0): no interface is built, because Notification becomes a service with events in rc.2. **Moderation** (`check-text`, `check-url`, was 1.11.0): the service comes in rc.5, the `Report` and `Block` skeleton belongs to M11 (2.14.0); the package `moderation` stays empty until then |
 
 ## M4 — Events & broker (1.17.0 – 1.20.0)
 ---
@@ -268,10 +262,10 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Risk | Mitigation |
 |---|---|
-| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.12.0 |
-| No test net during the split | M3 is entirely about the net and runs before M4 and M5 |
+| Splitting on the old data model is painful | UUID and the `User` split come before the split (1.3.0–1.4.0); cross-module relations become IDs in 1.10.0 |
+| No test net during the split | 1.11.0 – 1.13.0 are entirely about the net and run before Flyway, M4 and M5 |
 | Features are slower to build in a distributed system | One compose file, cross-service E2E in rc.7, a shared `contracts` module |
-| Schemas keep changing in `2.x` | Flyway from 1.13.0 on the stable schema, one migration per version, per-service folders ready for extraction |
+| Schemas keep changing in `2.x` | Flyway from 1.14.0 on the stable schema, one migration per version, per-service folders ready for extraction |
 | No user-facing features before `2.0.0` | M0 closes the critical holes; M1–M5 change shape only |
 | Duplicated background jobs if replicas are added later | `SKIP LOCKED` in the outbox (1.17.0), Redis Pub/Sub for WS (rc.4) |
 
@@ -280,6 +274,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.26 | 2026-11-27 | **New order of work:** tests first, then Flyway, then the split, then business logic. The safety net (M3) is merged into M2: Testcontainers is 1.11.0 (was 1.14.0), the E2E smoke is 1.12.0 (was 1.15.0), the role tests, the coverage gate and ArchUnit are 1.13.0 (was 1.16.0), Flyway is 1.14.0 (was 1.13.0), and the cross-module IDs (done) are 1.10.0 (was 1.12.0). `NotificationApi` (old 1.10.0) is dropped and the Moderation module (old 1.11.0) waits for the extraction (rc.5, M11). Older changelog rows keep the numbers they used at the time. |
 | 1.25 | 2026-11-27 | **D-5.2 done:** Notification Service builds a recipient projection from events (`docs/9` 1.9, D11); `docs/6` 1.12 has the tables; `docs/10` 1.6 rewrites B1, E1 and E2 (Core no longer updates `users`: Auth applies `users.status` from `moderation.*` and `account.deletion_requested`, and owns the grace-window job). `docs/3` 1.7. Open follow-ups: the internal API of Auth (`GET /internal/users/{id}`) is not in `docs/8`, and the other diagrams of `docs/10` still use one generic `PG`. |
 | 1.24 | 2026-11-27 | **docs/10 checked after the database split:** B1 (Notification selects professionals from the tables of Core), E1 and E2 still show cross-service SQL; the rewrite depends on D-5.2 (the recipient projection) and is not done. Nothing else in `docs/` still says schema per service. |
 | 1.23 | 2026-11-27 | **Prod: a PostgreSQL server per module.** `docker-compose.prod.yml` runs `db-core`, `db-auth` and `db-messaging` (own volume, no published port) instead of one server; the prod JDBC URLs point at them. Dev keeps one server with three databases. The prod volume `db_data` is not migrated: its data must be copied into the three new databases by hand. |
