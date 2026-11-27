@@ -1,7 +1,7 @@
 # ProFinder — System Design
 
-- **Version:** 1.5
-- **Date:** 2026-10-27
+- **Version:** 1.6
+- **Date:** 2026-11-27
 - **Status:** Approved
 - **Purpose:** Service topology, per-service responsibilities, infrastructure, inter-service communication, the RabbitMQ exchange/queue layout, and deployment/scaling.
 
@@ -29,7 +29,7 @@ flowchart TD
     Mod --> MQ & PG
 
     MQ["Message Queue<br/>(RabbitMQ)"]
-    PG[("PostgreSQL<br/>(one schema per service)")]
+    PG[("PostgreSQL<br/>(one database per service)")]
 
     MQ --> C1["Notification Service<br/>in-app + push + email"]
     MQ --> C2["Core API indexing consumer<br/>Elasticsearch upsert"]
@@ -67,7 +67,7 @@ flowchart TD
 ---
 
 **Purpose:** Main business logic
-**Database:** PostgreSQL, schema `core`
+**Database:** PostgreSQL, database `core_db`
 **Responsibilities:**
 - Users, Orders, Responses, Reviews
 - **Reports System** - user/professional reporting for policy violations
@@ -97,7 +97,7 @@ flowchart TD
 **Purpose:** Centralized authentication & authorization
 **Responsibilities:** Registration, email verification (24h link), JWT access tokens (15 min, role + account_status claims), sliding refresh tokens (7d, rotation + reuse detection, 30d cap), OAuth2 (Google, 1:1 link), password reset (15 min link). Maintains the Redis session denylist (`v1:denylist:{user_id}`) for instant revocation on ban / role change / password change / logout-all. Publishes `auth.*` events (verification / password-reset / set-password links) via its own transactional outbox — Notification Service sends the actual email ([9 - Event Catalog.md](9%20-%20Event%20Catalog.md)).
 **Tech:** Java 21, Quarkus 3.x
-**Database:** PostgreSQL, schema `auth`
+**Database:** PostgreSQL, database `auth_db`
 **Not in MVP:** 2FA/TOTP (deferred to Phase 2).
 
 ### 4. Messaging Service - Quarkus (Port 8082)
@@ -106,7 +106,7 @@ flowchart TD
 **Purpose:** Real-time messaging between users
 **Responsibilities:** Send/receive messages, message history, message deletion (own messages), file sharing in messages, WebSocket support. Publishes `message.sent` / `message.deleted` via a transactional outbox.
 **Tech:** Java 21, Quarkus 3.x, WebSocket
-**Database:** PostgreSQL, schema `messaging`
+**Database:** PostgreSQL, database `messaging_db`
 
 ### 5. Notification Service - Quarkus (Port 8083)
 ---
@@ -119,7 +119,7 @@ flowchart TD
 - Honours the `notification_preferences(user_id, event_type, channel)` matrix
 - Idempotent consumers (dedup by `event_id`); failed email → NACK, 3 retries, then `notifications.deadletter`. In-app is written first, so a failed push/email never loses the in-app record.
 **Tech:** Java 21, Quarkus 3.x, RabbitMQ consumer
-**Database:** PostgreSQL, schema `notification`
+**Database:** PostgreSQL, database `notification_db`
 
 ### 5a. Moderation Service - Quarkus (Port 8084)
 ---
@@ -134,7 +134,7 @@ flowchart TD
 - Integration with external ML models (Google Cloud Perspective API, AWS Rekognition)
 **Tech:** Java 21, Quarkus 3.x, Message Queue consumer/producer
 **Message Queue:** Consumes content events from RabbitMQ; publishes results via callback
-**Database:** PostgreSQL, schema `moderation` - stores moderation rules, decisions, logs
+**Database:** PostgreSQL, database `moderation_db` - stores moderation rules, decisions, logs
 **External APIs:** Google Cloud Content Safety, AWS Rekognition, custom ML models
 **Key Features:**
 - Rules can be updated without service restart
@@ -145,10 +145,10 @@ flowchart TD
 ### 6. PostgreSQL (Port 5432)
 ---
 
-**Purpose:** One PostgreSQL instance, one schema per service (`core`, `auth`, `messaging`, `notification`, `moderation`)
+**Purpose:** One database per service (`core_db`, `auth_db`, `messaging_db`, `notification_db`, `moderation_db`). In development they are on one PostgreSQL server; in production each service has its own server (`docker-compose.prod.yml`)
 **Used by:** Core API, Auth Service, Messaging Service, Notification Service, Moderation Service
 
-**Data ownership rule:** a service reads and writes only its own schema. No cross-schema `SELECT`, `JOIN`, `UPDATE` or foreign key. Another service's data comes from its API or from events ([9 - Event Catalog.md](9%20-%20Event%20Catalog.md)), or from a projection the consumer builds from those events. Each service has its own DB role with rights on its schema only. Table-to-schema mapping: [6 - Database Schema.md § Schema Ownership](6%20-%20Database%20Schema.md).
+**Data ownership rule:** a service reads and writes only its own database. No cross-database `SELECT`, `JOIN`, `UPDATE` or foreign key (PostgreSQL cannot join across databases, so the rule is enforced by the server). No transaction writes to two databases: a change that touches two services is a sequence of local transactions with compensation or an event. Another service's data comes from its API or from events ([9 - Event Catalog.md](9%20-%20Event%20Catalog.md)), or from a projection the consumer builds from those events. Each service has its own DB role with rights on its database only. Table-to-database mapping: [6 - Database Schema.md § Database Ownership](6%20-%20Database%20Schema.md).
 
 ### 7. Elasticsearch (Port 9200)
 ---
@@ -290,7 +290,7 @@ flowchart TD
 | **Auth Service separate** | Centralized security, independent scalability, used by all services |
 | **Messaging Service separate** | WebSocket support, real-time requirements, independent from order flow |
 | **Notification Service separate** | Async processing, independent scaling, decoupled from Core API |
-| **One PostgreSQL, schema per service** | One instance to run on a single VPS, but every service owns its schema and never reads another's, so a later move to separate databases changes only connection strings |
+| **Database per service** | Every service owns its database and never reads another's; a database cannot be joined across, so the boundary holds by construction. One server runs all of them in development, one server per service in production, and moving a database to another host changes only its connection string |
 | **Elasticsearch integration** | Fast search without separate service; Core API indexes and queries |
 | **MinIO for files** | Separates large files from database; easy migration to AWS S3 |
 | **Redis caching** | Reduces database load; sessions, profiles, search results |
@@ -521,6 +521,7 @@ GET /moderation/analytics
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-11-27 | **Database per service (decision 7 revised):** the schema per service of 1.5 became a database per service (`core_db`, `auth_db`, `messaging_db`, ...); in production each service has its own PostgreSQL server. A transaction never writes to two databases. Implemented in the code with one datasource and persistence unit per module (roadmap 1.22, 1.23). |
 | 1.5 | 2026-10-27 | **D-1.1 (decision 7):** shared database replaced by one PostgreSQL with one schema per service and no cross-schema reads. Added the data ownership rule and per-service `Database` lines. Sequence diagrams B1, E1 and E2 in [10 - Sequence Diagrams.md](10%20-%20Sequence%20Diagrams.md) still show cross-service SQL and are to be rewritten as events or API calls. |
 | 1.4 | 2026-09-10 | Standardised to the shared doc format. Title "System Architecture" → "System Design" (matches the filename and every cross-reference). Moved the header version-note prose into this table. Renamed *Moderation Service Details* → *Moderation Service — Phase 2 (not MVP)* and added an MVP callout on the high-level diagram's Phase-2 boxes. |
 | 1.3 | 2026-09-07 | "Core API ↔ Auth Service" now says JWT validation is **local** (signature check + Redis denylist), not a per-request HTTP call — matches [4 - Business logic.md § Sessions & Tokens](4%20-%20Business%20logic.md#sessions--tokens) and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md). Closed the last cross-file inconsistency. |

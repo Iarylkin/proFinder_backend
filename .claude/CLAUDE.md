@@ -57,7 +57,7 @@ docker-compose up -d                              # Start all services (PostgreS
 ### Tech Stack
 - **Framework:** Quarkus (Java 21) with RESTful API
 - **JSON:** Jackson (`quarkus-rest-jackson`): unknown fields are ignored, dates are ISO 8601 strings, `null` fields are written, a nested entity hides what is `@JsonIgnore`; the format is pinned by `JsonFormatTest`
-- **Database:** PostgreSQL with Hibernate ORM + Panache
+- **Database:** PostgreSQL with Hibernate ORM + Panache; one database and one persistence unit per module (`core_db`, `auth_db`, `messaging_db`), no relation, foreign key or transaction crosses two of them
 - **Search:** Elasticsearch 8.15 (indexed documents for Orders & Professionals)
 - **Cache:** Redis
 - **File Storage:** MinIO (S3-like)
@@ -68,7 +68,7 @@ docker-compose up -d                              # Start all services (PostgreS
 ### Project Structure
 
 #### `/src/main/java/io/github/strogolsky/profinder`
-Main application code is split into modules, one package per future service (step 1.7.0 of `docs/16`; the boundaries between them are not enforced yet: the modules still call each other's classes and entities relate across them). Inside a module the classes are grouped by layer, in the sub-packages listed below (`<module>.entity`, `<module>.service`, ...):
+Main application code is split into modules, one package per future service (step 1.7.0 of `docs/16`; the boundaries between them are not enforced yet: the modules still call each other's classes, but no entity relates across modules: a reference to another module is a plain `UUID`). Inside a module the classes are grouped by layer, in the sub-packages listed below (`<module>.entity`, `<module>.service`, ...):
 
 - **`core`** — orders, bids (responses), reviews, customer and professional profiles, categories, locations, search (Elasticsearch), file storage (MinIO)
 - **`auth`** — `User`, `UserRole`, registration, login, tokens, password recovery, `UserResource` (avatar, email and password changes), `CryptoUtils`
@@ -81,7 +81,7 @@ The layers (each is a sub-package of the module that owns the class):
 
 - **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
-  - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at users
+  - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at the IDs of users (`user1Id`, `user2Id`, `senderId`); the profile keeps the ID of its user as its primary key and its own `createAt`
   - `OrderStatus`, `BidStatus`, `UserRole` enums. `Bid` is the response of a professional to an order (table `responses`, API `/orders/{id}/responses`, `/responses/{id}`); it is not called `OrderResponse` so the name stays free for the DTO of an order
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
@@ -137,7 +137,7 @@ The layers (each is a sub-package of the module that owns the class):
 #### `/src/main/resources`
 Configuration and reference data:
 - `application.properties` — Quarkus configuration (DB, JWT keys, Elasticsearch, Redis, MinIO, Mailer). Credentials and key paths are read from environment variables (`DB_PASSWORD`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `JWT_PRIVATE_KEY_PATH`, `JWT_PUBLIC_KEY_PATH`); locally they come from `.env` and `keys/`, both git-ignored
-- `import.sql` — SQL scripts loaded on startup (`%dev` only, with `drop-and-create`)
+- `import-core.sql`, `import-auth.sql` — SQL scripts loaded on startup into `core_db` and `auth_db` (`%dev` only, with `drop-and-create`; the property is fixed at build time, so build the jar with `-Dquarkus.profile=dev` to get the data)
 - `logstash.conf` — Log forwarding config for production
 
 #### `/src/test`
@@ -148,7 +148,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Configuration & Profiles
 - **Dev Profile** (`%dev.*`)
   - Local PostgreSQL, Elasticsearch, Redis, MinIO, Logstash on localhost
-  - Database schema dropped and recreated on startup, `import.sql` loaded, SQL logged
+  - The schemas of the three databases are dropped and recreated on startup, `import-*.sql` loaded, SQL logged; `docker/postgres/init-databases.sql` creates the databases when the data directory is empty
   - Swagger UI at `/q/swagger-ui` (included in dev/test builds only)
 - **Prod Profile** (`%prod.*`)
   - Docker-internal hostnames (db-core, db-auth, db-messaging, elasticsearch-search, redis, logstash): in prod each module has its own PostgreSQL container (`docker-compose.prod.yml`, no published port); in dev one server holds the three databases
@@ -165,10 +165,11 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 ### Key Features & Workflows
 
 #### User Registration & Authentication
-1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create the `User` (hashed password), then its profile by role through `ProfileService`
+1. `AuthResource.register()` (`POST /v1/auth/register`) → `AuthService.register()` → create the `User` (hashed password), then its profile by role through `ProfileService`, in a separate transaction (the databases differ); if the profile fails the user is deleted again
 2. `AuthResource.login()` (`POST /v1/auth/login`) → `TokenService.generateToken()` returns a JWT with userId and role
 3. The current user ID is read from the verified token via `UserContext` (`id()`, `is(userId)`; the implementation `JwtUserContext` in `common.security` is the only class that reads the `SecurityIdentity`), so it costs no call to the auth module or to the database; resources and services never use `SecurityIdentity` directly
-4. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
+4. Deleting a user (`DELETE /customers/me`, `/professionals/me`) fires the event `UserDeleted` (`common.event`) after `auth` committed; `ProfileService` (core) and `ChatService` (messaging) observe it (`AFTER_SUCCESS`, each in its own transaction) and remove the profile and the chats
+5. Password recovery (`/v1/auth/password-recovery`): `POST` emails a 6-digit code (always `202`), `PATCH` resets the password; the code is single-use and 5 wrong codes per 15 minutes lock it (`429`)
 
 #### Order Lifecycle (Customer → Professional workflow)
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`

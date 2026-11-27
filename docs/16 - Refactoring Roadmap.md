@@ -129,7 +129,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | **D-5.4** | `docs/15`: update workflow names, paths, the `io.github.strogolsky.profinder` package, Mailpit, commit format; wiki sync (currently one-way, action pinned to `@main`) |
 | **D-5.5** | Availability and latency targets: one set of values in `docs/2` (uptime, search under 2 s vs under 500 ms, cache TTL) |
 | **rc.1** | Multi-module Maven, `contracts` (events, DTOs, errors). Monorepo layout `services/<name>` |
-| **rc.2** | Notification: own schema, `MailService`, recipient projection |
+| **rc.2** | Notification: own database, `MailService`, recipient projection |
 | **rc.3** | Auth: JWKS endpoint, private key only here, own outbox and poller, `JwtValidationFilter` and denylist check in the other services, JWKS cache |
 | **rc.4** | Messaging: own outbox and poller, Redis Pub/Sub instead of a static map, local blocks table fed by `user.blocked` events |
 | **rc.5** | Moderation Service: `POST /moderation/check-text` and `/check-url` (under 200 ms), internal access only |

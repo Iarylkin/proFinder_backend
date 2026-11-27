@@ -1,7 +1,7 @@
 # ProFinder — Application Classes (MVC)
 
-- **Version:** 1.7
-- **Date:** 2026-11-04
+- **Version:** 1.8
+- **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Every application-layer class to build, grouped by microservice (see [3 - System Design.md](3%20-%20System%20Design.md)) and then by domain module within each service. Layers: **Entity → Repository → Service → Controller → DTO**.
 
@@ -11,7 +11,7 @@
 - **Service** rows list the key methods (business behavior — this is the part that doesn't exist anywhere else, unlike Entity/Repository which mirror the DB schema).
 - **DTO** rows are named but not field-by-field — fields mirror either the entity (response DTOs) or the request shape implied by the endpoint; full request/response bodies live in [8 - API Specification.md](8%20-%20API%20Specification.md).
 - **DTOs are Java `record`s** (immutable), serialized with Jackson (`quarkus-rest-jackson`). A record that carries a secret (password, reset code, token) overrides `toString` so the secret is masked. Entities are never returned from a Resource.
-- **Data ownership:** each service reads and writes only its own schema ([3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md), [6 - Database Schema.md § Schema Ownership](6%20-%20Database%20Schema.md)). A Repository never queries another service's tables; data from another service arrives through its API client or an event consumer's local projection.
+- **Data ownership:** each service reads and writes only its own database ([3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md), [6 - Database Schema.md § Database Ownership](6%20-%20Database%20Schema.md)). A Repository never queries another service's tables; data from another service arrives through its API client or an event consumer's local projection.
 
 ---
 
@@ -293,6 +293,7 @@ and [10 - Sequence Diagrams.md § A3](10%20-%20Sequence%20Diagrams.md) all agree
 
 | Version | Date | Change |
 |---|---|---|
+| 1.8 | 2026-11-27 | **Database per service:** the data ownership convention says "own database" instead of "own schema" (see [3 - System Design.md](3%20-%20System%20Design.md) 1.6 and [6 - Database Schema.md](6%20-%20Database%20Schema.md) 1.11). |
 | 1.7 | 2026-11-04 | **Naming:** the profile DTOs are `CustomerUpdateRequest`, `ProfessionalUpdateRequest`, `CustomerResponse` and `ProfessionalResponse`, to match the code (a record cannot extend a class, so the two update requests have no common parent). |
 | 1.6 | 2026-11-04 | **Naming:** the entity of a professional's response is `Bid` (`BidRepository`, `BidService`, `BidController`, table `bids`) so `OrderResponse` does not clash with the DTO of an order; DTOs are named by direction, `*Request` and `*Response`, with no `*Dto`. |
 | 1.5 | 2026-10-31 | **D-1.5:** `OAuthService` / `OAuthController` work with several providers and no role-selection step; `RoleSelectionRequestDto` removed; `ProfileController` serves per-role `/…/me` endpoints. |
