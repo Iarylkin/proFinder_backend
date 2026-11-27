@@ -1,7 +1,7 @@
 # ProFinder — Sequence Diagrams
 
-- **Version:** 1.5
-- **Date:** 2026-11-04
+- **Version:** 1.6
+- **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Mermaid `sequenceDiagram` for every cross-service flow that isn't obvious from a single endpoint — the choreography between Client, the 5 services, and the infrastructure (PostgreSQL, Redis, Elasticsearch, MinIO, RabbitMQ, FCM, SMTP, Google). [Documentation Roadmap.md](Documentation%20Roadmap.md) Block C "Sequence" row.
 
@@ -9,6 +9,7 @@
 
 **Conventions**
 - `LB` = Nginx load balancer / gateway. Omitted from diagrams where it only proxies.
+- `PG` = the PostgreSQL database of the service the arrow starts from (a database per service; B1, E1 and E2 name them `core_db`, `auth_db` and `notification_db` because they cross services). No arrow ever reaches the database of another service.
 - `MQ` = RabbitMQ (`profinder.events` topic exchange). Every publish shown is really an **outbox write** in the same DB transaction; the poller (`~1 s`) does the actual `basic.publish`. Diagrams collapse that to one arrow labelled *(via outbox)* unless the timing matters.
 - Solid arrow `->>` = request / send. Dashed `-->>` = response / async delivery.
 - Error branches use `alt`. Only the interesting failure paths are drawn.
@@ -287,11 +288,12 @@ sequenceDiagram
     autonumber
     actor C as Customer
     participant Core as Core API
-    participant PG as PostgreSQL
+    participant PG as core_db
     participant MQ as RabbitMQ
     participant Idx as Core API · SearchIndexConsumer
     participant ES as Elasticsearch
     participant Notif as Notification Service
+    participant NPG as notification_db
     participant FCM
     participant SMTP
 
@@ -317,22 +319,21 @@ sequenceDiagram
     Idx->>ES: upsert order document (guard: version)
 
     MQ->>Notif: orders.notifications queue
-    Notif->>PG: INSERT processed_events (event_id, "notification")
-    Notif->>PG: SELECT professionals WHERE category matches AND city matches AND profile ACTIVE
+    Notif->>NPG: INSERT processed_events (event_id, "notification")
+    Notif->>NPG: SELECT recipients JOIN recipient_categories, recipient_cities WHERE category and city match AND status ACTIVE (own projection)
     loop each matching professional (+ the customer)
-        Notif->>PG: INSERT notifications row
-        Notif->>PG: check notification_preferences (event_type, channel)
+        Notif->>NPG: INSERT notifications row
+        Notif->>NPG: check notification_preferences (event_type, channel)
         Notif->>FCM: push (if enabled)
-        Notif->>SMTP: email (if enabled)
+        Notif->>SMTP: email to recipients.email (if enabled)
     end
 ```
 
 **Notes**
 - The two outbox rows commit atomically with the status change — a broker outage delays delivery, never drops it.
 - `search.order_reindex` and `order.published` are **separate events on separate queues** with separate consumers ([9 §3](9%20-%20Event%20Catalog.md)). The indexer ignores `order.published`; Notification Service never sees `search.*`.
-- Matching is exact category + exact city (flat category list, city-only match — [4 § Location and Categories](4%20-%20Business%20logic.md)).
+- Matching is exact category + exact city (flat category list, city-only match — [4 § Location and Categories](4%20-%20Business%20logic.md)). It runs on the **recipient projection** of Notification Service (`recipients`, `recipient_categories`, `recipient_cities`), which is fed by `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core) — a database per service rules out reading Core's tables ([9 § D11](9%20-%20Event%20Catalog.md)). The projection is eventually consistent: a professional who changed category a moment ago may miss this notification.
 - Consumer is idempotent: a redelivered `order.published` hits the `processed_events` PK and is dropped before any duplicate push.
-
 
 ### B2. Professional submits a response
 ---
@@ -597,8 +598,11 @@ sequenceDiagram
     actor RP as Reporter
     actor M as Moderator
     participant Core as Core API
-    participant PG as PostgreSQL
+    participant PG as core_db
     participant MQ as RabbitMQ
+    participant Auth as Auth Service
+    participant APG as auth_db
+    participant Redis
     participant Idx as SearchIndexConsumer
     participant ES as Elasticsearch
     participant Notif as Notification Service
@@ -618,34 +622,38 @@ sequenceDiagram
     Note over M,Core: later — moderator works the shared queue
     M->>Core: GET /reports?status=submitted
     M->>Core: POST /reports/{id}/decision {decision: banned, notes}
-    Core->>PG: reported user's status must be ACTIVE (not PENDING_VERIFICATION)
+    Core->>Auth: GET /internal/users/{id} (service-to-service) — status must be ACTIVE (not PENDING_VERIFICATION)
     alt target not verified
         Core-->>M: 409 MODERATION_TARGET_NOT_VERIFIED
     else
         Core->>PG: BEGIN
-        Core->>PG: UPDATE users SET status=BANNED
         Core->>PG: UPDATE reports SET status=resolved, decision=banned
+        Core->>PG: (if professional) profile_status=HIDDEN
         Core->>PG: (if customer) for each ACTIVE order: status=CLOSED, closed_reason=ACCOUNT_ACTION
         Core->>PG: INSERT outbox: moderation.banned
         Core->>PG: INSERT outbox: report.resolved
         Core->>PG: INSERT outbox: search.professional_reindex (hide)  — and/or one search.order_reindex per closed order
+        Core->>PG: INSERT outbox: projection.professional_matching_changed (HIDDEN)
         Core->>PG: COMMIT
-        Core->>Redis: SET v1:denylist:{banned_user_id} EX 900 + revoke refresh tokens
         Core-->>M: 200 ReportResponse
     end
 
     Core->>MQ: publish the batch (via outbox)
+    MQ->>Auth: auth.account — moderation.banned
+    Auth->>APG: BEGIN, UPDATE users SET status=BANNED, INSERT processed_events + outbox (projection.recipient_changed), COMMIT
+    Auth->>Redis: SET v1:denylist:{banned_user_id} EX 900 + revoke refresh tokens
     MQ->>Idx: search.index — drop professional doc / drop closed-order docs
     Idx->>ES: delete / update documents
-    MQ->>Notif: reports.notifications
+    MQ->>Notif: reports.notifications + recipients.projection
     Notif->>Notif: notify banned user (reason + appeal window)
     Notif->>Notif: notify reporter (outcome)
     Notif->>Notif: notify order responders (account closed)
 ```
 
 **Notes**
-- All state changes + every outbox row are **one transaction**. The denylist `SET` + refresh-token revocation happen right after commit so the banned user is logged out within seconds.
-- Suspension is the same shape with `status=SUSPENDED` + `suspension_end_date`; a scheduled job (or lazy check at next login) flips it back to `ACTIVE` and emits a reinstatement reindex.
+- `users` lives in `auth_db`: Core **never** updates `users.status`. Core's transaction covers only its own data (report, profile visibility, orders, outbox); Auth applies the status when it consumes `moderation.banned`, which takes seconds, not milliseconds. Until then the old access token (15 min) still works; the denylist entry written by Auth after the status change logs the banned user out. No transaction spans the two databases, and the two outbox rows of Auth and Core are independent.
+- The status check before the decision is a read through Auth's internal API (a service may read another service's data through its API, [3 § PostgreSQL](3%20-%20System%20Design.md)). Between the check and the consumption of the event the status can change (for example, the user starts the deletion); Auth ignores a `moderation.banned` for an account that is already `DELETED`.
+- Suspension is the same shape with `status=SUSPENDED` + `suspension_end_date` (in Auth's data); a scheduled job in Auth (or a lazy check at next login) flips it back to `ACTIVE`, emits `projection.recipient_changed` and Core re-shows the profile through `account.reactivated`-style reinstatement.
 - Ban appeal: `POST /ban-appeals` within 30 days → reviewed by a **different** moderator (`SAME_MODERATOR_REVIEW` guard), one appeal only.
 
 
@@ -657,8 +665,9 @@ sequenceDiagram
     autonumber
     actor U as Client
     participant Core as Core API
+    participant PG as core_db
     participant Auth as Auth Service
-    participant PG as PostgreSQL
+    participant APG as auth_db
     participant Redis
     participant MQ as RabbitMQ
     participant Idx as SearchIndexConsumer
@@ -666,44 +675,47 @@ sequenceDiagram
     participant Notif as Notification Service
 
     U->>Core: DELETE /users/me  (request account deletion)
-    Core->>PG: guard — no active ban, no open report against the user
+    Core->>PG: guard — no open report against the user; the token claim account_status must be ACTIVE (no ban/suspension)
     alt blocked
         Core-->>U: 409 ACCOUNT_DELETION_BLOCKED (resolve open items first)
     else ok
         Core->>PG: BEGIN
-        Core->>PG: UPDATE users SET status=DELETED, deleted_at=now(), grace_ends_at=now()+30d
-        Core->>PG: scrub PII (name -> "Deleted user", email nulled/hashed, phone/bio cleared)
-        Core->>PG: hide professional profile
+        Core->>PG: scrub PII of the profile (name -> "Deleted user", phone/bio cleared), profile_status=HIDDEN
         Core->>PG: close all ACTIVE orders (ACCOUNT_ACTION)
-        Core->>PG: INSERT outbox: account.deletion_requested + search.professional_reindex + search.order_reindex(s)
+        Core->>PG: INSERT outbox: account.deletion_requested + search.professional_reindex + search.order_reindex(s) + projection.professional_matching_changed
         Core->>PG: COMMIT
-        Core->>Redis: SET v1:denylist:{user_id} EX 900 + revoke refresh tokens
         Core-->>U: 204
     end
     Core->>MQ: publish (via outbox)
+    MQ->>Auth: auth.account — account.deletion_requested
+    Auth->>APG: BEGIN, UPDATE users SET status=DELETED, deleted_at=now(), grace_ends_at=now()+30d, email nulled/hashed, INSERT outbox (projection.recipient_changed), COMMIT
+    Auth->>Redis: SET v1:denylist:{user_id} EX 900 + revoke refresh tokens
     MQ->>Idx: drop documents from ES
-    MQ->>Notif: notify user — "30 days to reactivate by logging in"
+    MQ->>Notif: notify user — "30 days to reactivate by logging in" (sent before the email is scrubbed from the projection, from the event)
 
     alt user logs in within 30 days
         U->>Auth: POST /auth/login
-        Auth->>PG: status DELETED + within grace -> UPDATE status=ACTIVE
-        Auth->>PG: INSERT outbox (account.reactivated)
+        Auth->>APG: status DELETED + within grace -> UPDATE status=ACTIVE
+        Auth->>APG: INSERT outbox (account.reactivated + projection.recipient_changed)
         Auth-->>U: 200 tokens
-        Note over MQ,Idx: account.reactivated -> re-index profile if it was ACTIVE
+        Auth->>MQ: publish account.reactivated
+        MQ->>Core: core.account — un-hide the profile, INSERT outbox (search.professional_reindex, projection.professional_matching_changed)
+        Note over MQ,Idx: re-index the profile if it was ACTIVE
     else grace window elapses
-        Note over Core: scheduled job scans users WHERE status=DELETED AND grace_ends_at < now()
-        Core->>PG: finalize — keep the row (no orphans), data already scrubbed
-        Core->>PG: INSERT outbox (account.deletion_finalized)
-        Core->>MQ: publish account.deletion_finalized
+        Note over Auth: scheduled job in Auth scans users WHERE status=DELETED AND grace_ends_at < now()
+        Auth->>APG: finalize — keep the row (no orphans), data already scrubbed
+        Auth->>APG: INSERT outbox (account.deletion_finalized)
+        Auth->>MQ: publish account.deletion_finalized
         MQ->>Idx: hard-purge ES document
         MQ->>Notif: final "account permanently deleted" email
     end
 ```
 
 **Notes**
-- Soft delete — the DB row is **kept** and anonymized so no order/response/review/message is ever orphaned ([4 § Concurrency & Edge Cases](4%20-%20Business%20logic.md)). Reviews the user *wrote* stay, anonymized.
-- Reactivation is just "log in during the grace window" — no separate endpoint.
-- PII scrub happens **at request time**, not at finalize; finalize is mostly the ES purge + the final notification.
+- Soft delete — the rows are **kept** and anonymized so no order/response/review/message is ever orphaned ([4 § Concurrency & Edge Cases](4%20-%20Business%20logic.md)). Reviews the user *wrote* stay, anonymized.
+- The request starts in Core (the profile, the orders and the reports are Core's data) and finishes in Auth (`users` is Auth's): two local transactions joined by `account.deletion_requested`, no distributed transaction. For a short time the profile is already hidden while the login still works; the deletion is complete when Auth has consumed the event.
+- Reactivation is just "log in during the grace window" — no separate endpoint. Auth owns the status and the scheduler of the grace window; Core un-hides the profile when it consumes `account.reactivated`.
+- PII scrub of the profile happens **at request time** in Core, the scrub of the email in Auth right after; finalize is mostly the ES purge + the final notification.
 
 
 ## Changelog
@@ -711,6 +723,7 @@ sequenceDiagram
 
 | Version | Date | Change |
 |---|---|---|
+| 1.6 | 2026-11-27 | **B1, E1 and E2 without cross-service SQL** (the open item of roadmap D-1.1; database per service): B1 matches professionals on the recipient projection of Notification Service (decision D11 of [9](9%20-%20Event%20Catalog.md)); E1 and E2 no longer let Core update `users` — Core applies its own data and publishes, Auth applies `users.status` when it consumes `moderation.*` / `account.deletion_requested`; E2's grace-window job and `account.deletion_finalized` move to Auth, `account.reactivated` un-hides the profile in Core. The participants `PG` are now `core_db`, `auth_db` and `notification_db`. |
 | 1.5 | 2026-11-04 | **Naming:** `POST /orders/{id}/bids`, events `bid.created` / `bid.edited`, DTOs named by direction (`BidResponse`, `OrderResponse`, ...), to match the code. |
 | 1.4 | 2026-10-31 | **D-1.5:** A5 rewritten: the role is chosen before the provider redirect (signed `state`), identities live in `linked_identities`, the account and its profile are created together, no `temp_token` or `POST /auth/role`. |
 | 1.3 | 2026-10-28 | **Naming:** *conversation* → *chat*; `PATCH /orders/{id}` replaces `/publish`; `DELETE /users/me`; DTO names `OrderDto` and `OrderResponseDto`. |

@@ -1,6 +1,6 @@
 # ProFinder — System Design
 
-- **Version:** 1.6
+- **Version:** 1.7
 - **Date:** 2026-11-27
 - **Status:** Approved
 - **Purpose:** Service topology, per-service responsibilities, infrastructure, inter-service communication, the RabbitMQ exchange/queue layout, and deployment/scaling.
@@ -115,6 +115,7 @@ flowchart TD
 **Responsibilities:**
 - Push via **Firebase Cloud Messaging** (device-token table, refresh + invalidation)
 - Email: real-time per event, `multipart/alternative` (HTML + text), branded Qute templates, per-type + global unsubscribe. No digest in MVP. Also owns the Auth Service transactional emails (`auth.*` events → verification / reset / set-password), which are email-only and bypass the preferences matrix.
+- Keeps its own **recipient projection** (`recipients`, `recipient_categories`, `recipient_cities`), built from `projection.*` events of Auth and Core, because it cannot read their databases: that is where it finds the email of a user and the professionals matching a published order ([9 - Event Catalog.md § D11](9%20-%20Event%20Catalog.md))
 - In-app: rows in `notifications` (PostgreSQL), unread badge, purge read > 90d
 - Honours the `notification_preferences(user_id, event_type, channel)` matrix
 - Idempotent consumers (dedup by `event_id`); failed email → NACK, 3 retries, then `notifications.deadletter`. In-app is written first, so a failed push/email never loses the in-app record.
@@ -521,6 +522,7 @@ GET /moderation/analytics
 
 | Version | Date | Change |
 |---|---|---|
+| 1.7 | 2026-11-27 | Notification Service keeps a recipient projection built from events (decision D11 in [9](9%20-%20Event%20Catalog.md), roadmap D-5.2). |
 | 1.6 | 2026-11-27 | **Database per service (decision 7 revised):** the schema per service of 1.5 became a database per service (`core_db`, `auth_db`, `messaging_db`, ...); in production each service has its own PostgreSQL server. A transaction never writes to two databases. Implemented in the code with one datasource and persistence unit per module (roadmap 1.22, 1.23). |
 | 1.5 | 2026-10-27 | **D-1.1 (decision 7):** shared database replaced by one PostgreSQL with one schema per service and no cross-schema reads. Added the data ownership rule and per-service `Database` lines. Sequence diagrams B1, E1 and E2 in [10 - Sequence Diagrams.md](10%20-%20Sequence%20Diagrams.md) still show cross-service SQL and are to be rewritten as events or API calls. |
 | 1.4 | 2026-09-10 | Standardised to the shared doc format. Title "System Architecture" → "System Design" (matches the filename and every cross-reference). Moved the header version-note prose into this table. Renamed *Moderation Service Details* → *Moderation Service — Phase 2 (not MVP)* and added an MVP callout on the high-level diagram's Phase-2 boxes. |

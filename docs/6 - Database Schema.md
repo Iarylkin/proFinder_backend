@@ -1,6 +1,6 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.11
+- **Version:** 1.12
 - **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
@@ -427,6 +427,26 @@ erDiagram
 - A background job purges **read** `notifications` older than `inapp_retention_days` (default 90); unread rows are kept indefinitely.
 - `notification_preferences` has no row = treated as `enabled = true` (every cell defaults on) — rows only exist for cells a user has actually touched, or the table is pre-seeded per user on signup (implementation choice, not a schema constraint).
 
+#### Recipient projection (`notification_db` only)
+---
+
+Notification Service cannot read `users` or `professional_profiles` (they are in other databases), so it keeps its own copy of what it needs, built from the events `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core) ([9 - Event Catalog.md § D11](9%20-%20Event%20Catalog.md)). These tables have **no foreign keys** to anything and are never written by another service.
+
+`recipients`
+
+| Column | Type | Constraints / Notes |
+|---|---|---|
+| user_id | uuid | PK |
+| email | citext | nullable — `NULL` once the account is deleted |
+| role | user_role | NOT NULL |
+| status | account_status | NOT NULL — Notification sends only to `ACTIVE` |
+| source_version | bigint | NOT NULL — `users.version` of the event; an older event is ignored |
+| updated_at | timestamp | |
+
+`recipient_categories` — `(professional_id uuid, category_id uuid)`, PK on both; `recipient_cities` — `(professional_id uuid, city citext)`, PK on both. A `projection.professional_matching_changed` event replaces all category and city rows of its professional in one transaction, and is ignored if it is older than the version stored for that professional in `recipient_matching_versions(professional_id uuid PK, source_version bigint)`.
+
+**Matching for `order.published`:** professionals with a row in `recipient_categories` for the order's category **and** a row in `recipient_cities` for its city, whose `recipients.status` is `ACTIVE`.
+
 
 ## 6. Moderation & Reports
 ---
@@ -501,7 +521,7 @@ erDiagram
 **Constraints:**
 - `reports`: no unique constraint on `(reporter_id, reported_user_id)` alone — duplicates are allowed, just rate-limited to 1/day (checked at the application layer against `created_at`, see [FR-Reports-12](2%20-%20Requirements.md)).
 - `ban_appeals`: `UNIQUE (report_id)` — one appeal per ban. `reviewer_id` must differ from `reports.moderator_id` (app-layer check).
-- **Suspend/ban precondition:** a report's `decision` can only become `suspended`/`banned` if the `reported_user_id`'s `users.status` is currently `ACTIVE` (not `PENDING_VERIFICATION`) — see the gap closed in [5 - State Machines.md § Account Status](5%20-%20State%20Machines.md).
+- **Suspend/ban precondition:** a report's `decision` can only become `suspended`/`banned` if the `reported_user_id`'s `users.status` is currently `ACTIVE` (not `PENDING_VERIFICATION`) — see the gap closed in [5 - State Machines.md § Account Status](5%20-%20State%20Machines.md). `users` lives in `auth_db`, so Core reads the status from Auth's internal API (service-to-service, not public) and never updates it: Auth applies the status when it consumes `moderation.suspended` / `moderation.banned`.
 - `blocks`: `UNIQUE (blocker_id, blocked_id)`.
 
 
@@ -643,7 +663,7 @@ One database per service (`core_db`, `auth_db`, `messaging_db`, ...; [3 - System
 | `auth_db` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
 | `core_db` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `bids`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
 | `messaging_db` | `chats`, `messages`, `outbox`, `processed_events` |
-| `notification_db` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
+| `notification_db` | `notifications`, `notification_preferences`, `device_tokens`, `recipients`, `recipient_categories`, `recipient_cities`, `processed_events` |
 | `moderation_db` | the rules and decision log tables (Phase 2) |
 
 Each database has its own `outbox` / `processed_events` where it publishes or consumes events. The personal data (`display_name`, `phone`, `bio`, `avatar_file_id`) lives in the profiles, which stay in Core; `users` and `linked_identities` belong to Auth (decided in roadmap version 1.4.0, [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
@@ -681,6 +701,7 @@ Everything else that references `users` (`orders.customer_id`, `bids.professiona
 
 | Version | Date | Change |
 |---|---|---|
+| 1.12 | 2026-11-27 | **Recipient projection (decision D11 of [9](9%20-%20Event%20Catalog.md)):** `notification_db` gets `recipients`, `recipient_categories`, `recipient_cities` and `recipient_matching_versions`, built from events, so Notification never reads another service's tables; Core reads `users.status` for a ban from Auth's internal API and never updates it. |
 | 1.11 | 2026-11-27 | **Database per service:** § Schema Ownership became § Database Ownership; one database per service instead of one schema per service (`core_db`, `auth_db`, `messaging_db`, ...), no transaction across databases, the deletion of a user is the event `UserDeleted`. The profile has its own `created_at` (the account lives in `auth_db`). |
 | 1.10 | 2026-11-04 | **Naming:** table `responses` → `bids` (entity `Bid`): the table, the entity and the API paths use one name, and `OrderResponse` is free for the DTO of an order. Columns and constraints are unchanged. |
 | 1.9 | 2026-10-31 | **Account vs profile (decision D-1.5):** `users` keeps only authentication and account state; `display_name`, `phone`, `bio`, `avatar_file_id` move to both profile tables; new table `linked_identities` (several providers per account, raw `claims`) replaces `users.google_id`; `users.role` is `NOT NULL` (no `NULL` state, no `temp_token`); an account has exactly one profile; every account needs a verified email. |

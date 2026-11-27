@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.23
+- **Version:** 1.25
 - **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -70,7 +70,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version / task | What we do |
 |---|---|
-| **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
+| **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. **Done 2026-11-27:** `docs/10` B1, E1 and E2 are rewritten without cross-service SQL (database per service, D-5.2) |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
 | **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.5.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID literals |
@@ -124,7 +124,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version / task | What we do |
 |---|---|
 | **D-5.1** (before code) | Denylist owner (Auth or Core), decision 6. Recommendation: Core publishes `moderation.banned`, Auth consumes it and sets the denylist |
-| **D-5.2** (before code) | How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
+| **D-5.2** (before code) | **Done 2026-11-27: a projection built from events** (decision D11 of `docs/9`, tables in `docs/6`, diagrams in `docs/10`). How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
 | **D-5.3** | Deployment: VPS + Compose or Kubernetes (decision 10); make `docs/3` and `15` agree. Scaling: change NFR-Scale-1/2 in `docs/2` to one instance at launch |
 | **D-5.4** | `docs/15`: update workflow names, paths, the `io.github.strogolsky.profinder` package, Mailpit, commit format; wiki sync (currently one-way, action pinned to `@main`) |
 | **D-5.5** | Availability and latency targets: one set of values in `docs/2` (uptime, search under 2 s vs under 500 ms, cache TTL) |
@@ -255,7 +255,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
-| 9 | How Notification gets email and recipients (recommended: projection built from events) | D-5.2 |
+| 9 | ~~How Notification gets email and recipients~~ **Decided 2026-11-27:** a projection built from events (`projection.recipient_changed`, `projection.professional_matching_changed`) | D-5.2 |
 | 10 | Deployment: VPS + Compose or Kubernetes | D-5.3 |
 | 1 | Accepting a professional: change the code to match `docs/`, or change `docs/` to match the code | 2.6.0 |
 | 4 | Chat attachments | D-9.1 |
@@ -280,6 +280,8 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.25 | 2026-11-27 | **D-5.2 done:** Notification Service builds a recipient projection from events (`docs/9` 1.9, D11); `docs/6` 1.12 has the tables; `docs/10` 1.6 rewrites B1, E1 and E2 (Core no longer updates `users`: Auth applies `users.status` from `moderation.*` and `account.deletion_requested`, and owns the grace-window job). `docs/3` 1.7. Open follow-ups: the internal API of Auth (`GET /internal/users/{id}`) is not in `docs/8`, and the other diagrams of `docs/10` still use one generic `PG`. |
+| 1.24 | 2026-11-27 | **docs/10 checked after the database split:** B1 (Notification selects professionals from the tables of Core), E1 and E2 still show cross-service SQL; the rewrite depends on D-5.2 (the recipient projection) and is not done. Nothing else in `docs/` still says schema per service. |
 | 1.23 | 2026-11-27 | **Prod: a PostgreSQL server per module.** `docker-compose.prod.yml` runs `db-core`, `db-auth` and `db-messaging` (own volume, no published port) instead of one server; the prod JDBC URLs point at them. Dev keeps one server with three databases. The prod volume `db_data` is not migrated: its data must be copied into the three new databases by hand. |
 | 1.22 | 2026-11-27 | **A database per module:** `core_db`, `auth_db` and `messaging_db` on one PostgreSQL server, one Quarkus datasource and persistence unit each (`application.properties`; `docker/postgres/init-databases.sql` creates the databases); `import.sql` is split into `import-core.sql` and `import-auth.sql`. No transaction writes to two databases: `register` saves the user and then the profile in separate transactions and deletes the user if the profile fails; the observers of `UserDeleted` run after the commit, each in its own transaction (so a failure there leaves the data of a deleted user until it is removed again; the outbox of `docs/9` is the real fix). `docs/3` and `docs/6` still say one schema per service. |
 | 1.21 | 2026-11-27 | **1.8.0 done, 1.9.0 done:** the narrow `UserService` interface and `MessagingApi` are dropped as overengineering (no caller needs them); the chat lists of `User` are removed. |
