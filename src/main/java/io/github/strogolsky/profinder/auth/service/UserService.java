@@ -225,7 +225,7 @@ public class UserService {
                             final String newEmail,
                             final String currentPassword) {
         User user = getById(userId);
-        if (user.getEmail().equalsIgnoreCase(newEmail)) {
+        if (user.getEmail().equals(newEmail)) {
             throw new BadRequestException("New email is same as old email");
         }
         if (!CryptoUtils.verify(currentPassword, user.getPassword())) {
