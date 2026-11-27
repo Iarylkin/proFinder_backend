@@ -155,6 +155,7 @@ public class OrderService {
      * @return the status the order must have after the update
      * @throws StatusConflictException if the requested status is not {@code CANCELLED}
      *                                 or the transition is not valid from the current status
+     *                                 (decided by {@link OrderStatus#transitionTo})
      */
     static OrderStatus nextStatus(final OrderStatus current, final OrderStatus requested) {
         if (requested == null || requested == current) {
@@ -163,10 +164,7 @@ public class OrderService {
         if (requested != OrderStatus.CANCELLED) {
             throw new StatusConflictException("Only the CANCELLED status can be set on an order");
         }
-        if (!current.isValidTransition(requested)) {
-            throw new StatusConflictException("Cannot change the status from " + current + " to " + requested);
-        }
-        return requested;
+        return current.transitionTo(requested);
     }
 
     /**

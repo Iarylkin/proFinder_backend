@@ -99,7 +99,8 @@ public class BidService {
      * @throws ForbiddenException if the current user is not the customer who created the order
      * @throws io.github.strogolsky.profinder.common.exception.StaleVersionException
      *         if the bid was changed after the client read it
-     * @throws StatusConflictException if the status is not {@code APPROVED}
+     * @throws StatusConflictException if the status is not {@code APPROVED}, or the order is already
+     *                                 {@code COMPLETED} or {@code CANCELLED}
      */
     @Transactional
     public Order updateStatus(final UUID bidId, final BidStatus status,
@@ -117,9 +118,11 @@ public class BidService {
             throw new StatusConflictException("Only the APPROVED status can be set on a bid");
         }
 
+        OrderStatus completed = order.getStatus().transitionTo(OrderStatus.COMPLETED);
+
         order.setPrice(finalPrice);
         order.setDeadline(finalDeadline);
-        order.setStatus(OrderStatus.COMPLETED);
+        order.setStatus(completed);
 
         bid.setStatus(BidStatus.APPROVED);
 

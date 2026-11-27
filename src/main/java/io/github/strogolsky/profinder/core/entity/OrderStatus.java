@@ -1,5 +1,6 @@
 package io.github.strogolsky.profinder.core.entity;
 
+import io.github.strogolsky.profinder.common.exception.StatusConflictException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -81,13 +82,13 @@ public enum OrderStatus {
      *
      * @param newStatus The desired status to transition to.
      * @return The new status if the transition is allowed.
-     * @throws IllegalStateException if the transition is invalid.
+     * @throws StatusConflictException if the transition is invalid (HTTP 409).
      */
     public OrderStatus transitionTo(final OrderStatus newStatus) {
         log.info("Attempting transition from {} to {}", this, newStatus);
         if (!isValidTransition(newStatus)) {
-            log.error("Invalid status transition from {} to {}", this, newStatus);
-            throw new IllegalStateException("Invalid transition from " + this + " to " + newStatus);
+            log.warn("Invalid status transition from {} to {}", this, newStatus);
+            throw new StatusConflictException("Cannot change the status from " + this + " to " + newStatus);
         }
         log.debug("Transition from {} to {} successful", this, newStatus);
         return newStatus;
