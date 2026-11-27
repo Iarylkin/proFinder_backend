@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.20
-- **Date:** 2026-11-08
+- **Version:** 1.22
+- **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -89,12 +89,12 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
 | **1.7.0** | **Done 2026-11-06.** Packages `io.github.strogolsky.profinder.{core,auth,messaging,notification,moderation,common}`, each with the layer sub-packages (`entity`, `service`, ...); move classes only. The base package `fit.biejk` is renamed to `io.github.strogolsky.profinder` (Maven `groupId` `io.github.strogolsky`, `artifactId` stays `pro-finder`). `common` holds what belongs to no module (base entities, `VersionCheck`, the error format, validation, `PageRequest`) and becomes `contracts` in 2.0.0-rc.1. `UserResource` stays whole in `auth`; the module `moderation` is an empty package until 1.11.0. |
-| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). Open: the narrow interface over `UserService` for `core` and `messaging` (`exists`, `delete`) |
-| **1.9.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
+| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). **Done 2026-11-27.** The narrow interface over `UserService` for `core` and `messaging` is dropped as overengineering: the modules still call `UserService` directly until 1.12.0 |
+| **1.9.0** | **Done 2026-11-27.** Messaging boundary: `User` no longer holds the lists `initiatedChats` and `receivedChats` (the only reference from another module into `messaging`); deleting a user removes their chats and messages when `messaging` handles the event `UserDeleted` (see 1.12.0). `MessagingApi` is dropped: no other module calls `messaging`; it is added if one ever does |
 | **1.10.0** | Notification boundary: `MailService` behind `NotificationApi` |
 | **1.11.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies |
-| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module (possible now, because modules only reference each other by ID); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
+| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies **Done early, 2026-11-27, together with a database per module (1.22):** `Profile.user`, `Chat.user1`, `Chat.user2` and `ChatMessage.sender` are plain `UUID` columns; the deletion of a user is the event `UserDeleted` (`common.event`), handled after the commit by `core` (the profile) and `messaging` (the chats). `User` has no `profile` and `core` keeps its own `createAt`; the email in `/customers/me` is read from `auth`. ArchUnit tests are still open |
+| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table per database, one database per module (`core_db`, `auth_db`, `messaging_db`); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
 
 ## M3 — Safety net (1.14.0 – 1.16.0)
 ---
@@ -280,6 +280,8 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.22 | 2026-11-27 | **A database per module:** `core_db`, `auth_db` and `messaging_db` on one PostgreSQL server, one Quarkus datasource and persistence unit each (`application.properties`; `docker/postgres/init-databases.sql` creates the databases); `import.sql` is split into `import-core.sql` and `import-auth.sql`. No transaction writes to two databases: `register` saves the user and then the profile in separate transactions and deletes the user if the profile fails; the observers of `UserDeleted` run after the commit, each in its own transaction (so a failure there leaves the data of a deleted user until it is removed again; the outbox of `docs/9` is the real fix). `docs/3` and `docs/6` still say one schema per service. |
+| 1.21 | 2026-11-27 | **1.8.0 done, 1.9.0 done:** the narrow `UserService` interface and `MessagingApi` are dropped as overengineering (no caller needs them); the chat lists of `User` are removed. |
 | 1.20 | 2026-11-08 | **1.8.0 started:** `CurrentUser` is named `UserContext`; the role is left out because nothing used it. |
 | 1.19 | 2026-11-06 | **1.7.0 done:** classes moved into the modules `core`, `auth`, `messaging`, `notification`, `moderation` and the new `common`; the base package `fit.biejk` is renamed to `io.github.strogolsky.profinder`. `common` is not in the first plan: shared classes belong to no module and become `contracts` in 2.0.0-rc.1. |
 | 1.18 | 2026-11-04 | 1.5.0 gets the naming: DTOs are `*Request` / `*Response` (no `*Dto`) and a professional's response to an order is a `Bid` (table `bids`, paths `/bids`), so `OrderResponse` is free for the DTO of an order and every name shows its direction. |
