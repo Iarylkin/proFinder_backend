@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.22
+- **Version:** 1.23
 - **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -280,6 +280,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.23 | 2026-11-27 | **Prod: a PostgreSQL server per module.** `docker-compose.prod.yml` runs `db-core`, `db-auth` and `db-messaging` (own volume, no published port) instead of one server; the prod JDBC URLs point at them. Dev keeps one server with three databases. The prod volume `db_data` is not migrated: its data must be copied into the three new databases by hand. |
 | 1.22 | 2026-11-27 | **A database per module:** `core_db`, `auth_db` and `messaging_db` on one PostgreSQL server, one Quarkus datasource and persistence unit each (`application.properties`; `docker/postgres/init-databases.sql` creates the databases); `import.sql` is split into `import-core.sql` and `import-auth.sql`. No transaction writes to two databases: `register` saves the user and then the profile in separate transactions and deletes the user if the profile fails; the observers of `UserDeleted` run after the commit, each in its own transaction (so a failure there leaves the data of a deleted user until it is removed again; the outbox of `docs/9` is the real fix). `docs/3` and `docs/6` still say one schema per service. |
 | 1.21 | 2026-11-27 | **1.8.0 done, 1.9.0 done:** the narrow `UserService` interface and `MessagingApi` are dropped as overengineering (no caller needs them); the chat lists of `User` are removed. |
 | 1.20 | 2026-11-08 | **1.8.0 started:** `CurrentUser` is named `UserContext`; the role is left out because nothing used it. |

@@ -23,7 +23,9 @@ services:
     networks:
       - elk
     depends_on:
-      - db
+      - db-core
+      - db-auth
+      - db-messaging
       - redis
       - elasticsearch-logs
       - elasticsearch-search
@@ -100,18 +102,40 @@ services:
     depends_on:
       - elasticsearch-search
 
-  db:
+  # One PostgreSQL server per module; no port is published, only the backend reaches them.
+  db-core:
     image: postgres:16-alpine
-    container_name: profinder-db
+    container_name: profinder-db-core
     environment:
-      POSTGRES_DB: postgres
+      POSTGRES_DB: core_db
       POSTGRES_USER: iarylser
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
-    ports:
-      - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+      - db_core_data:/var/lib/postgresql/data
+    networks:
+      - elk
+
+  db-auth:
+    image: postgres:16-alpine
+    container_name: profinder-db-auth
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: iarylser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - db_auth_data:/var/lib/postgresql/data
+    networks:
+      - elk
+
+  db-messaging:
+    image: postgres:16-alpine
+    container_name: profinder-db-messaging
+    environment:
+      POSTGRES_DB: messaging_db
+      POSTGRES_USER: iarylser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - db_messaging_data:/var/lib/postgresql/data
     networks:
       - elk
 
@@ -160,7 +184,9 @@ services:
       - elk
 
 volumes:
-  db_data:
+  db_core_data:
+  db_auth_data:
+  db_messaging_data:
   minio_data:
 
 networks:

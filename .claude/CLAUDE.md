@@ -151,7 +151,7 @@ Unit tests (JUnit 5, Mockito + REST Assured):
   - Database schema dropped and recreated on startup, `import.sql` loaded, SQL logged
   - Swagger UI at `/q/swagger-ui` (included in dev/test builds only)
 - **Prod Profile** (`%prod.*`)
-  - Docker-internal hostnames (db, elasticsearch-search, redis, logstash)
+  - Docker-internal hostnames (db-core, db-auth, db-messaging, elasticsearch-search, redis, logstash): in prod each module has its own PostgreSQL container (`docker-compose.prod.yml`, no published port); in dev one server holds the three databases
   - MinIO accessible via host.docker.internal from containers
   - Prometheus metrics enabled on `/metrics` endpoint
   - Schema generation `none` (the schema must already exist until Flyway arrives); secrets come from the environment, JWT keys from the paths in `JWT_*_KEY_PATH`
