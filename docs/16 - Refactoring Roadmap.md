@@ -1,6 +1,6 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.27
+- **Version:** 1.28
 - **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
@@ -274,6 +274,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.28 | 2026-11-27 | **`categoryIds` in the requests:** the requests that set the categories of an order (`OrderCreateRequest`, `OrderUpdateRequest`) and of a professional (`ProfessionalUpdateRequest`) carry `categoryIds`, a list of UUIDs, instead of `categories`, a list of `Category` entities, which made every save fail with a 500 (a stub without a version). `CategoryService.resolve` loads the stored categories (`404` for an unknown id). The responses keep `categories`. A client that still sends `categories` is not rejected: the unknown field is ignored (Jackson), so the categories simply do not change. |
 | 1.27 | 2026-11-27 | **`rating` rename:** the professional's `averageRating`/`average_rating` is `rating` in the code (entity, responses, search document), `rating_avg` is `rating` in `docs/`. Until Flyway (1.14.0) a deployed database needs `ALTER TABLE professional_profiles RENAME COLUMN average_rating TO rating;` by hand; the search index is recreated at startup; the JSON field of a professional is `rating`. |
 | 1.26 | 2026-11-27 | **New order of work:** tests first, then Flyway, then the split, then business logic. The safety net (M3) is merged into M2: Testcontainers is 1.11.0 (was 1.14.0), the E2E smoke is 1.12.0 (was 1.15.0), the role tests, the coverage gate and ArchUnit are 1.13.0 (was 1.16.0), Flyway is 1.14.0 (was 1.13.0), and the cross-module IDs (done) are 1.10.0 (was 1.12.0). `NotificationApi` (old 1.10.0) is dropped and the Moderation module (old 1.11.0) waits for the extraction (rc.5, M11). Older changelog rows keep the numbers they used at the time. |
 | 1.25 | 2026-11-27 | **D-5.2 done:** Notification Service builds a recipient projection from events (`docs/9` 1.9, D11); `docs/6` 1.12 has the tables; `docs/10` 1.6 rewrites B1, E1 and E2 (Core no longer updates `users`: Auth applies `users.status` from `moderation.*` and `account.deletion_requested`, and owns the grace-window job). `docs/3` 1.7. Open follow-ups: the internal API of Auth (`GET /internal/users/{id}`) is not in `docs/8`, and the other diagrams of `docs/10` still use one generic `PG`. |
