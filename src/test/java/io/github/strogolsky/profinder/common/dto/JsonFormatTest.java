@@ -153,7 +153,7 @@ class JsonFormatTest {
         ProfessionalResponse p = new ProfessionalResponse(A, 1L, 4.5, "p@b.io", null, null, null, null, null,
                 List.of(category()), "d");
 
-        assertEquals(json("{\"averageRating\":4.5,\"categories\":[{\"id\":"
+        assertEquals(json("{\"rating\":4.5,\"categories\":[{\"id\":"
                 + "\"11111111-1111-1111-1111-111111111111\",\"name\":\"Plumbing\"}],\"description\":\"d\","
                 + "\"email\":\"p@b.io\",\"id\":\"11111111-1111-1111-1111-111111111111\",\"version\":1}"),
                 withoutNulls(p));

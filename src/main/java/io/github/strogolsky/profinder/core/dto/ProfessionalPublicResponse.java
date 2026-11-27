@@ -12,7 +12,7 @@ import java.util.UUID;
  * ProfessionalResponse} it does not contain the account (login) email.
  *
  * @param id Unique identifier of the professional.
- * @param averageRating Average rating based on customer reviews.
+ * @param rating Average rating based on customer reviews.
  * @param firstName First name of the professional.
  * @param lastName Last name of the professional.
  * @param phoneNumber Phone number of the professional.
@@ -23,7 +23,7 @@ import java.util.UUID;
  */
 public record ProfessionalPublicResponse(
         UUID id,
-        double averageRating,
+        double rating,
         String firstName,
         String lastName,
         String phoneNumber,

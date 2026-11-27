@@ -15,8 +15,9 @@ import java.util.UUID;
 /**
  * Service for managing {@link Review} entities.
  * <p>
- * Provides functionality for creating reviews and retrieving them by customer, professional, or order.
- * Also updates the average rating of professionals upon new review creation.
+ * Provides functionality for creating reviews and retrieving them by customer or professional, and the
+ * ratings of the reviews of a professional. The rating of the professional itself is calculated by
+ * {@link ProfessionalService}.
  * </p>
  */
 @Slf4j
@@ -34,7 +35,7 @@ public class ReviewService {
     private final CustomerService customerService;
 
     /**
-     * Persists a new review and updates the professional's average rating.
+     * Persists a new review. The rating of the professional is recalculated by the caller.
      *
      * @param review the review to be saved
      * @return the persisted {@link Review}
@@ -49,10 +50,17 @@ public class ReviewService {
         reviewRepository.persist(review);
         log.debug("Review persisted: reviewId={}", review.getId());
 
-        professionalService.computeAverageRating(review.getProfessional().getId());
-        log.debug("Average rating recalculated for professionalId={}", review.getProfessional().getId());
-
         return review;
+    }
+
+    /**
+     * Reads the ratings of all reviews of a professional, including a review saved a moment ago.
+     *
+     * @param professionalId ID of the professional
+     * @return the ratings, one per review
+     */
+    public List<Integer> getRatingsByProfessionalId(final UUID professionalId) {
+        return reviewRepository.findRatingsByProfessionalId(professionalId);
     }
 
     /**

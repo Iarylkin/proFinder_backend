@@ -35,7 +35,7 @@ INSERT INTO categories (id, version, name) VALUES
 ('00000000-0000-4000-b000-000000000020', 0, 'Fitness Coaching');
 
 -- Professional data
-INSERT INTO professional_profiles (user_id, version, first_name, last_name, phone_number, location_id, average_rating, description) VALUES
+INSERT INTO professional_profiles (user_id, version, first_name, last_name, phone_number, location_id, rating, description) VALUES
 ('00000000-0000-4000-8000-000000000100', 0, 'Eva', 'Kralova', '555555555', '00000000-0000-4000-a000-000000000001', 4.7, 'Experienced hair stylist with over 10 years in the business.'),
 ('00000000-0000-4000-8000-000000000101', 0, 'Tomas', 'Dvorak', '444444444', '00000000-0000-4000-a000-000000000002', 4.2, 'Certified tax consultant helping small businesses.'),
 ('00000000-0000-4000-8000-000000000102', 0, 'Lucie', 'Horakova', '111222333', '00000000-0000-4000-a000-000000000001', 4.5, 'Expert in legal consulting and personal finance.'),

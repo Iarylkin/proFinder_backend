@@ -41,7 +41,7 @@ public class ProfessionalSearchDto {
     /**
      * Average rating of the professional (calculated from reviews).
      */
-    private Double averageRating;
+    private Double rating;
 
     /**
      * List of categories provided by the professional.

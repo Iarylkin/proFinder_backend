@@ -56,7 +56,7 @@ public interface ProfessionalMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createAt", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
-    @Mapping(target = "averageRating", ignore = true)
+    @Mapping(target = "rating", ignore = true)
     @Mapping(target = "bids", ignore = true)
     @Mapping(target = "reviews", ignore = true)
     ProfessionalProfile toEntity(ProfessionalUpdateRequest request);

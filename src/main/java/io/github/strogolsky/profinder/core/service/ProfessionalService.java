@@ -129,40 +129,6 @@ public class ProfessionalService {
     }
 
     /**
-     * Recalculates and updates the average rating for a professional.
-     * <p>
-     * Computes the arithmetic mean from all reviews linked to the professional.
-     * If no reviews are found, the rating is set to {@code null}.
-     * </p>
-     *
-     * @param professionalId the ID of the professional whose rating should be updated
-     */
-    @Transactional
-    public void computeAverageRating(final UUID professionalId) {
-        ProfessionalProfile professional = getById(professionalId);
-        List<Review> reviews = professional.getReviews();
-
-        if (reviews == null || reviews.isEmpty()) {
-            log.warn("No reviews found for professionalId={}. Setting averageRating to null.", professionalId);
-            professional.setAverageRating(null);
-        } else {
-            double sum = 0;
-            for (Review review : reviews) {
-                sum += review.getRating();
-            }
-            double average = sum / reviews.size();
-            professional.setAverageRating(average);
-            log.debug("Computed new averageRating={} for professionalId={}", average, professionalId);
-        }
-
-        professionalRepository.persist(professional);
-
-        professionalSearchService.save(professionalSearchMapper.toDto(professional));
-
-        log.info("Updated averageRating for professionalId={}", professionalId);
-    }
-
-    /**
      * Creates and saves a review for the specified professional.
      *
      * @param professionalId professional ID
@@ -180,7 +146,36 @@ public class ProfessionalService {
         review.setCustomer(customer);
         review.setProfessional(professional);
 
-        return reviewService.create(review);
+        Review created = reviewService.create(review);
+        updateRating(professional);
+        return created;
+    }
+
+    /**
+     * Recalculates the rating of a professional after a review and saves it with the search index.
+     *
+     * @param professional the professional whose rating changed
+     */
+    private void updateRating(final ProfessionalProfile professional) {
+        professional.setRating(calculateRating(professional.getId()));
+        professionalRepository.persist(professional);
+        professionalSearchService.save(professionalSearchMapper.toDto(professional));
+        log.info("Updated rating={} for professionalId={}",
+                professional.getRating(), professional.getId());
+    }
+
+    /**
+     * The rule of the rating of a professional: the arithmetic mean of the ratings of all their reviews, or
+     * {@code 0} when there are none. Change the rating here; the callers do not depend on the formula.
+     *
+     * @param professionalId ID of the professional
+     * @return the rating
+     */
+    private double calculateRating(final UUID professionalId) {
+        return reviewService.getRatingsByProfessionalId(professionalId).stream()
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0);
     }
 
     /**

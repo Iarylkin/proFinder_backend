@@ -45,7 +45,7 @@ public class ProfessionalSearchMapper {
                 professional.getFirstName(),
                 professional.getLastName(),
                 professional.getDescription(),
-                professional.getAverageRating(),
+                professional.getRating(),
                 categoryNames,
                 professional.getLocation().getName()
         );

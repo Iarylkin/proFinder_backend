@@ -13,7 +13,7 @@ import java.util.UUID;
  *
  * @param id Unique identifier of the professional.
  * @param version Version of the resource for optimistic locking: the client sends it back in a {@code PATCH}.
- * @param averageRating Average rating based on customer reviews.
+ * @param rating Average rating based on customer reviews.
  * @param email Professional's email address.
  * @param firstName First name of the professional.
  * @param lastName Last name of the professional.
@@ -26,7 +26,7 @@ import java.util.UUID;
 public record ProfessionalResponse(
         UUID id,
         Long version,
-        double averageRating,
+        double rating,
         String email,
         String firstName,
         String lastName,

@@ -70,7 +70,7 @@ public class ProfessionalSearchService {
 
     /**
      * Searches for professionals using keyword and location.
-     * The results are sorted by averageRating in descending order.
+     * The results are sorted by rating in descending order.
      * Supports fuzzy matching for keyword.
      *
      * @param keyword  the search keyword (e.g., service name or description)
@@ -117,7 +117,7 @@ public class ProfessionalSearchService {
                             )
                             .sort(so -> so
                                     .field(f -> f
-                                            .field("averageRating")
+                                            .field("rating")
                                             .order(SortOrder.Desc)
                                     )
                             ),

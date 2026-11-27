@@ -42,4 +42,21 @@ public class ReviewRepository implements PanacheRepositoryBase<Review, UUID> {
                 .page(page - 1, size)
                 .list();
     }
+
+    /**
+     * Reads the ratings of all reviews written for a professional.
+     * <p>
+     * It is a query, so Hibernate first writes the reviews that were saved but not yet flushed, and the newest
+     * review is among the ratings (a lazy list of reviews on the professional would not contain it).
+     * </p>
+     *
+     * @param professionalId ID of the professional
+     * @return the ratings, one per review
+     */
+    public List<Integer> findRatingsByProfessionalId(final UUID professionalId) {
+        return getEntityManager()
+                .createQuery("select r.rating from Review r where r.professional.id = ?1", Integer.class)
+                .setParameter(1, professionalId)
+                .getResultList();
+    }
 }

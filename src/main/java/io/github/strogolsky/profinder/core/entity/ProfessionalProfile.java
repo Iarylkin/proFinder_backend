@@ -35,8 +35,8 @@ public class ProfessionalProfile extends Profile {
     /**
      * Average rating calculated from customer reviews.
      */
-    @Column(name = "average_rating")
-    private Double averageRating = 0.0;
+    @Column(name = "rating")
+    private Double rating = 0.0;
 
     /**
      * Short description of the professional's services or qualifications.
