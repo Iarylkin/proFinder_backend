@@ -74,6 +74,11 @@ public class OrderService {
     private final UserContext userContext;
 
     /**
+     * Service for the categories: a request names them by id only.
+     */
+    private final CategoryService categoryService;
+
+    /**
      * Creates a new order with default status.
      *
      * @param order order entity
@@ -83,6 +88,7 @@ public class OrderService {
     public Order create(final Order order) {
         log.info("Create order: customerId={}, description={}", order.getCustomer().getId(), order.getDescription());
         order.setStatus(OrderStatus.getStartOrder());
+        order.setCategories(categoryService.resolve(order.getCategories()));
         orderRepository.persist(order);
         log.debug("Order created with ID={}", order.getId());
 
@@ -121,7 +127,7 @@ public class OrderService {
 
         order.setStatus(nextStatus(order.getStatus(), changes.getStatus()));
         if (changes.getCategories() != null) {
-            order.setCategories(changes.getCategories());
+            order.setCategories(categoryService.resolve(changes.getCategories()));
         }
         if (changes.getTitle() != null) {
             order.setTitle(changes.getTitle());

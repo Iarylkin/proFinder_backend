@@ -13,7 +13,7 @@ import java.util.List;
  * MapStruct mapper for converting between {@link Order}
  * entities and {@link OrderResponse} data transfer objects.
  */
-@Mapper(componentModel = "jakarta")
+@Mapper(componentModel = "jakarta", uses = CategoryReferences.class)
 public interface OrderMapper {
 
     /**
@@ -29,6 +29,7 @@ public interface OrderMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "location", ignore = true)
     @Mapping(target = "bids", ignore = true)
+    @Mapping(target = "categories", source = "categoryIds")
     Order toEntity(OrderCreateRequest request);
 
     /**
@@ -60,5 +61,6 @@ public interface OrderMapper {
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "bids", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "categories", source = "categoryIds")
     Order toEntity(OrderUpdateRequest request);
 }

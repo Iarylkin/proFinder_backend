@@ -3,7 +3,6 @@ package io.github.strogolsky.profinder.core.dto;
 import io.github.strogolsky.profinder.common.validation.Limits;
 import io.github.strogolsky.profinder.common.validation.NoControlChars;
 import io.github.strogolsky.profinder.common.validation.Text;
-import io.github.strogolsky.profinder.core.entity.Category;
 import io.github.strogolsky.profinder.core.entity.Location;
 import io.github.strogolsky.profinder.core.entity.OrderStatus;
 import jakarta.validation.constraints.FutureOrPresent;
@@ -15,12 +14,13 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request body for a partial update of an order. Every field is optional: a missing or {@code null} field
  * keeps its current value.
  *
- * @param categories New list of categories for the order.
+ * @param categoryIds IDs of the categories: New list of categories for the order.
  * @param status Requested status. Only {@code CANCELLED} can be set through an order update.
  * @param description New description of the order.
  * @param title New title of the order.
@@ -31,7 +31,7 @@ import java.util.List;
  *        since, and the request is rejected with 409.
  */
 public record OrderUpdateRequest(
-        List<Category> categories,
+        List<@NotNull UUID> categoryIds,
         OrderStatus status,
         @Size(min = Limits.ORDER_DESCRIPTION_MIN_LENGTH, max = Limits.ORDER_DESCRIPTION_MAX_LENGTH)
         @NoControlChars(multiline = true)

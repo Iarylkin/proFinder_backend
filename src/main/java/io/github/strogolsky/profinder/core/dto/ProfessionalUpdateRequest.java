@@ -3,7 +3,6 @@ package io.github.strogolsky.profinder.core.dto;
 import io.github.strogolsky.profinder.common.validation.Limits;
 import io.github.strogolsky.profinder.common.validation.NoControlChars;
 import io.github.strogolsky.profinder.common.validation.Text;
-import io.github.strogolsky.profinder.core.entity.Category;
 import io.github.strogolsky.profinder.core.entity.Location;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -11,6 +10,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request body for a partial update of the profile of the current professional. Besides the fields of {@link
@@ -24,7 +24,7 @@ import java.util.List;
  * @param phoneNumber New phone number.
  * @param location New location.
  * @param description New description of the services.
- * @param categories New list of categories.
+ * @param categoryIds IDs of the categories: New list of categories.
  * @param version The version the client has seen. A different current version means someone changed the resource
  *        since, and the request is rejected with 409.
  */
@@ -34,7 +34,7 @@ public record ProfessionalUpdateRequest(
         @Size(max = Limits.PHONE_MAX_LENGTH) @Pattern(regexp = Limits.PHONE_PATTERN) String phoneNumber,
         Location location,
         @Size(max = Limits.BIO_MAX_LENGTH) @NoControlChars(multiline = true) String description,
-        List<Category> categories,
+        List<@NotNull UUID> categoryIds,
         @NotNull
         @PositiveOrZero
         Long version) {

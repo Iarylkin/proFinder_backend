@@ -68,6 +68,11 @@ public class ProfessionalService {
     /** Service for the profiles of the users. */
     private final ProfileService profileService;
 
+    /**
+     * Service for the categories: a request names them by id only.
+     */
+    private final CategoryService categoryService;
+
 
     /**
      * Puts a newly created professional profile into the search index.
@@ -200,7 +205,7 @@ public class ProfessionalService {
             if (changes.getCategories().isEmpty()) {
                 throw new CategoryRequiredException();
             }
-            professional.setCategories(changes.getCategories());
+            professional.setCategories(categoryService.resolve(changes.getCategories()));
         }
         professionalRepository.flush();
         // the resource maps the result after the transaction ends, so load the lazy categories now

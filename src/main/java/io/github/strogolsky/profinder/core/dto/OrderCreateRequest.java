@@ -3,7 +3,6 @@ package io.github.strogolsky.profinder.core.dto;
 import io.github.strogolsky.profinder.common.validation.Limits;
 import io.github.strogolsky.profinder.common.validation.NoControlChars;
 import io.github.strogolsky.profinder.common.validation.Text;
-import io.github.strogolsky.profinder.core.entity.Category;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
@@ -13,19 +12,20 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request to create an order. It holds only what the client may choose: the identifier, status, version,
  * customer and location are set by the server.
  *
- * @param categories Categories of the order.
+ * @param categoryIds IDs of the categories: Categories of the order.
  * @param title Title of the order.
  * @param description Description of the order.
  * @param price Price offered by the customer.
  * @param deadline Date by which the work should be done; it must not be in the past.
  */
 public record OrderCreateRequest(
-        List<Category> categories,
+        List<@NotNull UUID> categoryIds,
         @NotBlank
         @Size(min = Limits.ORDER_TITLE_MIN_LENGTH, max = Limits.ORDER_TITLE_MAX_LENGTH)
         @NoControlChars

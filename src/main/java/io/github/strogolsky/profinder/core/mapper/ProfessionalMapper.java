@@ -15,7 +15,7 @@ import java.util.List;
  * The personal data belongs to the profile; the email and the creation time are read from its user.
  * </p>
  */
-@Mapper(componentModel = "jakarta")
+@Mapper(componentModel = "jakarta", uses = CategoryReferences.class)
 public interface ProfessionalMapper {
 
     /**
@@ -59,5 +59,6 @@ public interface ProfessionalMapper {
     @Mapping(target = "rating", ignore = true)
     @Mapping(target = "bids", ignore = true)
     @Mapping(target = "reviews", ignore = true)
+    @Mapping(target = "categories", source = "categoryIds")
     ProfessionalProfile toEntity(ProfessionalUpdateRequest request);
 }
