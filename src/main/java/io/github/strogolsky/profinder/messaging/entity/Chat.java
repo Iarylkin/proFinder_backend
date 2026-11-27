@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.messaging.entity;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.common.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -26,26 +25,16 @@ import java.util.UUID;
 public class Chat extends BaseEntity {
 
     /**
-     * First participant in the chat.
-     * <p>
-     * {@link JsonIgnore} is used to avoid cyclic serialization.
-     * </p>
+     * First participant in the chat: the ID of a user of the auth module (a plain reference, not a relation).
      */
-    @ManyToOne
-    @JoinColumn(name = "user1_id", nullable = false)
-    @JsonIgnore
-    private User user1;
+    @Column(name = "user1_id", nullable = false)
+    private UUID user1Id;
 
     /**
-     * Second participant in the chat.
-     * <p>
-     * {@link JsonIgnore} is used to avoid cyclic serialization.
-     * </p>
+     * Second participant in the chat: the ID of a user of the auth module (a plain reference, not a relation).
      */
-    @ManyToOne
-    @JoinColumn(name = "user2_id", nullable = false)
-    @JsonIgnore
-    private User user2;
+    @Column(name = "user2_id", nullable = false)
+    private UUID user2Id;
 
     /**
      * List of messages exchanged in the chat.
@@ -66,6 +55,6 @@ public class Chat extends BaseEntity {
      */
     public boolean hasParticipant(final UUID userId) {
         return userId != null
-                && (user1.getId().equals(userId) || user2.getId().equals(userId));
+                && (user1Id.equals(userId) || user2Id.equals(userId));
     }
 }

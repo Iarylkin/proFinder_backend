@@ -1,11 +1,14 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.entity.User;
+import io.github.strogolsky.profinder.auth.entity.UserRole;
+import io.github.strogolsky.profinder.common.event.UserDeleted;
 import io.github.strogolsky.profinder.common.validation.Text;
 import io.github.strogolsky.profinder.core.entity.Profile;
 import io.github.strogolsky.profinder.core.repository.ProfileRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.TransactionPhase;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -45,18 +48,33 @@ public class ProfileService {
     /**
      * Creates the profile of a user. The type of the profile is the one of the role of the user.
      *
-     * @param user the user the profile belongs to
+     * @param userId the ID of the user the profile belongs to
+     * @param role   the role of the user
      * @return the created profile
      */
     @Transactional
-    public Profile create(final User user) {
-        log.info("Create profile: userId={}, role={}", user.getId(), user.getRole());
-        Profile profile = profileFactory.create(user.getRole(), user);
+    public Profile create(final UUID userId, final UserRole role) {
+        log.info("Create profile: userId={}, role={}", userId, role);
+        Profile profile = profileFactory.create(role, userId);
         profile.setLocation(locationService.getDefault());
         profileRepository.persist(profile);
         profileCreated.fire(profile);
         log.debug("Profile created with ID={}", profile.getId());
         return profile;
+    }
+
+    /**
+     * Removes the profile of a deleted user, together with what hangs on it (its reviews).
+     *
+     * @param event the deletion of the user
+     */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void onUserDeleted(@Observes(during = TransactionPhase.AFTER_SUCCESS) final UserDeleted event) {
+        Profile profile = profileRepository.findById(event.userId());
+        if (profile != null) {
+            profileRepository.delete(profile);
+            log.debug("Profile deleted with ID={}", event.userId());
+        }
     }
 
     /**

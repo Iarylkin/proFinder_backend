@@ -1,7 +1,7 @@
 # ProFinder — Database Schema
 
-- **Version:** 1.10
-- **Date:** 2026-11-04
+- **Version:** 1.12
+- **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Full relational schema — tables, columns, types, constraints, indexes, enums. Every decision here traces back to [4 - Business logic.md](4%20-%20Business%20logic.md) and [5 - State Machines.md](5%20-%20State%20Machines.md); no new business decisions are made in this file, only translated into DDL-shaped tables.
 
@@ -427,6 +427,26 @@ erDiagram
 - A background job purges **read** `notifications` older than `inapp_retention_days` (default 90); unread rows are kept indefinitely.
 - `notification_preferences` has no row = treated as `enabled = true` (every cell defaults on) — rows only exist for cells a user has actually touched, or the table is pre-seeded per user on signup (implementation choice, not a schema constraint).
 
+#### Recipient projection (`notification_db` only)
+---
+
+Notification Service cannot read `users` or `professional_profiles` (they are in other databases), so it keeps its own copy of what it needs, built from the events `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core) ([9 - Event Catalog.md § D11](9%20-%20Event%20Catalog.md)). These tables have **no foreign keys** to anything and are never written by another service.
+
+`recipients`
+
+| Column | Type | Constraints / Notes |
+|---|---|---|
+| user_id | uuid | PK |
+| email | citext | nullable — `NULL` once the account is deleted |
+| role | user_role | NOT NULL |
+| status | account_status | NOT NULL — Notification sends only to `ACTIVE` |
+| source_version | bigint | NOT NULL — `users.version` of the event; an older event is ignored |
+| updated_at | timestamp | |
+
+`recipient_categories` — `(professional_id uuid, category_id uuid)`, PK on both; `recipient_cities` — `(professional_id uuid, city citext)`, PK on both. A `projection.professional_matching_changed` event replaces all category and city rows of its professional in one transaction, and is ignored if it is older than the version stored for that professional in `recipient_matching_versions(professional_id uuid PK, source_version bigint)`.
+
+**Matching for `order.published`:** professionals with a row in `recipient_categories` for the order's category **and** a row in `recipient_cities` for its city, whose `recipients.status` is `ACTIVE`.
+
 
 ## 6. Moderation & Reports
 ---
@@ -501,7 +521,7 @@ erDiagram
 **Constraints:**
 - `reports`: no unique constraint on `(reporter_id, reported_user_id)` alone — duplicates are allowed, just rate-limited to 1/day (checked at the application layer against `created_at`, see [FR-Reports-12](2%20-%20Requirements.md)).
 - `ban_appeals`: `UNIQUE (report_id)` — one appeal per ban. `reviewer_id` must differ from `reports.moderator_id` (app-layer check).
-- **Suspend/ban precondition:** a report's `decision` can only become `suspended`/`banned` if the `reported_user_id`'s `users.status` is currently `ACTIVE` (not `PENDING_VERIFICATION`) — see the gap closed in [5 - State Machines.md § Account Status](5%20-%20State%20Machines.md).
+- **Suspend/ban precondition:** a report's `decision` can only become `suspended`/`banned` if the `reported_user_id`'s `users.status` is currently `ACTIVE` (not `PENDING_VERIFICATION`) — see the gap closed in [5 - State Machines.md § Account Status](5%20-%20State%20Machines.md). `users` lives in `auth_db`, so Core reads the status from Auth's internal API (service-to-service, not public) and never updates it: Auth applies the status when it consumes `moderation.suspended` / `moderation.banned`.
 - `blocks`: `UNIQUE (blocker_id, blocked_id)`.
 
 
@@ -633,39 +653,39 @@ All enums map 1:1 to the states drawn in [5 - State Machines.md](5%20-%20State%2
 | `processed_events` | `PK (event_id, consumer)` | idempotency dedup |
 
 
-## Schema Ownership
+## Database Ownership
 ---
 
-One PostgreSQL instance, one schema per service ([3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md)). A service touches only its own schema: no cross-schema `JOIN`, `UPDATE` or foreign key. A column that points to another schema's row (for example `orders.customer_id`) is a plain `uuid` with no FK; integrity is kept by events and by the application.
+One database per service (`core_db`, `auth_db`, `messaging_db`, ...; [3 - System Design.md § PostgreSQL](3%20-%20System%20Design.md)). A service touches only its own database: no cross-database `JOIN`, `UPDATE` or foreign key, and no transaction writes to two databases. A column that points to another database's row (for example `orders.customer_id`) is a plain `uuid` with no FK; integrity is kept by events and by the application.
 
-| Schema | Tables |
+| Database | Tables |
 |---|---|
-| `auth` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
-| `core` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `bids`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
-| `messaging` | `chats`, `messages`, `outbox`, `processed_events` |
-| `notification` | `notifications`, `notification_preferences`, `device_tokens`, `processed_events` |
-| `moderation` | the rules and decision log tables (Phase 2) |
+| `auth_db` | `users`, `refresh_tokens`, `email_verification_tokens`, `password_reset_tokens`, `outbox`, `processed_events` |
+| `core_db` | `professional_profiles`, `customer_profiles`, `professional_categories`, `professional_cities`, `categories`, `orders`, `bids`, `reviews`, `review_replies`, `reports`, `report_evidence`, `ban_appeals`, `blocks`, `files`, `portfolio_photos`, `outbox`, `processed_events` |
+| `messaging_db` | `chats`, `messages`, `outbox`, `processed_events` |
+| `notification_db` | `notifications`, `notification_preferences`, `device_tokens`, `recipients`, `recipient_categories`, `recipient_cities`, `processed_events` |
+| `moderation_db` | the rules and decision log tables (Phase 2) |
 
-Each schema has its own `outbox` / `processed_events` where it publishes or consumes events. The personal data (`display_name`, `phone`, `bio`, `avatar_file_id`) lives in the profiles, which stay in Core; `users` and `linked_identities` belong to Auth (decided in roadmap version 1.4.0, [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
+Each database has its own `outbox` / `processed_events` where it publishes or consumes events. The personal data (`display_name`, `phone`, `bio`, `avatar_file_id`) lives in the profiles, which stay in Core; `users` and `linked_identities` belong to Auth (decided in roadmap version 1.4.0, [16 - Refactoring Roadmap.md](16%20-%20Refactoring%20Roadmap.md)). `users.status` changes made by Core (ban, deletion) go through Auth's API or events, not a direct `UPDATE`.
 
 
 ## Foreign Keys & ON DELETE
 ---
 
-A foreign key exists only between tables of the **same schema** ([Schema Ownership](#schema-ownership)). Every `FK → users.id` (or `files.id`, `categories.id`) in a table of another schema is a **logical reference**: a plain `uuid` column with an index, no database constraint, kept consistent by events.
+A foreign key exists only between tables of the **same database** ([Database Ownership](#database-ownership)). Every `FK → users.id` (or `files.id`, `categories.id`) in a table of another database is a **logical reference**: a plain `uuid` column with an index, no database constraint, kept consistent by events.
 
 Rows are almost never hard-deleted (soft delete, see Cross-Cutting Notes), so the default is `ON DELETE RESTRICT`. `CASCADE` is used only for rows that have no meaning without their parent.
 
 | Child column | Parent | `ON DELETE` | Why |
 |---|---|---|---|
-| `refresh_tokens.user_id`, `email_verification_tokens.user_id`, `password_reset_tokens.user_id` | `users.id` (`auth`) | `CASCADE` | tokens are worthless without the account (PII scrub of a `DELETED` user) |
-| `professional_categories.professional_id`, `professional_cities.professional_id` | `professional_profiles.user_id` (`core`) | `CASCADE` | pure join rows |
+| `refresh_tokens.user_id`, `email_verification_tokens.user_id`, `password_reset_tokens.user_id` | `users.id` (`auth_db`) | `CASCADE` | tokens are worthless without the account (PII scrub of a `DELETED` user) |
+| `professional_categories.professional_id`, `professional_cities.professional_id` | `professional_profiles.user_id` (`core_db`) | `CASCADE` | pure join rows |
 | `professional_categories.category_id` | `categories.id` | `RESTRICT` | category delete is blocked while referenced ([13 - Validation Rules.md](13%20-%20Validation%20Rules.md)) |
-| `orders.category_id`, `bids.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.chat_id` | their parent in the same schema | `RESTRICT` | history must never be orphaned |
+| `orders.category_id`, `bids.order_id`, `review_replies.review_id`, `report_evidence.report_id`, `ban_appeals.report_id`, `portfolio_photos.file_id`, `messages.chat_id` | their parent in the same database | `RESTRICT` | history must never be orphaned |
 
-Everything else that references `users` (`orders.customer_id`, `bids.professional_id`, `reviews.*`, `chats.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across schemas.
+Everything else that references `users` (`orders.customer_id`, `bids.professional_id`, `reviews.*`, `chats.*`, `messages.sender_id`, `reports.*`, `blocks.*`, `files.owner_id`, `notifications.user_id`, …) is a logical reference across databases. Deleting a user is therefore an event (`UserDeleted`): `core` removes the profile and `messaging` the chats after `auth` committed, each in its own transaction.
 
-**`citext`:** `users.email`, `categories.name` and `professional_cities.city` use the PostgreSQL `citext` type. The baseline Flyway migration of each schema that uses it runs `CREATE EXTENSION IF NOT EXISTS citext`.
+**`citext`:** `users.email`, `categories.name` and `professional_cities.city` use the PostgreSQL `citext` type. The baseline Flyway migration of each database that uses it runs `CREATE EXTENSION IF NOT EXISTS citext`.
 
 ## Cross-Cutting Notes
 ---
@@ -681,6 +701,8 @@ Everything else that references `users` (`orders.customer_id`, `bids.professiona
 
 | Version | Date | Change |
 |---|---|---|
+| 1.12 | 2026-11-27 | **Recipient projection (decision D11 of [9](9%20-%20Event%20Catalog.md)):** `notification_db` gets `recipients`, `recipient_categories`, `recipient_cities` and `recipient_matching_versions`, built from events, so Notification never reads another service's tables; Core reads `users.status` for a ban from Auth's internal API and never updates it. |
+| 1.11 | 2026-11-27 | **Database per service:** § Schema Ownership became § Database Ownership; one database per service instead of one schema per service (`core_db`, `auth_db`, `messaging_db`, ...), no transaction across databases, the deletion of a user is the event `UserDeleted`. The profile has its own `created_at` (the account lives in `auth_db`). |
 | 1.10 | 2026-11-04 | **Naming:** table `responses` → `bids` (entity `Bid`): the table, the entity and the API paths use one name, and `OrderResponse` is free for the DTO of an order. Columns and constraints are unchanged. |
 | 1.9 | 2026-10-31 | **Account vs profile (decision D-1.5):** `users` keeps only authentication and account state; `display_name`, `phone`, `bio`, `avatar_file_id` move to both profile tables; new table `linked_identities` (several providers per account, raw `claims`) replaces `users.google_id`; `users.role` is `NOT NULL` (no `NULL` state, no `temp_token`); an account has exactly one profile; every account needs a verified email. |
 | 1.8 | 2026-10-28 | **`version`:** type `bigint` instead of `int`, and present on every entity table, because the code declares `id` (UUID) and `version` in one base class (`BaseEntity`) that all entities extend. |

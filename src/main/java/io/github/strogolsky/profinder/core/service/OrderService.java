@@ -43,6 +43,11 @@ public class OrderService {
             "User is not the owner of this order. orderId={}, customerId={}";
 
     /**
+     * Message of the error for a user who is not the owner of the order.
+     */
+    private static final String NOT_OWNER_ERROR = "You are not the owner of this order";
+
+    /**
      * Service for indexing orders in Elasticsearch.
      */
     private final OrderSearchService orderSearchService;
@@ -111,7 +116,7 @@ public class OrderService {
         if (!userContext.is(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
-            throw new ForbiddenException("You are not the owner of this order");
+            throw new ForbiddenException(NOT_OWNER_ERROR);
         }
         VersionCheck.require(order, changes.getVersion());
 
@@ -177,7 +182,7 @@ public class OrderService {
         if (!userContext.is(order.getCustomer().getId())) {
             log.error(NOT_ORDER_OWNER_MESSAGE,
                     orderId, order.getCustomer().getId());
-            throw new ForbiddenException("You are not the owner of this order");
+            throw new ForbiddenException(NOT_OWNER_ERROR);
         }
         orderRepository.delete(order);
 

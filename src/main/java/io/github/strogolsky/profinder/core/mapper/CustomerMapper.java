@@ -21,11 +21,11 @@ public interface CustomerMapper {
      * Converts a customer profile to its corresponding DTO.
      *
      * @param entity the customer profile
+     * @param email  the email of the account, which lives in the auth module
      * @return the corresponding CustomerResponse
      */
-    @Mapping(target = "email", source = "user.email")
-    @Mapping(target = "createAt", source = "user.createAt")
-    CustomerResponse toDto(CustomerProfile entity);
+    @Mapping(target = "email", source = "email")
+    CustomerResponse toDto(CustomerProfile entity, String email);
 
     /**
      * Converts a customer profile to its public DTO (without contact data).
@@ -33,7 +33,6 @@ public interface CustomerMapper {
      * @param entity the customer profile
      * @return the corresponding CustomerPublicResponse
      */
-    @Mapping(target = "createAt", source = "user.createAt")
     CustomerPublicResponse toPublicDto(CustomerProfile entity);
 
     /**
@@ -46,7 +45,7 @@ public interface CustomerMapper {
      * @return a customer profile with the requested changes
      */
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createAt", ignore = true)
     @Mapping(target = "avatarKey", ignore = true)
     @Mapping(target = "orders", ignore = true)
     @Mapping(target = "reviews", ignore = true)

@@ -1,12 +1,14 @@
 package io.github.strogolsky.profinder.messaging.service;
 
-import io.github.strogolsky.profinder.auth.entity.User;
+import io.github.strogolsky.profinder.common.event.UserDeleted;
 import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.messaging.entity.Chat;
 import io.github.strogolsky.profinder.messaging.entity.ChatMessage;
 import io.github.strogolsky.profinder.messaging.repository.ChatMessageRepository;
 import io.github.strogolsky.profinder.messaging.repository.ChatRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.event.TransactionPhase;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
@@ -49,7 +51,6 @@ public class ChatService {
      * @return the newly created {@link Chat} entity
      * @throws BadRequestException if both user IDs are the same
      */
-    @Transactional
     public Chat create(final UUID userId1, final UUID userId2) {
         log.info("Creating new chat");
         UUID first = userId1.compareTo(userId2) <= 0 ? userId1 : userId2;
@@ -62,12 +63,25 @@ public class ChatService {
             log.info("Chat id {} already exists", first);
             return getByUsersId(first, second);
         }
-        User user1 = userService.getById(first);
-        User user2 = userService.getById(second);
+        requireUser(first);
+        requireUser(second);
 
+        return save(first, second);
+    }
+
+    /**
+     * Saves the chat. A separate transaction, because the users are checked in the auth database before,
+     * and a transaction must not touch two databases.
+     *
+     * @param first  ID of the first user
+     * @param second ID of the second user
+     * @return the saved chat
+     */
+    @Transactional
+    Chat save(final UUID first, final UUID second) {
         Chat chat = new Chat();
-        chat.setUser1(user1);
-        chat.setUser2(user2);
+        chat.setUser1Id(first);
+        chat.setUser2Id(second);
 
         chatRepository.persist(chat);
         log.info("Created chat with id: {}", chat.getId());
@@ -180,4 +194,20 @@ public class ChatService {
         return chatRepository.findByUsersId(userId1, userId2);
     }
 
+    /**
+     * Removes the chats of a deleted user, together with their messages.
+     *
+     * @param event the deletion of the user
+     */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void onUserDeleted(@Observes(during = TransactionPhase.AFTER_SUCCESS) final UserDeleted event) {
+        chatRepository.list("user1Id = ?1 OR user2Id = ?1", event.userId()).forEach(chatRepository::delete);
+        log.debug("Chats of the deleted user {} removed", event.userId());
+    }
+
+    private void requireUser(final UUID userId) {
+        if (!userService.existById(userId)) {
+            throw new NotFoundException("User with id " + userId + " not found");
+        }
+    }
 }

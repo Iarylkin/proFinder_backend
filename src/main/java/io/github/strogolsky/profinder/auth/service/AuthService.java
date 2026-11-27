@@ -88,7 +88,6 @@ public class AuthService {
      * @param role     user role
      * @return JWT token for the newly created user
      */
-    @Transactional
     public String register(final String email, final String password, final UserRole role) {
         log.info("Register: email={}, role={}", email, role);
         if (role == null) {
@@ -96,9 +95,30 @@ public class AuthService {
             throw new BadRequestException("Unsupported role");
         }
         User created = userService.create(newUser(email, password, role));
-        profileService.create(created);
+        createProfileOrUndo(created);
         log.debug("Created user with ID={}, role={}", created.getId(), role);
         return tokenService.generateToken(created);
+    }
+
+    /**
+     * Creates the profile of a new user. The user and the profile live in different databases, so they are
+     * saved in separate transactions; if the profile fails, the user is deleted again, so that nobody is left
+     * with an account that has no profile.
+     *
+     * @param created the user that was just saved
+     */
+    private void createProfileOrUndo(final User created) {
+        try {
+            profileService.create(created.getId(), created.getRole());
+        } catch (RuntimeException e) {
+            log.error("Profile of user {} was not created, deleting the user", created.getId(), e);
+            try {
+                userService.delete(created.getId());
+            } catch (RuntimeException undoFailure) {
+                log.error("User {} could not be deleted after the profile failed", created.getId(), undoFailure);
+            }
+            throw e;
+        }
     }
 
     private User newUser(final String email, final String password, final UserRole role) {

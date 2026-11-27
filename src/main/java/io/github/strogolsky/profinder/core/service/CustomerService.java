@@ -61,7 +61,6 @@ public class CustomerService {
      *
      * @param id ID of the customer to delete
      */
-    @Transactional
     public void delete(final UUID id) {
         log.info("Delete customer: ID={}", id);
         userService.delete(id);

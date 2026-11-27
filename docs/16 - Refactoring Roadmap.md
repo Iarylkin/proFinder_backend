@@ -1,7 +1,7 @@
 # ProFinder — Refactoring Roadmap
 
-- **Version:** 1.20
-- **Date:** 2026-11-08
+- **Version:** 1.25
+- **Date:** 2026-11-27
 - **Status:** Draft
 - **Purpose:** Step-by-step plan for moving the transitional monolith (`1.0.0`) to the target design in `docs/` (five services, event-driven, Flyway-managed schema), with a version number for every step, the docs fixes each milestone depends on, and the open decisions that block specific versions.
 
@@ -70,7 +70,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version / task | What we do |
 |---|---|
-| **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. Still open: rewrite `docs/10` B1, E1, E2 without cross-service SQL |
+| **D-1.1** (before code) | **Done 2026-10-27:** one PostgreSQL, one schema per service, no cross-schema reads (`docs/3`, `6`, `7`). Decision 7. **Done 2026-11-27:** `docs/10` B1, E1 and E2 are rewritten without cross-service SQL (database per service, D-5.2) |
 | **D-1.2** (before code) | **Done 2026-10-27:** `display_name` added to `RegisterRequestDto`; `users.role` nullable until a Google sign-up picks one; `POST /auth/role` takes the limited `temp_token`. Fixed in `docs/6`, `8`, `13` |
 | **D-1.3** | **Done 2026-10-27:** `quote_price`, `city` (`orders.location` renamed), reviews `direction=CUSTOMER\|PROFESSIONAL`, `UPPER_SNAKE_CASE` enum values everywhere, `ORDER_ALREADY_CLOSED` merged into `ORDER_CLOSED`, `ACCOUNT_LOCKED` and `RATE_LIMITED` kept distinct, Jackson instead of JSON-B, all DTOs become records with `toString` overridden where they carry secrets. Mapper impact is checked in 1.5.0 |
 | **D-1.4** | **Done 2026-10-27:** `docs/6` has the `CHECK`s, `citext`, § Foreign Keys & ON DELETE, `professional_profiles.last_active_at` and a partial unique index on live reviews; `docs/14` seeds categories with UUID literals |
@@ -89,12 +89,12 @@ Tag `v1.0.0` on the current state as the rollback base.
 |---|---|
 | **D-2.1** (before code) | `docs/3`: separate the roles. Reports, appeals and blocks live in Core; the Moderation Service only serves `check-text` and `check-url`. Decisions 2 and 8. Remove "Get chat history for order" |
 | **1.7.0** | **Done 2026-11-06.** Packages `io.github.strogolsky.profinder.{core,auth,messaging,notification,moderation,common}`, each with the layer sub-packages (`entity`, `service`, ...); move classes only. The base package `fit.biejk` is renamed to `io.github.strogolsky.profinder` (Maven `groupId` `io.github.strogolsky`, `artifactId` stays `pro-finder`). `common` holds what belongs to no module (base entities, `VersionCheck`, the error format, validation, `PageRequest`) and becomes `contracts` in 2.0.0-rc.1. `UserResource` stays whole in `auth`; the module `moderation` is an empty package until 1.11.0. |
-| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). Open: the narrow interface over `UserService` for `core` and `messaging` (`exists`, `delete`) |
-| **1.9.0** | Messaging boundary: `Chat`, `ChatMessage`, `ChatSocket`, `MessagingApi` |
+| **1.8.0** | Auth boundary: `AuthService`, `TokenService`, `CryptoUtils`, the interface for the current user. **Started 2026-11-08:** the interface is `UserContext` (`id()`, `is(userId)`) in `common.security`, implemented by `JwtUserContext` from the verified token; `AuthService` no longer gives out the current user. The role is not part of it (nothing used `getCurrentUserRole()`; roles are checked with `@RolesAllowed`). **Done 2026-11-27.** The narrow interface over `UserService` for `core` and `messaging` is dropped as overengineering: the modules still call `UserService` directly until 1.12.0 |
+| **1.9.0** | **Done 2026-11-27.** Messaging boundary: `User` no longer holds the lists `initiatedChats` and `receivedChats` (the only reference from another module into `messaging`); deleting a user removes their chats and messages when `messaging` handles the event `UserDeleted` (see 1.12.0). `MessagingApi` is dropped: no other module calls `messaging`; it is added if one ever does |
 | **1.10.0** | Notification boundary: `MailService` behind `NotificationApi` |
 | **1.11.0** | Moderation: `check-text` and `check-url` interface with word lists (internal, no public path). `Report` and `Block` skeleton in Core |
-| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies |
-| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table and one schema per module (possible now, because modules only reference each other by ID); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
+| **1.12.0** | Cross-module relations replaced with IDs (JPA relations and database foreign keys across modules go away). ArchUnit tests forbid extra dependencies **Done early, 2026-11-27, together with a database per module (1.22):** `Profile.user`, `Chat.user1`, `Chat.user2` and `ChatMessage.sender` are plain `UUID` columns; the deletion of a user is the event `UserDeleted` (`common.event`), handled after the commit by `core` (the profile) and `messaging` (the chats). `User` has no `profile` and `core` keeps its own `createAt`; the email in `/customers/me` is read from `auth`. ArchUnit tests are still open |
+| **1.13.0** | **Flyway**, introduced on the stable schema: baseline `V1` taken from the model after 1.12.0, which also creates the `citext` extension and makes `users.email` a `citext` column; folders `db/migration/{core,auth,messaging,notification,moderation}/`, one history table per database, one database per module (`core_db`, `auth_db`, `messaging_db`); `validate`. Dev data lives in `db/dev`, not `import.sql`. If a deployment with data worth keeping comes earlier, Flyway moves up to that point |
 
 ## M3 — Safety net (1.14.0 – 1.16.0)
 ---
@@ -124,12 +124,12 @@ Tag `v1.0.0` on the current state as the rollback base.
 | Version / task | What we do |
 |---|---|
 | **D-5.1** (before code) | Denylist owner (Auth or Core), decision 6. Recommendation: Core publishes `moderation.banned`, Auth consumes it and sets the denylist |
-| **D-5.2** (before code) | How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
+| **D-5.2** (before code) | **Done 2026-11-27: a projection built from events** (decision D11 of `docs/9`, tables in `docs/6`, diagrams in `docs/10`). How Notification gets the recipient's email and the recipients of `order.published` (decision 9; a projection built from events needs new events in `docs/9`) |
 | **D-5.3** | Deployment: VPS + Compose or Kubernetes (decision 10); make `docs/3` and `15` agree. Scaling: change NFR-Scale-1/2 in `docs/2` to one instance at launch |
 | **D-5.4** | `docs/15`: update workflow names, paths, the `io.github.strogolsky.profinder` package, Mailpit, commit format; wiki sync (currently one-way, action pinned to `@main`) |
 | **D-5.5** | Availability and latency targets: one set of values in `docs/2` (uptime, search under 2 s vs under 500 ms, cache TTL) |
 | **rc.1** | Multi-module Maven, `contracts` (events, DTOs, errors). Monorepo layout `services/<name>` |
-| **rc.2** | Notification: own schema, `MailService`, recipient projection |
+| **rc.2** | Notification: own database, `MailService`, recipient projection |
 | **rc.3** | Auth: JWKS endpoint, private key only here, own outbox and poller, `JwtValidationFilter` and denylist check in the other services, JWKS cache |
 | **rc.4** | Messaging: own outbox and poller, Redis Pub/Sub instead of a static map, local blocks table fed by `user.blocked` events |
 | **rc.5** | Moderation Service: `POST /moderation/check-text` and `/check-url` (under 200 ms), internal access only |
@@ -255,7 +255,7 @@ Tag `v1.0.0` on the current state as the rollback base.
 | 7 | ~~Shared database or schema per service~~ **Decided 2026-10-27:** one PostgreSQL, one schema per service, no reads across schemas | D-1.1 |
 | 8 | Reports and appeals in Core (as `docs/` say) | D-2.1 |
 | 6 | Who owns the denylist: Core or Auth | D-5.1 |
-| 9 | How Notification gets email and recipients (recommended: projection built from events) | D-5.2 |
+| 9 | ~~How Notification gets email and recipients~~ **Decided 2026-11-27:** a projection built from events (`projection.recipient_changed`, `projection.professional_matching_changed`) | D-5.2 |
 | 10 | Deployment: VPS + Compose or Kubernetes | D-5.3 |
 | 1 | Accepting a professional: change the code to match `docs/`, or change `docs/` to match the code | 2.6.0 |
 | 4 | Chat attachments | D-9.1 |
@@ -280,6 +280,11 @@ Tag `v1.0.0` on the current state as the rollback base.
 
 | Version | Date | Change |
 |---|---|---|
+| 1.25 | 2026-11-27 | **D-5.2 done:** Notification Service builds a recipient projection from events (`docs/9` 1.9, D11); `docs/6` 1.12 has the tables; `docs/10` 1.6 rewrites B1, E1 and E2 (Core no longer updates `users`: Auth applies `users.status` from `moderation.*` and `account.deletion_requested`, and owns the grace-window job). `docs/3` 1.7. Open follow-ups: the internal API of Auth (`GET /internal/users/{id}`) is not in `docs/8`, and the other diagrams of `docs/10` still use one generic `PG`. |
+| 1.24 | 2026-11-27 | **docs/10 checked after the database split:** B1 (Notification selects professionals from the tables of Core), E1 and E2 still show cross-service SQL; the rewrite depends on D-5.2 (the recipient projection) and is not done. Nothing else in `docs/` still says schema per service. |
+| 1.23 | 2026-11-27 | **Prod: a PostgreSQL server per module.** `docker-compose.prod.yml` runs `db-core`, `db-auth` and `db-messaging` (own volume, no published port) instead of one server; the prod JDBC URLs point at them. Dev keeps one server with three databases. The prod volume `db_data` is not migrated: its data must be copied into the three new databases by hand. |
+| 1.22 | 2026-11-27 | **A database per module:** `core_db`, `auth_db` and `messaging_db` on one PostgreSQL server, one Quarkus datasource and persistence unit each (`application.properties`; `docker/postgres/init-databases.sql` creates the databases); `import.sql` is split into `import-core.sql` and `import-auth.sql`. No transaction writes to two databases: `register` saves the user and then the profile in separate transactions and deletes the user if the profile fails; the observers of `UserDeleted` run after the commit, each in its own transaction (so a failure there leaves the data of a deleted user until it is removed again; the outbox of `docs/9` is the real fix). `docs/3` and `docs/6` still say one schema per service. |
+| 1.21 | 2026-11-27 | **1.8.0 done, 1.9.0 done:** the narrow `UserService` interface and `MessagingApi` are dropped as overengineering (no caller needs them); the chat lists of `User` are removed. |
 | 1.20 | 2026-11-08 | **1.8.0 started:** `CurrentUser` is named `UserContext`; the role is left out because nothing used it. |
 | 1.19 | 2026-11-06 | **1.7.0 done:** classes moved into the modules `core`, `auth`, `messaging`, `notification`, `moderation` and the new `common`; the base package `fit.biejk` is renamed to `io.github.strogolsky.profinder`. `common` is not in the first plan: shared classes belong to no module and become `contracts` in 2.0.0-rc.1. |
 | 1.18 | 2026-11-04 | 1.5.0 gets the naming: DTOs are `*Request` / `*Response` (no `*Dto`) and a professional's response to an order is a `Bid` (table `bids`, paths `/bids`), so `OrderResponse` is free for the DTO of an order and every name shows its direction. |

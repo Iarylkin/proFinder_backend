@@ -2,6 +2,7 @@ package io.github.strogolsky.profinder.core.resource;
 
 import io.github.strogolsky.profinder.common.dto.PageRequest;
 import io.github.strogolsky.profinder.common.security.UserContext;
+import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.core.dto.CustomerUpdateRequest;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.Order;
@@ -36,6 +37,11 @@ public class CustomerResource {
      * Mapper for converting between Customer entities and DTOs.
      */
     private final CustomerMapper customerMapper;
+
+    /**
+     * The account service of the auth module: the email is part of the private profile response.
+     */
+    private final UserService userService;
 
     /**
      * Service for managing order-related operations.
@@ -91,7 +97,7 @@ public class CustomerResource {
     public Response getMe() {
         UUID id = userContext.id();
         log.info("Get profile for customer ID={}", id);
-        return Response.ok(customerMapper.toDto(customerService.getById(id))).build();
+        return Response.ok(customerMapper.toDto(customerService.getById(id), email(id))).build();
     }
 
     /**
@@ -107,7 +113,7 @@ public class CustomerResource {
         UUID id = userContext.id();
         log.info("Update profile for customer ID={}", id);
         CustomerProfile result = customerService.updateProfile(id, customerMapper.toEntity(request));
-        return Response.ok(customerMapper.toDto(result)).build();
+        return Response.ok(customerMapper.toDto(result, email(id))).build();
     }
 
     /**
@@ -170,5 +176,7 @@ public class CustomerResource {
         return Response.ok(orderMapper.toDtoList(result)).build();
     }
 
-
+    private String email(final UUID id) {
+        return userService.getById(id).getEmail();
+    }
 }

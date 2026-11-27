@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.messaging.entity;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -15,13 +14,9 @@ class ChatTest {
     private static final UUID OUTSIDER_ID = UUID.randomUUID();
 
     private static Chat chatBetween(final UUID firstId, final UUID secondId) {
-        User first = new User();
-        first.setId(firstId);
-        User second = new User();
-        second.setId(secondId);
         Chat chat = new Chat();
-        chat.setUser1(first);
-        chat.setUser2(second);
+        chat.setUser1Id(firstId);
+        chat.setUser2Id(secondId);
         return chat;
     }
 

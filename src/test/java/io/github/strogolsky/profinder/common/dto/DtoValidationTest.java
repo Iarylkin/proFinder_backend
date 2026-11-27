@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -125,21 +126,21 @@ class DtoValidationTest {
 
     @Test
     void orderDeadlineMustNotBeInThePast() {
-        assertEquals(Set.of("deadline"), invalidFields(orderWith(PRICE, LocalDateTime.now().minusDays(1))));
-        assertTrue(invalidFields(orderWith(PRICE, LocalDateTime.now().plusDays(1))).isEmpty());
+        assertEquals(Set.of("deadline"), invalidFields(orderWith(PRICE, LocalDateTime.now(ZoneId.systemDefault()).minusDays(1))));
+        assertTrue(invalidFields(orderWith(PRICE, LocalDateTime.now(ZoneId.systemDefault()).plusDays(1))).isEmpty());
         assertTrue(invalidFields(orderWith(PRICE, null)).isEmpty());
     }
 
     @Test
     void partialOrderUpdateChecksTheDeadlineOnlyWhenItIsSent() {
-        assertEquals(Set.of("deadline"), invalidFields(orderUpdate(LocalDateTime.now().minusHours(1))));
+        assertEquals(Set.of("deadline"), invalidFields(orderUpdate(LocalDateTime.now(ZoneId.systemDefault()).minusHours(1))));
     }
 
     @Test
     void finalDeadlineIsRequiredAndMustNotBeInThePast() {
         assertEquals(Set.of("finalDeadline"), invalidFields(bidUpdate(null, 0L)));
-        assertEquals(Set.of("finalDeadline"), invalidFields(bidUpdate(LocalDateTime.now().minusDays(1), 0L)));
-        assertTrue(invalidFields(bidUpdate(LocalDateTime.now().plusDays(1), 0L)).isEmpty());
+        assertEquals(Set.of("finalDeadline"), invalidFields(bidUpdate(LocalDateTime.now(ZoneId.systemDefault()).minusDays(1), 0L)));
+        assertTrue(invalidFields(bidUpdate(LocalDateTime.now(ZoneId.systemDefault()).plusDays(1), 0L)).isEmpty());
     }
 
     @Test
@@ -191,7 +192,7 @@ class DtoValidationTest {
         assertEquals(Set.of("version"), invalidFields(new CustomerUpdateRequest(null, null, null, null, null)));
         assertEquals(Set.of("version"),
                 invalidFields(new ProfessionalUpdateRequest(null, null, null, null, null, null, null)));
-        assertEquals(Set.of("version"), invalidFields(bidUpdate(LocalDateTime.now().plusDays(1), null)));
+        assertEquals(Set.of("version"), invalidFields(bidUpdate(LocalDateTime.now(ZoneId.systemDefault()).plusDays(1), null)));
     }
 
     @Test

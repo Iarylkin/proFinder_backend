@@ -1,7 +1,7 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.auth.entity.UserRole;
+import io.github.strogolsky.profinder.common.event.UserDeleted;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.Location;
 import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
@@ -41,24 +41,24 @@ class ProfileServiceTest {
 
     @Test
     void customerGetsACustomerProfile() {
-        User user = userWithRole(UserRole.CUSTOMER);
+        UUID userId = UUID.randomUUID();
 
-        Profile profile = service.create(user);
+        Profile profile = service.create(userId, UserRole.CUSTOMER);
 
         assertInstanceOf(CustomerProfile.class, profile);
-        assertSame(user, profile.getUser());
+        assertEquals(userId, profile.getId());
         verify(repository).persist(profile);
         verify(profileCreated).fire(profile);
     }
 
     @Test
     void professionalGetsAProfessionalProfile() {
-        User user = userWithRole(UserRole.PROFESSIONAL);
+        UUID userId = UUID.randomUUID();
 
-        Profile profile = service.create(user);
+        Profile profile = service.create(userId, UserRole.PROFESSIONAL);
 
         assertInstanceOf(ProfessionalProfile.class, profile);
-        assertSame(user, profile.getUser());
+        assertEquals(userId, profile.getId());
     }
 
     @Test
@@ -66,7 +66,7 @@ class ProfileServiceTest {
         Location prague = new Location();
         when(locationService.getDefault()).thenReturn(prague);
 
-        Profile profile = service.create(userWithRole(UserRole.CUSTOMER));
+        Profile profile = service.create(UUID.randomUUID(), UserRole.CUSTOMER);
 
         assertSame(prague, profile.getLocation());
     }
@@ -130,9 +130,14 @@ class ProfileServiceTest {
         assertThrows(NotFoundException.class, () -> service.get(missing));
     }
 
-    private static User userWithRole(final UserRole role) {
-        User user = new User();
-        user.setRole(role);
-        return user;
+    @Test
+    void profileOfADeletedUserIsRemoved() {
+        UUID userId = UUID.randomUUID();
+        CustomerProfile profile = new CustomerProfile();
+        when(repository.findById(userId)).thenReturn(profile);
+
+        service.onUserDeleted(new UserDeleted(userId));
+
+        verify(repository).delete(profile);
     }
 }

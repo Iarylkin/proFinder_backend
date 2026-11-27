@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.auth.entity.UserRole;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
@@ -9,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
@@ -28,20 +28,20 @@ public class ProfileFactory {
             UserRole.PROFESSIONAL, ProfessionalProfile::new));
 
     /**
-     * Creates an empty profile of the type of the role and links it to the user.
+     * Creates an empty profile of the type of the role for the user.
      *
      * @param role the role of the user
-     * @param user the user the profile belongs to
+     * @param userId the ID of the user the profile belongs to
      * @return a new profile
      * @throws IllegalArgumentException if the role has no profile class
      */
-    public Profile create(final UserRole role, final User user) {
+    public Profile create(final UserRole role, final UUID userId) {
         Supplier<Profile> constructor = CONSTRUCTORS.get(role);
         if (constructor == null) {
             throw new IllegalArgumentException("No profile for role " + role);
         }
         Profile profile = constructor.get();
-        profile.setUser(user);
+        profile.setId(userId);
         return profile;
     }
 }

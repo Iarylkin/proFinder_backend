@@ -2,6 +2,7 @@ package io.github.strogolsky.profinder.messaging.resource;
 
 import io.github.strogolsky.profinder.common.dto.PageRequest;
 import io.github.strogolsky.profinder.common.security.UserContext;
+import io.github.strogolsky.profinder.core.service.ProfileService;
 import io.github.strogolsky.profinder.messaging.dto.ChatCreateRequest;
 import io.github.strogolsky.profinder.messaging.entity.Chat;
 import io.github.strogolsky.profinder.messaging.entity.ChatMessage;
@@ -42,6 +43,11 @@ public class ChatResource {
     private final ChatMapper chatMapper;
 
     /**
+     * Reads the first name of a chat partner from the core module.
+     */
+    private final ProfileService profileService;
+
+    /**
      * Creates a new chat between the authenticated user and the recipient.
      *
      * @param request The DTO containing the recipient's user ID.
@@ -55,8 +61,9 @@ public class ChatResource {
         UUID userId = userContext.id();
         Chat result = chatService.create(userId, request.recipientId());
 
-
-        return Response.status(Response.Status.CREATED).entity(chatMapper.toDto(result, userId)).build();
+        return Response.status(Response.Status.CREATED)
+                .entity(chatMapper.toDto(result, userId, this::firstName))
+                .build();
     }
 
     /**
@@ -98,7 +105,10 @@ public class ChatResource {
                 pagination.getPage(),
                 pagination.getSize()
         );
-        return Response.ok().entity(chatMapper.toDtoList(result, userId)).build();
+        return Response.ok().entity(chatMapper.toDtoList(result, userId, this::firstName)).build();
     }
 
+    private String firstName(final UUID userId) {
+        return profileService.get(userId).getFirstName();
+    }
 }

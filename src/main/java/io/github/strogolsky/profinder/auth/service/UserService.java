@@ -5,7 +5,9 @@ import io.github.strogolsky.profinder.auth.exception.EmailAlreadyRegisteredExcep
 import io.github.strogolsky.profinder.auth.repository.UserRepository;
 import io.github.strogolsky.profinder.auth.utilits.CryptoUtils;
 import io.github.strogolsky.profinder.notification.service.MailService;
+import io.github.strogolsky.profinder.common.event.UserDeleted;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
@@ -31,6 +33,11 @@ public class UserService {
      * Repository for accessing user data.
      */
     private final UserRepository userRepository;
+
+    /**
+     * Announces a deleted user, so that the other modules remove the data they keep about it.
+     */
+    private final Event<UserDeleted> userDeleted;
 
 
     /** Service for sending user notifications via email. */
@@ -177,6 +184,7 @@ public class UserService {
             throw new NotFoundException("User with id " + userId + " not found");
         }
         userRepository.delete(existingUser);
+        userDeleted.fire(new UserDeleted(userId));
         log.debug("User deleted with ID={}", userId);
     }
 

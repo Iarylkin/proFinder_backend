@@ -1,6 +1,5 @@
 package io.github.strogolsky.profinder.core.mapper;
 
-import io.github.strogolsky.profinder.auth.entity.User;
 import io.github.strogolsky.profinder.core.dto.CustomerPublicResponse;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import org.junit.jupiter.api.Test;
@@ -19,10 +18,7 @@ class CustomerPublicMappingTest {
 
     @Test
     void publicDtoHasNoContactData() {
-        User user = new User();
-        user.setEmail(EMAIL);
         CustomerProfile customer = new CustomerProfile();
-        customer.setUser(user);
         customer.setFirstName("Ann");
         customer.setPhoneNumber(PHONE);
 

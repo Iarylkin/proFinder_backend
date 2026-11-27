@@ -1,7 +1,7 @@
 # ProFinder — Event Catalog
 
-- **Version:** 1.8
-- **Date:** 2026-11-04
+- **Version:** 1.9
+- **Date:** 2026-11-27
 - **Status:** Stable
 - **Purpose:** Every asynchronous domain event on the RabbitMQ bus — routing key, producer, trigger, consumers, payload schema, and idempotency contract. Tier 1 item from [Documentation Roadmap.md](Documentation%20Roadmap.md) (Block B → "Event Catalog + payload schemas").
 
@@ -78,7 +78,8 @@ Every message on the bus has this exact top-level shape. `payload` is the only p
 - All IDs are UUIDs. All timestamps are UTC ISO-8601. All money is a plain number, USD ([A5](Documentation%20Roadmap.md)).
 - Payloads carry **denormalized display fields** the consumer needs (e.g. `professional_name`, `title`) so Notification Service never has to call back into Core API to render a message.
 - Payloads carry **IDs, not full entities** — a consumer that needs more does a read, but MVP consumers should not need to.
-- Payloads never carry PII beyond what the notification itself shows (no emails, no phone numbers — Notification Service resolves the user's contact channels from its own data + the `notification_preferences` matrix).
+- Payloads never carry PII beyond what the notification itself shows (no emails, no phone numbers — Notification Service resolves the user's contact channels from its own recipient table (the projection of [D11](#8-resolved-decisions)) + the `notification_preferences` matrix).
+- **Second deliberate exception:** `projection.recipient_changed` carries the user's email, because Notification Service builds its own recipient table from it ([D11](#8-resolved-decisions)); it never leaves the bus.
 - **One deliberate exception:** the `auth.*` events carry the verification / reset link (with its token) in the payload, because the token is the whole point of the email and Notification Service has no other way to get it. These tokens are short-lived and the bus is inside the same trust boundary. `auth.*` events are **email-only** and bypass the `notification_preferences` matrix — a user can't opt out of "verify your email".
 
 
@@ -95,6 +96,9 @@ Every message on the bus has this exact top-level shape. `payload` is the only p
 | `reviews.notifications` | `review.*` | Notification Service | `notifications.deadletter` |
 | `reports.notifications` | `report.*`, `moderation.*`, `account.*`, `user.*` | Notification Service | `notifications.deadletter` |
 | `auth.notifications` | `auth.*` | Notification Service | `notifications.deadletter` |
+| `recipients.projection` | `projection.*` | Notification Service | `notifications.deadletter` for a poison payload; otherwise `nack(requeue=true)`, no TTL (the projection must catch up) |
+| `auth.account` | `moderation.suspended`, `moderation.banned`, `account.deletion_requested` | Auth Service (sets `users.status`, revokes tokens) | `notifications.deadletter` |
+| `core.account` | `account.reactivated` | Core API (un-hides the profile) | `notifications.deadletter` |
 | `search.index` | `search.*` | Core API `SearchIndexConsumer` | **none** — see retry policy |
 | `notifications.deadletter` | (dead-lettered messages only) | manual inspection / replay tool | — |
 
@@ -140,17 +144,19 @@ Producer is `core-api` unless noted. "Notifies" = the human recipient of the res
 | 16 | `report.created` | `ReportService.fileReport()` | Notification Svc | reporter (confirmation only — moderators poll, no alert, [D2](#8-resolved-decisions)) |
 | 17 | `report.resolved` | `ReportService.resolve()` — any decision incl. `dismissed` | Notification Svc | reporter (outcome only) |
 | 18 | `moderation.warning_issued` | resolve with decision `warning` | Notification Svc | warned user |
-| 19 | `moderation.suspended` | resolve with decision `suspended` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | suspended user |
-| 20 | `moderation.banned` | resolve with decision `banned` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | banned user |
+| 19 | `moderation.suspended` | resolve with decision `suspended` | Auth Svc (sets `SUSPENDED`); Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | suspended user |
+| 20 | `moderation.banned` | resolve with decision `banned` | Auth Svc (sets `BANNED`); Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | banned user |
 | 21 | `moderation.content_removed` | resolve with decision `CONTENT_REMOVED` | Notification Svc; **cascades** `search.professional_reindex` if a portfolio photo | affected user |
-| 22 | `account.deletion_requested` | `AccountService.requestDeletion()` | Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | the user |
-| 23 | `account.reactivated` | login during the 30-day grace window | Notification Svc; **cascades** `search.professional_reindex` (un-hide if was ACTIVE) | the user |
-| 24 | `account.deletion_finalized` | `@Scheduled` — grace window elapsed | Notification Svc; search indexer (purge doc) | the user (final "account permanently deleted" email) |
+| 22 | `account.deletion_requested` | `AccountService.requestDeletion()` (Core: scrubs the profile, closes the orders) | Auth Svc (sets `DELETED`, scrubs the email); Notification Svc; **cascades** `search.professional_reindex` (hide) + `order.closed` per auto-close | the user |
+| 23 | `account.reactivated` | login during the 30-day grace window — **producer: auth-service** | Core API (un-hides the profile); Notification Svc; **cascades** `search.professional_reindex` (un-hide if was ACTIVE) | the user |
+| 24 | `account.deletion_finalized` | `@Scheduled` in Auth — grace window elapsed — **producer: auth-service** | Notification Svc; search indexer (purge doc) | the user (final "account permanently deleted" email) |
 | 25 | `auth.verification_requested` | `AuthService.register()` / resend-verification — **producer: auth-service** | Notification Svc (email only) | the user (verification link) |
 | 26 | `auth.password_reset_requested` | `AuthService.forgotPassword()` — **producer: auth-service**, only when the address maps to a real account (endpoint still returns `202` either way — anti-enumeration, [file 8](8%20-%20API%20Specification.md)) | Notification Svc (email only) | the user (reset link) |
 | 27 | `auth.password_set_requested` | Google-only account starts "set a password" to unlink — **producer: auth-service** | Notification Svc (email only) | the user (set-password link) |
 | 28 | `search.professional_reindex` | cascade from 9/10/19/20/21/22/23/24 and any profile/category/city/rate/experience/availability change | Core API `SearchIndexConsumer` | — |
 | 29 | `search.order_reindex` | cascade from 1/2/4/5/6 | Core API `SearchIndexConsumer` | — |
+| 30 | `projection.recipient_changed` | Auth applies any change of an account: registration, verification, email change, suspend/ban/deletion/reactivation — **producer: auth-service** | Notification Svc (upserts `recipients`) | — |
+| 31 | `projection.professional_matching_changed` | a professional changes categories, cities or the profile status | Notification Svc (replaces the rows of `recipient_categories` / `recipient_cities`) | — |
 
 
 ## 5. Payload schemas
@@ -346,6 +352,33 @@ Notation: `?` = nullable/optional, `[]` = array, `|` = enum of literals. The [en
 The reindex consumer fetches the current row from PostgreSQL (source of truth) and upserts the ES document; the payload's `version` is only a staleness guard so an out-of-order redelivery can't overwrite a newer document. Payload deliberately carries **no** document body.
 
 
+### Projection (system-only, build the recipient table of Notification Service)
+---
+
+```json
+// projection.recipient_changed   aggregate_type: user   producer: auth-service
+{
+  "user_id": "uuid",
+  "version": 12,                                  // users.version — the consumer upserts only if newer
+  "email": "string?",                             // null after the account is deleted (PII scrubbed)
+  "role": "CUSTOMER" | "PROFESSIONAL" | "MODERATOR" | "ADMIN",
+  "status": "PENDING_VERIFICATION" | "ACTIVE" | "SUSPENDED" | "BANNED" | "DELETED",
+  "occurred_at": "iso-8601"
+}
+
+// projection.professional_matching_changed   aggregate_type: professional   producer: core-api
+{
+  "professional_id": "uuid",
+  "version": 42,                                  // professional_profiles.version
+  "profile_status": "INCOMPLETE" | "ACTIVE" | "HIDDEN",
+  "category_ids": ["uuid"],
+  "cities": ["string"],
+  "occurred_at": "iso-8601"
+}
+```
+
+Both events carry the **full current state**, not a delta, so a lost or reordered event heals on the next one and a consumer can be rebuilt by replaying the latest event of every aggregate (a job of Auth and of Core re-emits them on demand). Notification Service sends to a user only if its `recipients` row is `ACTIVE` with an email; for `order.published` it selects the professionals whose `recipient_categories` contain the order's category and whose `recipient_cities` contain its city.
+
 ## 6. Cascade map (who emits what)
 ---
 
@@ -360,6 +393,8 @@ Several business actions emit a **notification event** *and* a **reindex event**
 | Close order | `order.closed` | `search.order_reindex` (remove) |
 | Post/edit review of a professional | `review.posted` / — | `search.professional_reindex` (rating_recalc) |
 | Professional edits profile / categories / cities / rate / experience / availability | — | `search.professional_reindex` |
+| Professional edits categories / cities / profile status | — | `projection.professional_matching_changed` |
+| Auth applies a status or email change of an account (register, verify, suspend, ban, delete, reactivate, email change) | — | `projection.recipient_changed` |
 | Suspend / ban / delete a professional | `moderation.*` / `account.*` | `search.professional_reindex` (hide) |
 | Suspend / ban / delete a **customer** | `moderation.*` / `account.*` | one `order.closed` **per** their ACTIVE order (`closed_reason: ACCOUNT_ACTION`) → each cascades its own `search.order_reindex` |
 | Reactivate account (grace-period login) | `account.reactivated` | `search.professional_reindex` (un-hide, if profile was ACTIVE) |
@@ -400,6 +435,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 | D8 | Dead-letter layout | **One shared `notifications.deadletter`** for all notification queues in MVP. |
 | D9 | `outbox` retention | Prune `sent = true AND sent_at < now() - INTERVAL '7 days'`. `CONFIGURATION.md` knob. |
 | D10 | `event_version` | All MVP events are `v1`; the field is stamped by the publisher from a per-type constant, not stored in `outbox`. |
+| D11 | How Notification gets recipients and emails (roadmap D-5.2, decision 9) | **A projection built from events**, owned by Notification Service: `recipients`, `recipient_categories`, `recipient_cities` in `notification_db`, fed by `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core) through the queue `recipients.projection`. A database per service rules out reading Core's or Auth's tables. Consistency is eventual: a notification can miss a professional who changed category a moment ago. |
 
 
 ## 9. Changelog
@@ -407,6 +443,7 @@ Resolved 2026-09-07 (D1–D6 by the user; D7–D10 taken as the recommended defa
 
 | Version | Date | Change |
 |---|---|---|
+| 1.9 | 2026-11-27 | **Projection (D11, roadmap D-5.2):** Notification Service builds its recipient table from the new `projection.recipient_changed` (Auth) and `projection.professional_matching_changed` (Core); new queues `recipients.projection`, `auth.account` and `core.account`; Auth consumes `moderation.suspended`, `moderation.banned` and `account.deletion_requested` to set `users.status` and produces `account.reactivated` and `account.deletion_finalized`; the email is a second deliberate PII exception in the payloads. Needed because every service has its own database. |
 | 1.8 | 2026-11-04 | **Naming:** events `bid.created` and `bid.edited` (aggregate `bid`, payload `bid_id`), publisher `BidService`, to match the entity and the table. |
 | 1.7 | 2026-10-28 | `event_id` is a plain UUID (v4): ids are no longer v7 (decision 3). |
 | 1.6 | 2026-10-28 | **Naming:** `conversation_id` → `chat_id` in the message payloads; `ResponseService` → `OrderResponseService`. |

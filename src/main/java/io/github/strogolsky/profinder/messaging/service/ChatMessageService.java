@@ -1,7 +1,5 @@
 package io.github.strogolsky.profinder.messaging.service;
 
-import io.github.strogolsky.profinder.auth.entity.User;
-import io.github.strogolsky.profinder.auth.service.UserService;
 import io.github.strogolsky.profinder.messaging.entity.Chat;
 import io.github.strogolsky.profinder.messaging.entity.ChatMessage;
 import io.github.strogolsky.profinder.messaging.repository.ChatMessageRepository;
@@ -24,11 +22,6 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
 
     /**
-     * Service used for retrieving user information.
-     */
-    private final UserService userService;
-
-    /**
      * Service used for retrieving chat information.
      */
     private final ChatService chatService;
@@ -43,12 +36,11 @@ public class ChatMessageService {
      */
     @Transactional
     public ChatMessage create(final UUID chatId, final UUID fromId, final String content) {
-        User fromUser = userService.getById(fromId);
         Chat chat = chatService.getById(chatId);
 
         ChatMessage chatMessage = new ChatMessage();
         chatMessage.setContent(content);
-        chatMessage.setSender(fromUser);
+        chatMessage.setSenderId(fromId);
         chatMessage.setChat(chat);
 
         chatMessageRepository.persist(chatMessage);
