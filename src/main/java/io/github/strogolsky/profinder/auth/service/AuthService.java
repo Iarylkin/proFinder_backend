@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -171,22 +170,12 @@ public class AuthService {
         String code = CryptoUtils.generateNumericCode(PASSWORD_LENGTH);
         String hashedCode = CryptoUtils.hash(code);
 
-        redisClient.setex(RESET_CODE_PREFIX + normalizeEmail(email), "600", hashedCode);
+        redisClient.setex(RESET_CODE_PREFIX + email, "600", hashedCode);
 
         String message = "Your password reset code is: " + code + "\nIt is valid for 10 minutes.";
 
         mailService.send(email, "Reset password", message);
         log.debug("Reset code issued for userId={}", user.get().getId());
-    }
-
-    /**
-     * Normalizes an email for use in cache keys: trimmed and lower-cased.
-     *
-     * @param email raw email
-     * @return normalized email
-     */
-    static String normalizeEmail(final String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
     }
 
     /**
@@ -210,7 +199,7 @@ public class AuthService {
             throw new BadRequestException("Passwords do not match");
         }
 
-        String email = normalizeEmail(request.email());
+        String email = request.email();
         String codeKey = RESET_CODE_PREFIX + email;
         String failureKey = RESET_FAILURE_PREFIX + email;
         ensureNotLocked(failureKey);
