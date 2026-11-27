@@ -68,7 +68,7 @@ class OrderServiceFlowTest {
         professionalService = mock(ProfessionalService.class);
         userContext = mock(UserContext.class);
         service = new OrderService(orderSearchService, orderSearchMapper, orderRepository, bidService,
-                professionalService, userContext);
+                professionalService, userContext, PassThroughCategories.service());
 
         CustomerProfile customer = new CustomerProfile();
         customer.setId(CUSTOMER_ID);

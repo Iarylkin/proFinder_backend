@@ -51,7 +51,8 @@ class ProfessionalServiceTest {
                 mock(ReviewService.class),
                 mock(UserContext.class),
                 mock(CustomerService.class),
-                profileService);
+                profileService,
+                PassThroughCategories.service());
 
         professional = new ProfessionalProfile();
         professional.setId(PROFESSIONAL_ID);

@@ -53,7 +53,8 @@ class OrderServiceTest {
                 orderRepository,
                 mock(BidService.class),
                 mock(ProfessionalService.class),
-                userContext);
+                userContext,
+                PassThroughCategories.service());
 
         CustomerProfile customer = new CustomerProfile();
         customer.setId(CUSTOMER_ID);

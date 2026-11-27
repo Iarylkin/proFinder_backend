@@ -58,7 +58,8 @@ class ProfessionalServiceRatingTest {
         userContext = mock(UserContext.class);
         customerService = mock(CustomerService.class);
         service = new ProfessionalService(professionalRepository, mock(UserService.class), searchService,
-                searchMapper, reviewService, userContext, customerService, mock(ProfileService.class));
+                searchMapper, reviewService, userContext, customerService, mock(ProfileService.class),
+                PassThroughCategories.service());
 
         professional = new ProfessionalProfile();
         professional.setId(PROFESSIONAL_ID);

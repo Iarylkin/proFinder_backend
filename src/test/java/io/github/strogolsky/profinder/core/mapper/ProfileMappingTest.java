@@ -2,7 +2,6 @@ package io.github.strogolsky.profinder.core.mapper;
 
 import io.github.strogolsky.profinder.core.dto.CustomerUpdateRequest;
 import io.github.strogolsky.profinder.core.dto.ProfessionalUpdateRequest;
-import io.github.strogolsky.profinder.core.entity.Category;
 import io.github.strogolsky.profinder.core.entity.CustomerProfile;
 import io.github.strogolsky.profinder.core.entity.ProfessionalProfile;
 import org.junit.jupiter.api.Test;
@@ -41,15 +40,15 @@ class ProfileMappingTest {
 
     @Test
     void professionalChangesCarryDescriptionAndCategories() {
-        Category plumbing = new Category();
-        plumbing.setId(UUID.randomUUID());
+        UUID plumbingId = UUID.randomUUID();
         ProfessionalUpdateRequest request = new ProfessionalUpdateRequest(
-                null, null, null, null, "I fix pipes", List.of(plumbing), 0L);
+                null, null, null, null, "I fix pipes", List.of(plumbingId), 0L);
 
         ProfessionalProfile changes = professionalMapper.toEntity(request);
 
         assertEquals("I fix pipes", changes.getDescription());
-        assertEquals(List.of(plumbing), changes.getCategories());
+        assertEquals(1, changes.getCategories().size());
+        assertEquals(plumbingId, changes.getCategories().get(0).getId());
         assertNull(changes.getFirstName());
         assertNull(changes.getPhoneNumber());
     }
