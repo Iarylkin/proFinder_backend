@@ -34,6 +34,11 @@ import java.util.UUID;
 @ApplicationScoped
 @RequiredArgsConstructor
 public class BidService {
+
+    /**
+     * Message of the error for a user who is not the owner of the order.
+     */
+    private static final String NOT_OWNER_ERROR = "You are not the owner of this order";
     /**
      * Repository for accessing order data.
      */
@@ -105,7 +110,7 @@ public class BidService {
         Order order = bid.getOrder();
 
         if (!userContext.is(order.getCustomer().getId())) {
-            throw new ForbiddenException("You are not the owner of this order");
+            throw new ForbiddenException(NOT_OWNER_ERROR);
         }
         VersionCheck.require(bid, version);
         if (status != BidStatus.APPROVED) {
@@ -195,7 +200,7 @@ public class BidService {
             throw new NotFoundException("Order not found");
         }
         if (!userContext.is(order.getCustomer().getId())) {
-            throw new ForbiddenException("You are not the owner of this order");
+            throw new ForbiddenException(NOT_OWNER_ERROR);
         }
 
         List<Bid> bids = bidRepository.findByOrderId(orderId, page, size);
