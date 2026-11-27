@@ -82,14 +82,14 @@ The layers (each is a sub-package of the module that owns the class):
 - **`entity/`** — JPA entities (User, Profile with CustomerProfile / ProfessionalProfile, Order, Bid, Chat, ChatMessage, Review, Category, Location)
   - Every entity extends `BaseEntity`: a `UUID id` (v4, `GenerationType.UUID`) and a `Long version` (`@Version`, optimistic locking; hidden from JSON)
   - `User` holds only authentication data (email, password, role, creation time). The personal data (name, phone, location, avatar) and the data of the role live in the profile: `Profile` is abstract (`TABLE_PER_CLASS`), `CustomerProfile` and `ProfessionalProfile` have their own tables and their primary key is the `user_id`. Orders, responses and reviews point at the profiles, chats at the IDs of users (`user1Id`, `user2Id`, `senderId`); the profile keeps the ID of its user as its primary key and its own `createAt`
-  - `OrderStatus`, `BidStatus`, `UserRole` enums. `Bid` is the response of a professional to an order (table `responses`, API `/orders/{id}/responses`, `/responses/{id}`); it is not called `OrderResponse` so the name stays free for the DTO of an order
+  - `OrderStatus`, `BidStatus`, `UserRole` enums. `Bid` is the response of a professional to an order (table `bids`, API `/orders/{id}/bids`, `/bids/{id}`); it is not called `OrderResponse` so the name stays free for the DTO of an order
   
 - **`resource/`** — REST endpoints following `/api/v1/{endpoint}` path pattern
   - `AuthResource` — Register (`POST /auth/register`), login (`POST /auth/login`), password recovery (`/password-recovery`)
   - `UserResource` — Avatar upload/download, email/password changes (the avatar is kept in the profile)
-  - `CustomerResource`, `ProfessionalResource` — Own profile (`GET`/`PATCH /customers/me`, `/professionals/me`: the type is the address), profiles by id, own orders; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), responses of a professional (`GET /professionals/{id}/responses`)
+  - `CustomerResource`, `ProfessionalResource` — Own profile (`GET`/`PATCH /customers/me`, `/professionals/me`: the type is the address), profiles by id; reviews are exposed here (`POST /professionals/{id}/reviews`, `GET .../reviews`, `GET /customers/me/reviews`), bids of a professional (`GET /professionals/{id}/bids`)
   - `ProfessionalSearchResource` — Professional search (`GET /search/professionals`)
-  - `OrderResource`, `BidResource` — Job posting & response workflows (`/orders/{id}/responses`, `/responses/{id}`)
+  - `OrderResource`, `BidResource` — Job posting & bid workflows (`/orders/{id}/bids`, `/bids/{id}`)
   - `ChatResource` — Chat creation, the current user's chats (`GET /chats/me`) and history; WebSocket communication in `ChatSocket`
   - `LocationResource`, `CategoryResource` — Reference data (`/locations`, `/categories`)
 
@@ -98,7 +98,7 @@ The layers (each is a sub-package of the module that owns the class):
   - `UserService` — Account creation, email/password changes
   - `ProfileService`, `ProfileFactory` — Creates the profile of a new user by its role (and sets the default location), reads a profile by user id, applies the personal data (name, phone, location) to a profile
   - `OrderService`, `CustomerService`, `ProfessionalService` — CRUD + queries
-  - `BidService` — Response lifecycle (create, approve; the other responses of the order are rejected)
+  - `BidService` — Bid lifecycle (create, approve; the other bids of the order are rejected)
   - `ChatService`, `ChatMessageService` — Chat session & message persistence
   - `MailService` — Email notifications (via Mailtrap in dev)
   - `TokenService` — JWT token generation (the current user is resolved by `UserContext`, not by this module)
@@ -174,9 +174,9 @@ Unit tests (JUnit 5, Mockito + REST Assured):
 #### Order Lifecycle (Customer → Professional workflow)
 1. Customer creates order via `OrderResource.create()` → `OrderService.create()`
 2. Professionals browse orders via `OrderResource.getOrders()` (Elasticsearch when filters are set)
-3. Professional submits a response via `OrderResource.respond()` (`POST /v1/orders/{id}/responses`) → `OrderService.respond()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
-4. The order owner lists responses (`GET /v1/orders/{id}/responses`) and accepts one via `BidResource.update()` (`PATCH /v1/responses/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
-5. Upon acceptance, the order status becomes `COMPLETED` and the other responses are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
+3. Professional submits a bid via `OrderResource.createBid()` (`POST /v1/orders/{id}/bids`) → `OrderService.placeBid()`; a closed order returns `409`; the order moves `CREATED` → `CUSTOMER_PENDING`
+4. The order owner lists bids (`GET /v1/orders/{id}/bids`) and accepts one via `BidResource.update()` (`PATCH /v1/bids/{id}` with `{"status": "APPROVED", "finalPrice", "finalDeadline"}`; any other status returns `409`)
+5. Upon acceptance, the order status becomes `COMPLETED` and the other bids are rejected (there is no `IN_PROGRESS` status; statuses are `CREATED`, `CUSTOMER_PENDING`, `COMPLETED`, `CANCELLED`)
 6. An order is updated with `PATCH /v1/orders/{id}` (`OrderResource.update()`, only the sent fields change); `{"status": "CANCELLED"}` cancels it, any other status or an invalid transition returns `409`, a non-owner gets `403`; a customer can review a professional via `POST /v1/professionals/{id}/reviews`
 
 #### Search
