@@ -143,7 +143,8 @@ class OrderServiceFlowTest {
 
     @Test
     void deletingAMissingOrderIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.delete(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.delete(unknownId));
 
         verify(orderRepository, never()).delete(any(Order.class));
     }
@@ -157,7 +158,8 @@ class OrderServiceFlowTest {
 
     @Test
     void missingOrderIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @SuppressWarnings("unchecked")
@@ -224,8 +226,9 @@ class OrderServiceFlowTest {
         order.getBids().add(bidOf(PROFESSIONAL_ID));
         when(professionalService.getById(PROFESSIONAL_ID)).thenReturn(professional(PROFESSIONAL_ID));
 
+        Bid bid = bidFromTheRequest();
         ClientErrorException thrown = assertThrows(ClientErrorException.class,
-                () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bidFromTheRequest()));
+                () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bid));
 
         assertEquals(409, thrown.getResponse().getStatus());
         verify(bidService, never()).create(any(Bid.class));
@@ -236,8 +239,8 @@ class OrderServiceFlowTest {
     void completedOrderTakesNoBids() {
         order.setStatus(OrderStatus.COMPLETED);
 
-        assertThrows(OrderClosedException.class,
-                () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bidFromTheRequest()));
+        Bid bid = bidFromTheRequest();
+        assertThrows(OrderClosedException.class, () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bid));
 
         verify(bidService, never()).create(any(Bid.class));
         assertEquals(OrderStatus.COMPLETED, order.getStatus());
@@ -247,16 +250,17 @@ class OrderServiceFlowTest {
     void cancelledOrderTakesNoBids() {
         order.setStatus(OrderStatus.CANCELLED);
 
-        assertThrows(OrderClosedException.class,
-                () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bidFromTheRequest()));
+        Bid bid = bidFromTheRequest();
+        assertThrows(OrderClosedException.class, () -> service.placeBid(ORDER_ID, PROFESSIONAL_ID, bid));
 
         verify(bidService, never()).create(any(Bid.class));
     }
 
     @Test
     void bidOnAMissingOrderIsNotFound() {
-        assertThrows(NotFoundException.class,
-                () -> service.placeBid(UUID.randomUUID(), PROFESSIONAL_ID, bidFromTheRequest()));
+        UUID unknownId = UUID.randomUUID();
+        Bid bid = bidFromTheRequest();
+        assertThrows(NotFoundException.class, () -> service.placeBid(unknownId, PROFESSIONAL_ID, bid));
 
         verify(bidService, never()).create(any(Bid.class));
     }

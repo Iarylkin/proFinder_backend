@@ -105,13 +105,14 @@ class CategoryServiceTest {
     void anUnknownCategoryIsNotFound() {
         storeBoth();
 
-        assertThrows(NotFoundException.class,
-                () -> service.resolve(List.of(stub(plumbing.getId()), stub(UUID.randomUUID()))));
+        var requested = List.of(stub(plumbing.getId()), stub(UUID.randomUUID()));
+        assertThrows(NotFoundException.class, () -> service.resolve(requested));
     }
 
     @Test
     void aCategoryWithoutAnIdIsABadRequest() {
-        assertThrows(BadRequestException.class, () -> service.resolve(List.of(new Category())));
+        var requested = List.of(new Category());
+        assertThrows(BadRequestException.class, () -> service.resolve(requested));
     }
 
     @Test

@@ -92,7 +92,8 @@ class UserServiceAccountTest {
 
     @Test
     void unknownIdIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @Test
@@ -151,8 +152,9 @@ class UserServiceAccountTest {
 
     @Test
     void passwordOfAMissingUserIsNotFound() {
+        UUID unknownId = UUID.randomUUID();
         assertThrows(NotFoundException.class,
-                () -> service.changePassword(UUID.randomUUID(), PASSWORD, NEW_PASSWORD, NEW_PASSWORD));
+                () -> service.changePassword(unknownId, PASSWORD, NEW_PASSWORD, NEW_PASSWORD));
     }
 
     // ---- email ----
@@ -205,15 +207,16 @@ class UserServiceAccountTest {
 
     @Test
     void emailOfAMissingUserIsNotFound() {
-        assertThrows(NotFoundException.class,
-                () -> service.changeEmail(UUID.randomUUID(), NEW_EMAIL, PASSWORD));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.changeEmail(unknownId, NEW_EMAIL, PASSWORD));
     }
 
     // ---- delete ----
 
     @Test
     void deletingAMissingUserIsNotFoundAndAnnouncesNothing() {
-        assertThrows(NotFoundException.class, () -> service.delete(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.delete(unknownId));
 
         verify(userDeleted, never()).fire(any(UserDeleted.class));
     }

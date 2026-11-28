@@ -93,7 +93,9 @@ class ProfessionalServiceRatingTest {
 
     @Test
     void reviewOfAMissingProfessionalIsNotFoundAndNothingIsSaved() {
-        assertThrows(NotFoundException.class, () -> service.review(UUID.randomUUID(), reviewWithRating(5)));
+        UUID unknownId = UUID.randomUUID();
+        Review review = reviewWithRating(5);
+        assertThrows(NotFoundException.class, () -> service.review(unknownId, review));
 
         verify(reviewService, never()).create(any(Review.class));
     }
@@ -149,7 +151,9 @@ class ProfessionalServiceRatingTest {
 
     @Test
     void reviewOfAMissingProfessionalChangesNoRating() {
-        assertThrows(NotFoundException.class, () -> service.review(UUID.randomUUID(), reviewWithRating(5)));
+        UUID unknownId = UUID.randomUUID();
+        Review review = reviewWithRating(5);
+        assertThrows(NotFoundException.class, () -> service.review(unknownId, review));
 
         verify(reviewService, never()).getRatingsByProfessionalId(any(UUID.class));
         verify(searchService, never()).save(any());

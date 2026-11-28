@@ -164,7 +164,8 @@ class BidServiceFlowTest {
 
     @Test
     void missingBidIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @Test
@@ -208,7 +209,8 @@ class BidServiceFlowTest {
 
     @Test
     void bidsOfAMissingOrderAreNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getByOrderId(UUID.randomUUID(), PAGE, SIZE));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getByOrderId(unknownId, PAGE, SIZE));
     }
 
     @Test

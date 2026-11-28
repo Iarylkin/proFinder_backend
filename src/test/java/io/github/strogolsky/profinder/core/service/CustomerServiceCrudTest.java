@@ -46,7 +46,8 @@ class CustomerServiceCrudTest {
 
     @Test
     void missingCustomerIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @Test

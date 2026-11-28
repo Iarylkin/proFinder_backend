@@ -51,7 +51,8 @@ class LocationServiceTest {
 
     @Test
     void unknownIdIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @Test

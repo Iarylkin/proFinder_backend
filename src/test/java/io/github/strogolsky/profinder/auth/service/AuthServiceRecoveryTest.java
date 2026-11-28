@@ -172,7 +172,8 @@ class AuthServiceRecoveryTest {
         Response stub3 = numberResponse(1);
         when(redisClient.incr(FAILURE_KEY)).thenReturn(stub3);
 
-        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request(EMAIL, "000000")));
+        ResetPasswordRequest request = request(EMAIL, "000000");
+        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request));
 
         verify(userService, never()).updatePassword(any(UUID.class), anyString());
         verify(redisClient).expire(FAILURE_KEY, String.valueOf(WINDOW_SECONDS));
@@ -185,7 +186,8 @@ class AuthServiceRecoveryTest {
         Response stub4 = numberResponse(1);
         when(redisClient.incr(FAILURE_KEY)).thenReturn(stub4);
 
-        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request(EMAIL, "123456")));
+        ResetPasswordRequest request = request(EMAIL, "123456");
+        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request));
 
         verify(userService, never()).updatePassword(any(UUID.class), anyString());
     }
@@ -197,7 +199,8 @@ class AuthServiceRecoveryTest {
         Response stub6 = numberResponse(2);
         when(redisClient.incr(FAILURE_KEY)).thenReturn(stub6);
 
-        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request(EMAIL, "000000")));
+        ResetPasswordRequest request = request(EMAIL, "000000");
+        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request));
 
         verify(redisClient, never()).expire(anyString(), anyString());
     }
@@ -209,7 +212,8 @@ class AuthServiceRecoveryTest {
         Response stub8 = numberResponse(MAX_ATTEMPTS);
         when(redisClient.incr(FAILURE_KEY)).thenReturn(stub8);
 
-        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request(EMAIL, "000000")));
+        ResetPasswordRequest request = request(EMAIL, "000000");
+        assertThrows(InvalidResetCodeException.class, () -> service.resetPassword(request));
 
         verify(redisClient).del(List.of(CODE_KEY));
     }
@@ -221,8 +225,9 @@ class AuthServiceRecoveryTest {
         Response stub10 = numberResponse(321);
         when(redisClient.ttl(FAILURE_KEY)).thenReturn(stub10);
 
+        ResetPasswordRequest request = request(EMAIL, "123456");
         TooManyAttemptsException locked = assertThrows(TooManyAttemptsException.class,
-                () -> service.resetPassword(request(EMAIL, "123456")));
+                () -> service.resetPassword(request));
 
         assertEquals(429, locked.getStatus().getStatusCode());
         assertEquals("321", String.valueOf(locked.getHeaders().get("Retry-After")));
@@ -237,8 +242,9 @@ class AuthServiceRecoveryTest {
         Response stub12 = numberResponse(-1);
         when(redisClient.ttl(FAILURE_KEY)).thenReturn(stub12);
 
+        ResetPasswordRequest request = request(EMAIL, "123456");
         TooManyAttemptsException locked = assertThrows(TooManyAttemptsException.class,
-                () -> service.resetPassword(request(EMAIL, "123456")));
+                () -> service.resetPassword(request));
 
         assertEquals(String.valueOf(WINDOW_SECONDS), String.valueOf(locked.getHeaders().get("Retry-After")));
     }

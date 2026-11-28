@@ -84,7 +84,8 @@ class ProfessionalServiceCrudTest {
 
     @Test
     void missingProfessionalIsNotFound() {
-        assertThrows(NotFoundException.class, () -> service.getById(UUID.randomUUID()));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.getById(unknownId));
     }
 
     @SuppressWarnings("unchecked")
@@ -147,7 +148,8 @@ class ProfessionalServiceCrudTest {
         ProfessionalProfile changes = new ProfessionalProfile();
         changes.setVersion(VERSION);
 
-        assertThrows(NotFoundException.class, () -> service.updateProfile(UUID.randomUUID(), changes));
+        UUID unknownId = UUID.randomUUID();
+        assertThrows(NotFoundException.class, () -> service.updateProfile(unknownId, changes));
 
         verify(searchService, never()).save(any(ProfessionalSearchDto.class));
     }

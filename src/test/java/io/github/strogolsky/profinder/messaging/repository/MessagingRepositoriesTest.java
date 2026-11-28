@@ -5,6 +5,7 @@ import io.github.strogolsky.profinder.messaging.entity.ChatMessage;
 import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.Test;
 
@@ -113,10 +114,14 @@ class MessagingRepositoriesTest {
         UUID[] users = pair();
         chat(users[0], users[1]);
 
-        assertThrows(PersistenceException.class, () -> {
-            chat(users[0], users[1]);
-            chats.getEntityManager().flush();
-        });
+        Chat duplicate = new Chat();
+        duplicate.setUser1Id(users[0]);
+        duplicate.setUser2Id(users[1]);
+        chats.persist(duplicate);
+
+        EntityManager entityManager = chats.getEntityManager();
+
+        assertThrows(PersistenceException.class, () -> entityManager.flush());
     }
 
     // ---- ChatMessageRepository ----
