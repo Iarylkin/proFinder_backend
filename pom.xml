@@ -15,6 +15,7 @@
         <quarkus.platform.version>3.18.3</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
+        <testcontainers.version>1.21.4</testcontainers.version>
 
         <!-- SonarQube Configuration -->
         <sonar.organization>${env.SONAR_ORGANIZATION}</sonar.organization>
@@ -27,6 +28,13 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Testcontainers 1.20 (the one of Quarkus 3.18) asks for Docker API 1.32, which the Docker of
+                 GitHub runners no longer accepts; 1.21.4 speaks the current API. Must stay above the BOM. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
