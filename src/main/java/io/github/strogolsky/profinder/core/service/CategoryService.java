@@ -47,13 +47,13 @@ public class CategoryService {
      * Every id is looked up, the order of the request is kept and a category named twice is taken once.
      *
      * @param requested the categories of the request, or {@code null} when none were sent
-     * @return the stored categories, or {@code null} when none were sent
+     * @return the stored categories, an empty list when none were sent
      * @throws BadRequestException if a category has no id
      * @throws NotFoundException   if a category does not exist
      */
     public List<Category> resolve(final List<Category> requested) {
         if (requested == null) {
-            return null;
+            return List.of();
         }
         Set<UUID> ids = new LinkedHashSet<>();
         for (Category category : requested) {
