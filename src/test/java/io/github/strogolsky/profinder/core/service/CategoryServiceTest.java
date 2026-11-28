@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -67,8 +66,8 @@ class CategoryServiceTest {
     }
 
     @Test
-    void noCategoriesInTheRequestStayNone() {
-        assertNull(service.resolve(null));
+    void noCategoriesInTheRequestGiveAnEmptyList() {
+        assertEquals(List.of(), service.resolve(null));
 
         verify(repository, never()).list(any(String.class), any(Object[].class));
     }

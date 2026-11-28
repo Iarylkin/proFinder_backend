@@ -1,9 +1,5 @@
 package io.github.strogolsky.profinder.core.service;
 
-import io.github.strogolsky.profinder.core.entity.Category;
-
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,10 +15,7 @@ final class PassThroughCategories {
 
     static CategoryService service() {
         CategoryService categories = mock(CategoryService.class);
-        when(categories.resolve(anyList())).thenAnswer(call -> {
-            List<Category> requested = call.getArgument(0);
-            return requested;
-        });
+        when(categories.resolve(anyList())).thenAnswer(call -> call.getArgument(0));
         return categories;
     }
 }

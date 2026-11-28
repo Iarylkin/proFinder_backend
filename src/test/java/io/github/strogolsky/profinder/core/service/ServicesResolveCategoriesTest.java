@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -103,14 +102,14 @@ class ServicesResolveCategoriesTest {
     }
 
     @Test
-    void newOrderWithoutCategoriesKeepsNone() {
-        when(categoryService.resolve(null)).thenReturn(null);
+    void newOrderWithoutCategoriesGetsAnEmptyList() {
+        when(categoryService.resolve(null)).thenReturn(List.of());
         Order created = new Order();
         created.setCustomer(order.getCustomer());
 
         orderService.create(created);
 
-        assertNull(created.getCategories());
+        assertEquals(List.of(), created.getCategories());
     }
 
     @Test
