@@ -1,10 +1,13 @@
 package io.github.strogolsky.profinder.api;
 
+import io.quarkus.test.common.QuarkusTestResource;
+
 /**
  * Base of the tests of the REST resources: the whole application runs on real databases and the requests
  * go over HTTP. Quarkus resets the RestAssured base path before every test and does not add
  * {@code quarkus.rest.path}, so a test builds its paths from {@link #API}.
  */
+@QuarkusTestResource(JwtTestKeys.class)
 public abstract class ApiTestBase {
 
     /** The root path of the REST API: {@code quarkus.rest.path} plus the version. */
